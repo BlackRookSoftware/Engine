@@ -3,8 +3,11 @@ package com.blackrook.engine.components;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.CaseInsensitiveHashMap;
 import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.exception.ConsoleCommandInvocationException;
+import com.blackrook.engine.exception.ConsoleVariableException;
 
 /**
  * 
@@ -84,7 +87,13 @@ public class EngineConsoleManager
 
 		void call(Object ... args)
 		{
-			// TODO: Cast/convert and invoke. 
+			if (args.length < types.length)
+				throw new ConsoleCommandInvocationException("Not enough arguments for command.");
+			
+			Object[] params = new Object[types.length];
+			for (int i = 0; i < params.length; i++)
+				params[i] = Reflect.createForType(args[i], types[i]);
+			Reflect.invokeBlind(method, instance, params);
 		}
 		
 	}
@@ -148,14 +157,18 @@ public class EngineConsoleManager
 
 		Object get()
 		{
-			// TODO: Cast/convert and invoke.
-			return null;
+			if (field != null)
+				return Reflect.getFieldValue(field, instance);
+			else
+				return Reflect.invokeBlind(getter, instance);
 		}
 
-		Object set(Object value)
+		void set(Object value)
 		{
-			// TODO: Cast/convert and invoke.
-			return null;
+			if (field != null)
+				Reflect.setField(instance, field, Reflect.createForType(value, type));
+			else
+				Reflect.invokeBlind(setter, instance, Reflect.createForType(value, type));
 		}
 		
 	}
