@@ -2,25 +2,32 @@ package com.blackrook.engine.components;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Iterator;
 
+import com.blackrook.commons.Common;
+import com.blackrook.commons.ObjectPair;
 import com.blackrook.commons.Reflect;
+import com.blackrook.commons.TypeProfile;
+import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.CaseInsensitiveHashMap;
-import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.CCMD;
+import com.blackrook.engine.annotation.CVAR;
+import com.blackrook.engine.annotation.Component;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
+import com.blackrook.engine.exception.ConsoleSetupException;
 import com.blackrook.engine.exception.ConsoleVariableException;
 
 /**
  * 
  * @author Matthew Tropiano
  */
-@EngineComponent
+@Component
 public class EngineConsoleManager
 {
 	/** Mapping of commands to invocation targets. */
 	private CaseInsensitiveHashMap<CCMDMapping> commandMap;
 	/** Mapping of variables to variable fields/methods. */
 	private CaseInsensitiveHashMap<CVARMapping> variableMap;
-	
 	/** Mapping of names to command aliases. */
 	private CaseInsensitiveHashMap<String> aliasMap;
 
@@ -39,10 +46,250 @@ public class EngineConsoleManager
 	 */
 	public void addEntries(Object instance)
 	{
-		// TODO: Finish.
+		Class<?> type = instance.getClass();
+		TypeProfile<?> profile = TypeProfile.getTypeProfile(type);
+		
+		// add commands.
+		for (Method method : type.getMethods())
+		{
+			CCMD anno = null;
+			if ((anno = method.getAnnotation(CCMD.class)) == null)
+				continue;
+			
+			String cmdname = (Common.isEmpty(anno.value()) ? method.getName().toLowerCase() : anno.value()).toLowerCase();
+
+			if (commandMap.containsKey(cmdname))
+			{
+				CCMDMapping declaring = commandMap.get(cmdname);
+				throw new ConsoleSetupException("Command \""+cmdname+"\" already declared by "+declaring.method.toGenericString());
+			}
+			
+			commandMap.put(cmdname, new CCMDMapping(instance, method, anno.description(), anno.usage()));
+		}
+
+		// add variables.
+		for (Field field : profile.getAnnotatedPublicFields(CVAR.class))
+		{
+			CVAR anno = field.getAnnotation(CVAR.class);
+			String varname = Common.isEmpty(anno.value()) ? field.getName() : anno.value();
+
+			if (variableMap.containsKey(varname))
+			{
+				CVARMapping declaring = variableMap.get(varname);
+				if (declaring.field != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by field "+declaring.field.toGenericString());
+				else if (declaring.getter != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by getter "+declaring.getter.toGenericString());
+				else if (declaring.setter != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared in setter "+declaring.getter.toGenericString());
+			}
+			
+			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), field));
+		}
+		
+		for (ObjectPair<String, MethodSignature> pair : profile.getGetterMethods())
+		{
+			String getterName = pair.getKey();
+			MethodSignature signature = pair.getValue();
+			Method method = signature.getMethod();
+
+			CVAR anno = method.getAnnotation(CVAR.class);
+			String varname = (Common.isEmpty(anno.value()) ? getterName : anno.value()).toLowerCase();
+
+			if (variableMap.containsKey(varname))
+			{
+				CVARMapping declaring = variableMap.get(varname);
+				if (declaring.field != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by field "+declaring.field.toGenericString());
+				else if (declaring.getter != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by getter "+declaring.getter.toGenericString());
+			}
+			
+			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), method));
+		}
+		
+		for (ObjectPair<String, MethodSignature> pair : profile.getSetterMethods())
+		{
+			String setterName = pair.getKey();
+			MethodSignature signature = pair.getValue();
+			Method method = signature.getMethod();
+
+			CVAR anno = method.getAnnotation(CVAR.class);
+			String varname = (Common.isEmpty(anno.value()) ? setterName : anno.value()).toLowerCase();
+			
+			if (variableMap.containsKey(varname))
+			{
+				CVARMapping declaring = variableMap.get(varname);
+				if (declaring.field != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by field "+declaring.field.toGenericString());
+				else if (declaring.setter != null)
+					throw new ConsoleSetupException("Variable setter for \""+varname+"\" already declared by setter "+declaring.setter.toGenericString());
+			}
+			
+			CVARMapping mapping = variableMap.get(varname);
+			mapping.setter = method;
+		}
+		
+		// scan for incomplete CVAR support. 
+		for (ObjectPair<String, CVARMapping> pair : variableMap)
+		{
+			CVARMapping mapping = pair.getValue();
+			if (mapping.field == null)
+			{
+				if (mapping.getter == null)
+					throw new ConsoleSetupException("Variable \""+pair.getKey()+"\" has no getter, hence, no read method! Cannot have a write-only variable!"); 
+			}
+		}
+	}
+	 
+	/**
+	 * Checks if a variable exists by name.
+	 * @param name the name of the variable.
+	 * @return true if it exists, false if not.
+	 */
+	public boolean containsVariable(String name)
+	{
+		return variableMap.containsKey(name);
+	}
+
+	/**
+	 * Returns all variable names in an array.
+	 */
+	public String[] getVariableNames()
+	{
+		String[] out = new String[variableMap.size()];
+		Iterator<String> it = variableMap.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+
+	/**
+	 * Gets a variable definition.
+	 * @param name the name of the variable.
+	 */
+	public CVARMapping getVariableDefinition(String name)
+	{
+		return variableMap.get(name);
+	}
+
+	/**
+	 * Gets the value of a variable by name.
+	 * @param name the name of the variable.
+	 */
+	public Object getVariable(String name)
+	{
+		synchronized (variableMap)
+		{
+			return variableMap.containsKey(name) ? variableMap.get(name).get() : null;
+		}
 	}
 	
+	/**
+	 * Gets the value of a variable by name, converted to a value type.
+	 * @param name the name of the variable.
+	 * @param type the target type.
+	 */
+	public <T> T getVariable(String name, Class<T> type)
+	{
+		return variableMap.containsKey(name) ? Reflect.createForType(variableMap.get(name).get(), type) : null; 
+	}
+
+	/**
+	 * Sets the value of a variable.
+	 * @param name the name of the variable.
+	 * @param value the value to set.
+	 */
+	public void setVariable(String name, Object value)
+	{
+		synchronized (variableMap)
+		{
+			if (!variableMap.containsKey(name))
+				throw new ConsoleVariableException("Variable \""+name+"\" doesn't exist.");
+			else
+				variableMap.get(name).set(value); 
+		}
+	}
 	
+	/**
+	 * Checks if a command exists.
+	 * @param name the name of the command.
+	 * @return true if it exists, false if not.
+	 */
+	public boolean containsCommand(String name)
+	{
+		return commandMap.containsKey(name);
+	}
+	
+	/**
+	 * Returns all command names in an array.
+	 */
+	public String[] getCommandNames()
+	{
+		String[] out = new String[commandMap.size()];
+		Iterator<String> it = commandMap.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+	
+	/**
+	 * Gets a variable definition.
+	 * @param name the name of the variable.
+	 */
+	public CCMDMapping getCommandDefinition(String name)
+	{
+		return commandMap.get(name);
+	}
+	
+	/**
+	 * Calls a command.
+	 * @param name the name of the command.
+	 * @param args the command arguments.
+	 * @return the command return value.
+	 */
+	public Object callCommand(String name, Object ... args)
+	{
+		if (!commandMap.containsKey(name))
+			throw new ConsoleCommandInvocationException("Command \""+name+"\" doesn't exist.");
+		else
+			return commandMap.get(name).call(args);
+	}
+	
+	/**
+	 * Checks if a command alias exists.
+	 * @param name the name of the command.
+	 * @return true if it exists, false if not.
+	 */
+	public boolean containsAlias(String name)
+	{
+		return aliasMap.containsKey(name);
+	}
+
+	/**
+	 * Returns all alias names in an array.
+	 */
+	public String[] getAliasNames()
+	{
+		String[] out = new String[aliasMap.size()];
+		Iterator<String> it = aliasMap.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+
+	/**
+	 * Gets a command alias by name.
+	 * @param name the name of the command.
+	 */
+	public String getAlias(String name)
+	{
+		return aliasMap.get(name);
+	}
+
 	/**
 	 * Mapping for console commands to methods. 
 	 */
@@ -85,7 +332,7 @@ public class EngineConsoleManager
 			return usage;
 		}
 
-		void call(Object ... args)
+		Object call(Object ... args)
 		{
 			if (args.length < types.length)
 				throw new ConsoleCommandInvocationException("Not enough arguments for command.");
@@ -93,7 +340,7 @@ public class EngineConsoleManager
 			Object[] params = new Object[types.length];
 			for (int i = 0; i < params.length; i++)
 				params[i] = Reflect.createForType(args[i], types[i]);
-			Reflect.invokeBlind(method, instance, params);
+			return Reflect.invokeBlind(method, instance, params);
 		}
 		
 	}
@@ -129,6 +376,16 @@ public class EngineConsoleManager
 			type = field.getType();
 		}
 		
+		CVARMapping(Object instance, String descripton, boolean archived, Method getter)
+		{
+			this.instance = instance;
+			this.description = descripton;
+			this.archived = archived;
+			this.getter = getter;
+			this.setter = null;
+			type = field.getType();
+		}
+
 		CVARMapping(Object instance, String descripton, boolean archived, Method getter, Method setter)
 		{
 			this.instance = instance;
@@ -167,8 +424,10 @@ public class EngineConsoleManager
 		{
 			if (field != null)
 				Reflect.setField(instance, field, Reflect.createForType(value, type));
-			else
+			else if (setter != null)
 				Reflect.invokeBlind(setter, instance, Reflect.createForType(value, type));
+			else
+				throw new ConsoleVariableException("This variable is read-only.");
 		}
 		
 	}
