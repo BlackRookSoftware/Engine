@@ -4,7 +4,7 @@ import java.io.File;
 
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
-import com.blackrook.engine.components.EngineConsoleManager;
+import com.blackrook.engine.console.EngineConsoleManager;
 
 public final class EngineTest
 {
@@ -33,7 +33,16 @@ public final class EngineTest
 			}
 		});
 		
-		e.getComponent(EngineConsoleManager.class).callCommand("debug", "butt");
+		EngineConsoleManager manager = e.getComponent(EngineConsoleManager.class); 
+		manager.callCommand("debug", "butt");
+		System.out.println(manager.getVariable("buttvar"));
+		manager.setVariable("buttvar", 10);
+		System.out.println(manager.getVariable("buttvar"));
+		
+		for (int i = 0; i < 10; i++)
+			e.getPooledComponent(PooledComponent.class).init(true);
+			
+		e.getPooledComponent(PooledComponent.class).init(true);
 		
 	}
 

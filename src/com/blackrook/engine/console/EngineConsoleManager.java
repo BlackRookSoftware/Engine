@@ -1,4 +1,4 @@
-package com.blackrook.engine.components;
+package com.blackrook.engine.console;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -10,18 +10,18 @@ import com.blackrook.commons.Reflect;
 import com.blackrook.commons.TypeProfile;
 import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.CaseInsensitiveHashMap;
-import com.blackrook.engine.annotation.CCMD;
-import com.blackrook.engine.annotation.CVAR;
-import com.blackrook.engine.annotation.Component;
+import com.blackrook.engine.annotation.EngineCCMD;
+import com.blackrook.engine.annotation.EngineCVAR;
+import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 import com.blackrook.engine.exception.ConsoleSetupException;
 import com.blackrook.engine.exception.ConsoleVariableException;
 
 /**
- * 
+ * The manager that can call and get/set elements available to the console.
  * @author Matthew Tropiano
  */
-@Component
+@EngineComponent
 public class EngineConsoleManager
 {
 	/** Mapping of commands to invocation targets. */
@@ -52,8 +52,8 @@ public class EngineConsoleManager
 		// add commands.
 		for (Method method : type.getMethods())
 		{
-			CCMD anno = null;
-			if ((anno = method.getAnnotation(CCMD.class)) == null)
+			EngineCCMD anno = null;
+			if ((anno = method.getAnnotation(EngineCCMD.class)) == null)
 				continue;
 			
 			String cmdname = (Common.isEmpty(anno.value()) ? method.getName().toLowerCase() : anno.value()).toLowerCase();
@@ -68,9 +68,9 @@ public class EngineConsoleManager
 		}
 
 		// add variables.
-		for (Field field : profile.getAnnotatedPublicFields(CVAR.class))
+		for (Field field : profile.getAnnotatedPublicFields(EngineCVAR.class))
 		{
-			CVAR anno = field.getAnnotation(CVAR.class);
+			EngineCVAR anno = field.getAnnotation(EngineCVAR.class);
 			String varname = Common.isEmpty(anno.value()) ? field.getName() : anno.value();
 
 			if (variableMap.containsKey(varname))
@@ -93,7 +93,7 @@ public class EngineConsoleManager
 			MethodSignature signature = pair.getValue();
 			Method method = signature.getMethod();
 
-			CVAR anno = method.getAnnotation(CVAR.class);
+			EngineCVAR anno = method.getAnnotation(EngineCVAR.class);
 			String varname = (Common.isEmpty(anno.value()) ? getterName : anno.value()).toLowerCase();
 
 			if (variableMap.containsKey(varname))
@@ -114,7 +114,7 @@ public class EngineConsoleManager
 			MethodSignature signature = pair.getValue();
 			Method method = signature.getMethod();
 
-			CVAR anno = method.getAnnotation(CVAR.class);
+			EngineCVAR anno = method.getAnnotation(EngineCVAR.class);
 			String varname = (Common.isEmpty(anno.value()) ? setterName : anno.value()).toLowerCase();
 			
 			if (variableMap.containsKey(varname))
@@ -200,6 +200,8 @@ public class EngineConsoleManager
 	 * Sets the value of a variable.
 	 * @param name the name of the variable.
 	 * @param value the value to set.
+	 * @throws ConsoleVariableException if the variable doesn't exist or the variable is read-only.
+	 * @throws ClassCastException if the incoming value cannot be converted.
 	 */
 	public void setVariable(String name, Object value)
 	{

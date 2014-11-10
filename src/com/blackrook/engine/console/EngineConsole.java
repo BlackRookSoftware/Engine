@@ -1,4 +1,4 @@
-package com.blackrook.engine.components;
+package com.blackrook.engine.console;
 
 import javax.swing.JFrame;
 

@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface CVAR
+public @interface EngineCVAR
 {
 	/**
 	 * The variable name. If not specified (or blank), this uses the field name, 
