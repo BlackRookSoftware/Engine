@@ -1,7 +1,5 @@
 package com.blackrook.engine.test;
 
-import java.io.File;
-
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
 import com.blackrook.engine.console.EngineConsoleManager;
@@ -19,16 +17,32 @@ public final class EngineTest
 			}
 
 			@Override
-			public File getConsoleLogFile()
+			public String getResourceDefinitionFile()
 			{
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
-			public String getResourceDefinitionFile()
+			public String[] getFilesystemStack()
 			{
-				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public String getFileSystemArchiveExtension()
+			{
+				return null;
+			}
+
+			@Override
+			public String getSettingsPath()
+			{
+				return null;
+			}
+
+			@Override
+			public String getLogFilePath()
+			{
 				return null;
 			}
 		});

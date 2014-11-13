@@ -7,10 +7,13 @@ import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
 import com.blackrook.commons.list.List;
+import com.blackrook.commons.logging.Logger;
+import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.annotation.EngineComponentConstructor;
 import com.blackrook.engine.annotation.EnginePooledComponent;
 import com.blackrook.engine.components.EnginePoolable;
+import com.blackrook.engine.console.EngineConsole;
 import com.blackrook.engine.console.EngineConsoleManager;
 import com.blackrook.engine.exception.EnginePoolUnavailableException;
 import com.blackrook.engine.exception.EngineSetupException;
@@ -23,11 +26,20 @@ import com.blackrook.engine.exception.NoSuchComponentException;
  */
 public final class Engine
 {
+	/** Engine logger. */
+	private Logger logger;
+	/** Engine logging factory. */
+	private LoggingFactory loggingFactory;
+	/** Engine filesystem. */
+	private EngineFileSystem fileSystem;
+
 	/** Engine singleton map. */
-	private HashMap<Class<?>, Object> engineSingletons;
+	private HashMap<Class<?>, Object> singletons;
 	/** Engine pooled object map. */
-	private HashMap<Class<?>, EnginePool<EnginePoolable>> enginePools;
+	private HashMap<Class<?>, EnginePool<EnginePoolable>> pools;
 	
+	/** Engine console. */
+	private EngineConsole console;
 	/** Engine console manager. */
 	private EngineConsoleManager consoleManager;
 	
@@ -38,10 +50,18 @@ public final class Engine
 	@SuppressWarnings("unchecked")
 	public Engine(EngineConfig config)
 	{
-		engineSingletons = new HashMap<Class<?>, Object>();
-		enginePools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
+		//TODO: Create console.
+		loggingFactory = new LoggingFactory();
+		fileSystem = new EngineFileSystem(this, config);
+		//TODO: Add logger drivers.
+		//TODO: Get engine logger.
+
+		singletons = new HashMap<Class<?>, Object>();
+		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		
-		engineSingletons.put(Engine.class, this);
+		singletons.put(Engine.class, this);
+		singletons.put(config.getClass(), config); // uses runtime class.
+		singletons.put(EngineFileSystem.class, fileSystem);
 		
 		consoleManager = createOrGetComponent(EngineConsoleManager.class);
 		
@@ -54,7 +74,7 @@ public final class Engine
 				
 				Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
 				EnginePooledComponent anno = componentClass.getAnnotation(EnginePooledComponent.class);
-				enginePools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
+				pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
 			}
 			else if (componentClass.isAnnotationPresent(EngineComponent.class))
 			{
@@ -116,9 +136,9 @@ public final class Engine
 	@SuppressWarnings("unchecked")
 	public <T> T getComponent(Class<T> clazz)
 	{
-		if (!engineSingletons.containsKey(clazz))
+		if (!singletons.containsKey(clazz))
 			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid singleton component.");
-		return (T)engineSingletons.get(clazz);
+		return (T)singletons.get(clazz);
 	}
 	
 	/**
@@ -129,10 +149,30 @@ public final class Engine
 	@SuppressWarnings("unchecked")
 	public <T extends EnginePoolable> T getPooledComponent(Class<T> clazz)
 	{
-		EnginePool<T> pool = (EnginePool<T>)enginePools.get(clazz);
+		EnginePool<T> pool = (EnginePool<T>)pools.get(clazz);
 		if (pool == null)
 			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid pooled component.");
 		return (T)pool.getAvailable();
+	}
+	
+	/**
+	 * Returns a logger instance for a particular component.
+	 * @param name the component name to log things for.
+	 * @return a logger to use.
+	 */
+	public Logger getLogger(String name)
+	{
+		return loggingFactory.getLogger(name);
+	}
+	
+	/**
+	 * Returns a logger instance for a particular component.
+	 * @param clz the component name to log things for.
+	 * @return a logger to use.
+	 */
+	public Logger getLogger(Class<?> clz)
+	{
+		return loggingFactory.getLogger(clz, true);
 	}
 	
 	/**
@@ -141,11 +181,11 @@ public final class Engine
 	 */
 	@SuppressWarnings("unchecked")
 	private <T> T createOrGetComponent(Class<T> clazz)	{
-		if (engineSingletons.containsKey(clazz))
-			return (T)engineSingletons.get(clazz);
+		if (singletons.containsKey(clazz))
+			return (T)singletons.get(clazz);
 		
 		T instance = createComponent(clazz, getAnnotatedConstructor(clazz));
-		engineSingletons.put(clazz, instance);
+		singletons.put(clazz, instance);
 		return instance;
 	}
 
