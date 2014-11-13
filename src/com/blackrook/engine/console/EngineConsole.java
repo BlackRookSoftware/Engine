@@ -1,6 +1,7 @@
 package com.blackrook.engine.console;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Toolkit;
@@ -8,6 +9,8 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -15,6 +18,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.border.BevelBorder;
 
 import com.blackrook.commons.Common;
 import com.blackrook.commons.CommonTokenizer;
@@ -78,8 +82,24 @@ public class EngineConsole extends JFrame
 		base.add(entryField, BorderLayout.SOUTH);
 		
 		contentPane.add(base, BorderLayout.CENTER);
+		contentPane.setPreferredSize(new Dimension(640, 480));
 		
-		setPreferredSize(new Dimension(640, 480));
+		addWindowFocusListener(new WindowFocusListener()
+		{
+			@Override
+			public void windowLostFocus(WindowEvent arg0)
+			{
+				// Nothing.
+			}
+			
+			@Override
+			public void windowGainedFocus(WindowEvent arg0)
+			{
+				entryField.requestFocus();
+			}
+		});
+		
+		pack();
 		setVisible(true);
 	}
 	
@@ -87,7 +107,8 @@ public class EngineConsole extends JFrame
 	private JTextArea createTextArea()
 	{
 		JTextArea out = new JTextArea();
-		out.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		out.setEditable(false);
+		out.setDisabledTextColor(Color.BLACK);
 		out.setLineWrap(true);
 		return out;
 	}
@@ -96,7 +117,7 @@ public class EngineConsole extends JFrame
 	private JScrollPane createScrollPane(JTextArea textarea)
 	{
 		JScrollPane out = new JScrollPane(textArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		out.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		out.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
 		return out;
 	}
 
@@ -105,6 +126,8 @@ public class EngineConsole extends JFrame
 	{
 		final JTextField field = new JTextField();
 		
+		field.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+
 		// focus.
 		field.addFocusListener(new FocusAdapter()
 		{
@@ -277,7 +300,7 @@ public class EngineConsole extends JFrame
 	// Send command.
 	private void sendCommand(String commandString)
 	{
-		if (!Common.isEmpty(commandString))
+		if (Common.isEmpty(commandString))
 			return;
 			
 		CommonTokenizer tokenizer = new CommonTokenizer(commandString);
@@ -291,7 +314,24 @@ public class EngineConsole extends JFrame
 		
 		Object out = null;
 		try {
-			out = consoleManager.callCommand(cmd, (Object[])args);
+			
+			if (consoleManager.containsCommand(cmd))
+				out = consoleManager.callCommand(cmd, (Object[])args);
+			else if (consoleManager.containsAlias(cmd))
+				parseCommand(consoleManager.getAlias(cmd));
+			else if (consoleManager.containsVariable(cmd))
+			{
+				if (args.length == 0)
+					println(cmd + " is " + String.valueOf(consoleManager.getVariable(cmd)));
+				else
+				{
+					consoleManager.setVariable(cmd, args[0]);
+					println(cmd + " set to " + String.valueOf(consoleManager.getVariable(cmd)));
+				}
+			}
+			else
+				println("ERROR: " + cmd + " is not a command, alias, or variable.");
+				
 		} catch (Exception e) {
 			println("EXCEPTION: " + e.getMessage());
 		}
@@ -346,7 +386,5 @@ public class EngineConsole extends JFrame
 	{
 		printf(formatting + '\n', args);
 	}
-	
-	
-	
+
 }

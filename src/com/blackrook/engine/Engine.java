@@ -1,6 +1,11 @@
 package com.blackrook.engine;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Constructor;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
@@ -8,7 +13,11 @@ import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
 import com.blackrook.commons.list.List;
 import com.blackrook.commons.logging.Logger;
+import com.blackrook.commons.logging.LoggingDriver;
 import com.blackrook.commons.logging.LoggingFactory;
+import com.blackrook.commons.logging.LoggingFactory.LogLevel;
+import com.blackrook.commons.logging.driver.ConsoleLogger;
+import com.blackrook.commons.logging.driver.PrintStreamLogger;
 import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.annotation.EngineComponentConstructor;
 import com.blackrook.engine.annotation.EnginePooledComponent;
@@ -28,6 +37,7 @@ public final class Engine
 {
 	/** Engine logger. */
 	private Logger logger;
+
 	/** Engine logging factory. */
 	private LoggingFactory loggingFactory;
 	/** Engine filesystem. */
@@ -50,20 +60,50 @@ public final class Engine
 	@SuppressWarnings("unchecked")
 	public Engine(EngineConfig config)
 	{
-		//TODO: Create console.
-		loggingFactory = new LoggingFactory();
-		fileSystem = new EngineFileSystem(this, config);
-		//TODO: Add logger drivers.
-		//TODO: Get engine logger.
-
 		singletons = new HashMap<Class<?>, Object>();
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
-		
+		loggingFactory = new LoggingFactory();
+
 		singletons.put(Engine.class, this);
 		singletons.put(config.getClass(), config); // uses runtime class.
+
+		fileSystem = new EngineFileSystem(this, config);
 		singletons.put(EngineFileSystem.class, fileSystem);
-		
+
 		consoleManager = createOrGetComponent(EngineConsoleManager.class);
+		console = new EngineConsole(this, config);
+
+		PrintStream ps;
+		try {
+			OutputStream outstream = fileSystem.createFile(config.getLogFilePath());
+			if (outstream != null)
+			{
+				ps = new PrintStream(outstream, true);
+				PrintStreamLogger pslogger = new PrintStreamLogger(ps);
+				loggingFactory.addDriver(pslogger);
+			}
+			else
+			{
+				console.println("ERROR: Could not open log file "+config.getLogFilePath());
+			}
+		} catch (IOException e) {
+			console.println("ERROR: Could not open log file "+config.getLogFilePath());
+		}
+		
+		loggingFactory.addDriver(new LoggingDriver()
+		{
+			final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			
+			@Override
+			public void log(Date time, LogLevel level, String source, String message, Throwable throwable)
+			{
+				console.printfln("%s <%s> %s: %s", DATE_FORMAT.format(time), source, level, message);
+			}
+		});
+
+		loggingFactory.addDriver(new ConsoleLogger());
+
+		logger = getLogger(Engine.class);
 		
 		for (Class<?> componentClass : getComponentClasses(config))
 		{
