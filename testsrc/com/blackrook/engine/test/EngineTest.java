@@ -1,6 +1,10 @@
 package com.blackrook.engine.test;
 
+import java.awt.Image;
 import java.io.File;
+import java.util.Arrays;
+
+import javax.swing.ImageIcon;
 
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
@@ -31,6 +35,21 @@ public final class EngineTest
 				// TODO Auto-generated method stub
 				return null;
 			}
+
+			@Override
+			public String getApplicationName() {
+				return "Test";
+			}
+
+			@Override
+			public String getApplicationVersion() {
+				return "0.9";
+			}
+
+			@Override
+			public Image getApplicationIcon() {
+				return null;
+			}
 		});
 		
 		EngineConsoleManager manager = e.getComponent(EngineConsoleManager.class); 
@@ -43,7 +62,7 @@ public final class EngineTest
 			e.getPooledComponent(PooledComponent.class).init(true);
 			
 		e.getPooledComponent(PooledComponent.class).init(true);
-		
+		System.out.println(Arrays.toString(manager.getCommandNamesForPrefix("deb")));
 	}
 
 }

@@ -10,6 +10,8 @@ import com.blackrook.commons.Reflect;
 import com.blackrook.commons.TypeProfile;
 import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.CaseInsensitiveHashMap;
+import com.blackrook.commons.list.List;
+import com.blackrook.commons.trie.CaseInsensitiveTrie;
 import com.blackrook.engine.annotation.EngineCCMD;
 import com.blackrook.engine.annotation.EngineCVAR;
 import com.blackrook.engine.annotation.EngineComponent;
@@ -24,6 +26,9 @@ import com.blackrook.engine.exception.ConsoleVariableException;
 @EngineComponent
 public class EngineConsoleManager
 {
+	/** A Trie that holds all auto-completable commands. */
+	private CaseInsensitiveTrie commandTrie;
+
 	/** Mapping of commands to invocation targets. */
 	private CaseInsensitiveHashMap<CCMDMapping> commandMap;
 	/** Mapping of variables to variable fields/methods. */
@@ -36,6 +41,7 @@ public class EngineConsoleManager
 	 */
 	public EngineConsoleManager()
 	{
+		commandTrie = new CaseInsensitiveTrie();
 		commandMap = new CaseInsensitiveHashMap<CCMDMapping>();
 		variableMap = new CaseInsensitiveHashMap<CVARMapping>();
 		aliasMap = new CaseInsensitiveHashMap<String>();
@@ -65,6 +71,7 @@ public class EngineConsoleManager
 			}
 			
 			commandMap.put(cmdname, new CCMDMapping(instance, method, anno.description(), anno.usage()));
+			commandTrie.put(cmdname);
 		}
 
 		// add variables.
@@ -231,6 +238,21 @@ public class EngineConsoleManager
 	{
 		String[] out = new String[commandMap.size()];
 		Iterator<String> it = commandMap.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+	
+	/**
+	 * Returns all command names that start with a string.
+	 */
+	public String[] getCommandNamesForPrefix(String prefix)
+	{
+		List<String> outList = new List<String>();
+		int amt = commandTrie.getAfter(prefix, outList);
+		String[] out = new String[amt];
+		Iterator<String> it = outList.iterator();
 		int i = 0;
 		while (it.hasNext())
 			out[i++] = it.next();

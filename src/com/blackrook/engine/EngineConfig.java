@@ -1,5 +1,6 @@
 package com.blackrook.engine;
 
+import java.awt.Image;
 import java.io.File;
 
 /**
@@ -8,6 +9,21 @@ import java.io.File;
  */
 public interface EngineConfig
 {
+	/**
+	 * Returns the application name. 
+	 */
+	public String getApplicationName();
+
+	/**
+	 * Returns the application version string. Can be null.
+	 */
+	public String getApplicationVersion();
+
+	/**
+	 * Returns the icon used for the application. Can be null.
+	 */
+	public Image getApplicationIcon();
+
 	/**
 	 * Returns the package root name for scanning stuff in
 	 * the engine application. 
