@@ -54,7 +54,7 @@ public class EngineFileSystem extends FileSystem
 			};
 		}
 
-		if (!Common.isEmpty(config.getFilesystemStack())) for (String dirPaths : config.getFilesystemStack())
+		if (!Common.isEmpty(config.getFileSystemStack())) for (String dirPaths : config.getFileSystemStack())
 		{
 			File dir = new File(dirPaths);
 			

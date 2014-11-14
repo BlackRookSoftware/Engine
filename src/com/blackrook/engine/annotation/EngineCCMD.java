@@ -29,5 +29,10 @@ public @interface EngineCCMD
 	 * Command description.
 	 */
 	String description() default "Console command.";
+
+	/**
+	 * If true, this is exposed in DEBUG mode only.
+	 */
+	boolean debug() default false;
 	
 }

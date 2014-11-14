@@ -2,7 +2,6 @@ package com.blackrook.engine.test;
 
 import java.awt.Image;
 
-import com.blackrook.commons.Common;
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
 
@@ -47,7 +46,7 @@ public final class EngineTest
 			}
 
 			@Override
-			public String[] getFilesystemStack() {
+			public String[] getFileSystemStack() {
 				return null; //new String[]{Common.WORK_DIR};
 			}
 
@@ -61,6 +60,12 @@ public final class EngineTest
 			public String getLogFilePath() {
 				// TODO Auto-generated method stub
 				return "test.log";
+			}
+
+			@Override
+			public boolean getDebugMode()
+			{
+				return true;
 			}
 		});
 		

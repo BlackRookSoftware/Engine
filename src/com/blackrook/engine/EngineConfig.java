@@ -29,6 +29,18 @@ public interface EngineConfig
 	public String getPackageRoot();
 
 	/**
+	 * Returns the directory path for storing user configuration.
+	 * NOTE: This is OUTSIDE of the file system path.  
+	 */
+	public String getSettingsPath();
+
+	/**
+	 * Returns the file to log console output to (other than the console itself).
+	 * NOTE: This is OUTSIDE of the file system path.  
+	 */
+	public String getLogFilePath();
+
+	/**
 	 * Returns the file system extension for archive systems.
 	 * If null, does not add archive types.
 	 */
@@ -38,19 +50,7 @@ public interface EngineConfig
 	 * Returns the list of directory paths to add in lowest to greatest stack precedence.
 	 * If null, these directories are not added.
 	 */
-	public String[] getFilesystemStack();
-
-	/**
-	 * Returns the directory path for storing user configuration. 
-	 * This is added to the top of the filestack automatically.
-	 */
-	public String getSettingsPath();
-
-	/**
-	 * Returns the file to log console output to (other than the console itself).
-	 * This is filesystem-relative: it gets written to the topmost writable directory. 
-	 */
-	public String getLogFilePath();
+	public String[] getFileSystemStack();
 
 	/**
 	 * Returns the file to read for reading resource definitions. This is filesystem-relative. 
@@ -58,4 +58,9 @@ public interface EngineConfig
 	 */
 	public String getResourceDefinitionFile();
 	
+	/**
+	 * Returns if this Engine should start in debug mode. 
+	 */
+	public boolean getDebugMode();
+
 }

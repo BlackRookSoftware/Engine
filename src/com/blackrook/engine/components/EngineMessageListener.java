@@ -1,4 +1,4 @@
-package com.blackrook.engine.components.roles;
+package com.blackrook.engine.components;
 
 import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.struct.EngineMessage;

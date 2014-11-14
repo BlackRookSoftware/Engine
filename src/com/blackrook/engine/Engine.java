@@ -1,16 +1,19 @@
 package com.blackrook.engine;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
 
 import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
+import com.blackrook.commons.linkedlist.Queue;
 import com.blackrook.commons.list.List;
 import com.blackrook.commons.logging.Logger;
 import com.blackrook.commons.logging.LoggingDriver;
@@ -21,12 +24,15 @@ import com.blackrook.commons.logging.driver.PrintStreamLogger;
 import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.annotation.EngineComponentConstructor;
 import com.blackrook.engine.annotation.EnginePooledComponent;
+import com.blackrook.engine.components.EngineDevice;
+import com.blackrook.engine.components.EngineMessageListener;
 import com.blackrook.engine.components.EnginePoolable;
 import com.blackrook.engine.console.EngineConsole;
 import com.blackrook.engine.console.EngineConsoleManager;
 import com.blackrook.engine.exception.EnginePoolUnavailableException;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
+import com.blackrook.engine.struct.EngineMessage;
 
 /**
  * The main engine, created as the centerpoint of the communication between components
@@ -35,9 +41,8 @@ import com.blackrook.engine.exception.NoSuchComponentException;
  */
 public final class Engine
 {
-	/** Engine logger. */
+	/** Logger. */
 	private Logger logger;
-
 	/** Engine logging factory. */
 	private LoggingFactory loggingFactory;
 	/** Engine filesystem. */
@@ -47,6 +52,10 @@ public final class Engine
 	private HashMap<Class<?>, Object> singletons;
 	/** Engine pooled object map. */
 	private HashMap<Class<?>, EnginePool<EnginePoolable>> pools;
+	/** Engine devices. */
+	private HashMap<String, EngineDevice> devices;
+	/** Engine message receiver. */
+	private Queue<EngineMessageListener> messageListeners;
 	
 	/** Engine console. */
 	private EngineConsole console;
@@ -62,34 +71,21 @@ public final class Engine
 	{
 		singletons = new HashMap<Class<?>, Object>();
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
+		devices = new HashMap<String, EngineDevice>();
+		messageListeners = new Queue<EngineMessageListener>();
 		loggingFactory = new LoggingFactory();
 
+		setUpLogging(config);
+		logger = getLogger(Engine.class);
+		
+		boolean debugMode = config.getDebugMode();
+		
 		singletons.put(Engine.class, this);
+		singletons.put(EngineConfig.class, config); // uses runtime class.
 		singletons.put(config.getClass(), config); // uses runtime class.
 
-		fileSystem = new EngineFileSystem(this, config);
-		singletons.put(EngineFileSystem.class, fileSystem);
-
-		consoleManager = createOrGetComponent(EngineConsoleManager.class);
-		console = new EngineConsole(this, config);
-
-		PrintStream ps;
-		try {
-			OutputStream outstream = fileSystem.createFile(config.getLogFilePath());
-			if (outstream != null)
-			{
-				ps = new PrintStream(outstream, true);
-				PrintStreamLogger pslogger = new PrintStreamLogger(ps);
-				loggingFactory.addDriver(pslogger);
-			}
-			else
-			{
-				console.println("ERROR: Could not open log file "+config.getLogFilePath());
-			}
-		} catch (IOException e) {
-			console.println("ERROR: Could not open log file "+config.getLogFilePath());
-		}
-		
+		consoleManager = createOrGetComponent(EngineConsoleManager.class, debugMode);
+		console = createOrGetComponent(EngineConsole.class, debugMode);
 		loggingFactory.addDriver(new LoggingDriver()
 		{
 			final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -101,10 +97,12 @@ public final class Engine
 			}
 		});
 
-		loggingFactory.addDriver(new ConsoleLogger());
-
-		logger = getLogger(Engine.class);
+		fileSystem = new EngineFileSystem(this, config);
+		singletons.put(EngineFileSystem.class, fileSystem);
 		
+		Queue<EngineDevice> devicesToStart = new Queue<EngineDevice>();
+		
+		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
 		{
 			if (componentClass.isAnnotationPresent(EnginePooledComponent.class))
@@ -115,58 +113,93 @@ public final class Engine
 				Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
 				EnginePooledComponent anno = componentClass.getAnnotation(EnginePooledComponent.class);
 				pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
+				logger.debugf("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
 			}
 			else if (componentClass.isAnnotationPresent(EngineComponent.class))
 			{
-				Object object = createOrGetComponent(componentClass);
-				consoleManager.addEntries(object);
+				Object obj = createOrGetComponent(componentClass, debugMode);
+				if (obj instanceof EngineDevice)
+					devicesToStart.enqueue((EngineDevice)obj);
 			}
-			
+		}
+
+		// Starts the devices.
+		while (!devicesToStart.isEmpty())
+		{
+			EngineDevice device = devicesToStart.dequeue();
+			logger.infof("Starting device %s.", device.getName());
+			if (device.create())
+				logger.infof("Finished starting device %s.", device.getName());
+			else
+				logger.errorf("Failed starting device %s.", device.getName());
 		}
 		
 	}
-	
-	/**
-	 * Finds an returns this component's {@link EngineComponentConstructor}, if any.
-	 * @param clazz the class to search.
-	 * @return a viable constructor or null if no constructor annotated with {@link EngineComponentConstructor}.
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Constructor<T> getComponentConstructor(Class<T> clazz)
-	{
-		Constructor<T> foundConstructor = null;
-		for (Constructor<T> cons : (Constructor<T>[])clazz.getConstructors())
-		{
-			if (foundConstructor != null)
-				return foundConstructor;
-			
-			if (!cons.isAnnotationPresent(EngineComponentConstructor.class))
-				continue;
-		}
 
-		return null;
-	}
-	
 	/**
 	 * Creates a new component for a class and using one of its constructors.
 	 * @param clazz the class to instantiate.
 	 * @param constructor the constructor to call for instantiation.
 	 * @return the new class instance.
 	 */
-	public <T> T createComponent(Class<T> clazz, Constructor<T> constructor)
+	<T> T createComponent(Class<T> clazz, Constructor<T> constructor)
 	{
-		if (constructor == null)
-			return Reflect.create(clazz);
+		return createComponent(clazz, constructor, false);
+	}
+
+	/**
+	 * Creates a new component for a class and using one of its constructors.
+	 * @param clazz the class to instantiate.
+	 * @param constructor the constructor to call for instantiation.
+	 * @return the new class instance.
+	 */
+	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean debugMode)
+	{
+		T object = null;
 		
-		Class<?>[] types = constructor.getParameterTypes();
-		Object[] params = new Object[types.length]; 
-		for (int i = 0; i < types.length; i++)
+		if (constructor == null)
+			object = Reflect.create(clazz);
+		else
 		{
-			if (types[i].equals(clazz))
-				throw new EngineSetupException("Circular dependency detected: class "+types[i].getSimpleName()+" is the same as this one: "+clazz.getSimpleName());
-			params[i] = createOrGetComponent(types[i]);
+			Class<?>[] types = constructor.getParameterTypes();
+			Object[] params = new Object[types.length]; 
+			for (int i = 0; i < types.length; i++)
+			{
+				if (types[i].equals(clazz))
+					throw new EngineSetupException("Circular dependency detected: class "+types[i].getSimpleName()+" is the same as this one: "+clazz.getSimpleName());
+				else if (Logger.class.isAssignableFrom(types[i]))
+					params[i] = getLogger(clazz);
+				else
+					params[i] = createOrGetComponent(types[i], debugMode);
+			}
+			
+			object = Reflect.construct(constructor, params);
 		}
-		return Reflect.construct(constructor, params);
+
+		if (!clazz.isAnnotationPresent(EngineComponent.class))
+			return object;
+		
+		consoleManager.addEntries(object, debugMode);
+		logger.debugf("Created component. %s", clazz.getSimpleName());
+		
+		// check if device.
+		if (EngineDevice.class.isAssignableFrom(clazz))
+		{
+			EngineDevice device = (EngineDevice)object;
+			devices.put(device.getName(), device);
+			logger.debugf("%s added to devices.", clazz.getSimpleName());
+		}
+
+		// check if message listener.
+		if (EngineMessageListener.class.isAssignableFrom(clazz))
+		{
+			EngineMessageListener listener = (EngineMessageListener)object;
+			messageListeners.add(listener);
+			logger.debugf("%s added to message listeners.", clazz.getSimpleName());
+		}
+
+		
+		return object;
 	}
 
 	/**
@@ -187,12 +220,12 @@ public final class Engine
 	 * @throws EnginePoolUnavailableException if the pool's policy is to throw an exception if an object cannot be returned.
 	 */
 	@SuppressWarnings("unchecked")
-	public <T extends EnginePoolable> T getPooledComponent(Class<T> clazz)
+	public <T extends EnginePoolable> EnginePool<T> getPool(Class<T> clazz)
 	{
 		EnginePool<T> pool = (EnginePool<T>)pools.get(clazz);
 		if (pool == null)
 			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid pooled component.");
-		return (T)pool.getAvailable();
+		return pool;
 	}
 	
 	/**
@@ -212,19 +245,122 @@ public final class Engine
 	 */
 	public Logger getLogger(Class<?> clz)
 	{
-		return loggingFactory.getLogger(clz, true);
+		return loggingFactory.getLogger(clz, false);
 	}
 	
+	/**
+	 * Broadcasts a message to all message listeners.
+	 * @param message the message to broadcast to all who would listen.
+	 */
+	public void sendMessage(EngineMessage message)
+	{
+		for (EngineMessageListener listener : messageListeners)
+			listener.onEngineMessage(message);
+	}
+	
+	/**
+	 * Restarts an engine device. 
+	 * @param name the name of the device.
+	 * @return true if successful, false if not.
+	 */
+	public boolean restartDevice(String name)
+	{
+		return destroyDevice(name) && createDevice(name);
+	}
+
+	/**
+	 * Returns the names of all devices. 
+	 */
+	String[] getDeviceNames()
+	{
+		String[] out = new String[devices.size()];
+		Iterator<String> it = devices.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+	
+	/**
+	 * Creates an engine device. 
+	 * @param name the name of the device.
+	 * @return true if successful, false if not.
+	 */
+	private boolean createDevice(String name)
+	{
+		EngineDevice device = devices.get(name);
+		if (device != null)
+		{
+			if (device.isActive())
+			{
+				return false;
+			}
+			else
+			{
+				logger.infof("Created device %s.", device.getName());
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Creates an engine device. 
+	 * @param name the name of the device.
+	 * @return true if successful, false if not.
+	 */
+	private boolean destroyDevice(String name)
+	{
+		EngineDevice device = devices.get(name);
+		if (device != null)
+		{
+			if (!device.isActive())
+			{
+				return false;
+			}
+			else
+			{
+				logger.infof("Destroyed device %s.", device.getName());
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	// Sets up the logger factory.
+	private void setUpLogging(EngineConfig config)
+	{		
+		PrintStream ps;
+		try {
+			FileOutputStream fos = new FileOutputStream(new File(config.getLogFilePath()));
+			if (fos != null)
+			{
+				ps = new PrintStream(fos, true);
+				PrintStreamLogger pslogger = new PrintStreamLogger(ps);
+				loggingFactory.addDriver(pslogger);
+			}
+			else
+			{
+				console.println("ERROR: Could not open log file "+config.getLogFilePath());
+			}
+		} catch (IOException e) {
+			console.println("ERROR: Could not open log file "+config.getLogFilePath());
+		}
+		
+		loggingFactory.addDriver(new ConsoleLogger());
+	}
+
 	/**
 	 * Creates or gets an engine singleton component by class.
 	 * @param clazz the class to create/retrieve.
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> T createOrGetComponent(Class<T> clazz)	{
+	private <T> T createOrGetComponent(Class<T> clazz, boolean debug)
+	{
 		if (singletons.containsKey(clazz))
 			return (T)singletons.get(clazz);
 		
-		T instance = createComponent(clazz, getAnnotatedConstructor(clazz));
+		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), debug);
 		singletons.put(clazz, instance);
 		return instance;
 	}
@@ -256,7 +392,7 @@ public final class Engine
 		
 		// Scan for singletons to instantiate.
 		Hash<String> packageMap = new Hash<String>();
-		for (String className : Reflect.getClasses(Common.getPackagePathForClass(Engine.class)))
+		for (String className : Reflect.getClasses(Engine.class.getPackage().getName()))
 			packageMap.put(className);
 		for (String className : Reflect.getClasses(config.getPackageRoot()))
 			packageMap.put(className);

@@ -11,6 +11,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
+import java.util.Arrays;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -25,11 +26,17 @@ import com.blackrook.commons.CommonTokenizer;
 import com.blackrook.commons.list.List;
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
+import com.blackrook.engine.annotation.EngineCCMD;
+import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.EngineComponentConstructor;
+import com.blackrook.engine.console.EngineConsoleManager.CCMDMapping;
+import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 
 /**
  * The console itself.
  * @author Matthew Tropiano
  */
+@EngineComponent
 public class EngineConsole extends JFrame
 {
 	private static final long serialVersionUID = 3854911727580406755L;
@@ -55,7 +62,8 @@ public class EngineConsole extends JFrame
 	 * @param engine the engine instance.
 	 * @param config the configuration.
 	 */
-	public EngineConsole(Engine engine, EngineConfig config)
+	@EngineComponentConstructor
+	public EngineConsole(Engine engine, EngineConfig config, EngineConsoleManager manager)
 	{
 		super();
 		
@@ -65,8 +73,9 @@ public class EngineConsole extends JFrame
 		setVisible(false);
 	
 		toolkit = Toolkit.getDefaultToolkit();
-		consoleManager = engine.getComponent(EngineConsoleManager.class);
 		commandHistory = new List<String>(50);
+
+		consoleManager = manager;
 		
 		scrollPane = createScrollPane(textArea = createTextArea());
 		entryField = createEntryField();
@@ -127,6 +136,7 @@ public class EngineConsole extends JFrame
 		final JTextField field = new JTextField();
 		
 		field.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+		field.setFocusTraversalKeysEnabled(false);
 
 		// focus.
 		field.addFocusListener(new FocusAdapter()
@@ -331,14 +341,31 @@ public class EngineConsole extends JFrame
 			}
 			else
 				println("ERROR: " + cmd + " is not a command, alias, or variable.");
-				
-		} catch (Exception e) {
-			println("EXCEPTION: " + e.getMessage());
+		
+		} catch (ConsoleCommandInvocationException ex) {
+
+			println("ERROR: " + ex.getMessage());
+			CCMDMapping mapping = consoleManager.getCommandDefinition(cmd);
+			String[] usage = mapping.getUsage();
+			
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < usage.length; i++)
+			{
+				sb.append('[').append(usage[i]).append(']');
+				if (i < usage.length - 1)
+					sb.append(' ');
+			}
+			println("Usage: " + cmd + " " + sb.toString());
+
+		} catch (Exception ex) {
+			println("EXCEPTION: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
 		}
 		
 		if (out != null)
 			println(String.valueOf(out));
 	}
+	
+	
 	
 	/**
 	 * Prints a message to the console.
@@ -352,7 +379,7 @@ public class EngineConsole extends JFrame
 	/**
 	 * Prints a formatted message to the console.
 	 * @param formatting the format text (see {@link String#format(String, Object...)}).
-	 * @param object the message to print (see {@link String#valueOf(Object)}).
+	 * @param args the message to print (see {@link String#valueOf(Object)}).
 	 */
 	public void printf(String formatting, Object ... args)
 	{
@@ -380,11 +407,32 @@ public class EngineConsole extends JFrame
 	/**
 	 * Prints a formatted message to the console with a newline appended to it.
 	 * @param formatting the format text (see {@link String#format(String, Object...)}).
-	 * @param object the message to print (see {@link String#valueOf(Object)}).
+	 * @param args the message to print (see {@link String#valueOf(Object)}).
 	 */
 	public void printfln(String formatting, Object ... args)
 	{
 		printf(formatting + '\n', args);
 	}
 
+	@EngineCCMD(value = "cmdlist", description = "Lists all console commands.")
+	public void ccmdCCMDList(String prefix)
+	{
+		String[] commands = null;
+		if (Common.isEmpty(prefix))
+			commands = consoleManager.getCommandNames();
+		else
+			commands = consoleManager.getCommandNamesForPrefix(prefix);
+		
+		Arrays.sort(commands);
+		
+		int i = 0;
+		for (String cmd : commands)
+		{
+			printfln("%s\t\t%s", cmd, consoleManager.getCommandDefinition(cmd).getDescription());
+			i++;
+		}
+		
+		printfln("count %d", i);
+	}
+	
 }

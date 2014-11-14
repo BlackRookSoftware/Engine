@@ -14,7 +14,6 @@ import com.blackrook.commons.list.List;
 import com.blackrook.commons.trie.CaseInsensitiveTrie;
 import com.blackrook.engine.annotation.EngineCCMD;
 import com.blackrook.engine.annotation.EngineCVAR;
-import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 import com.blackrook.engine.exception.ConsoleSetupException;
 import com.blackrook.engine.exception.ConsoleVariableException;
@@ -23,7 +22,6 @@ import com.blackrook.engine.exception.ConsoleVariableException;
  * The manager that can call and get/set elements available to the console.
  * @author Matthew Tropiano
  */
-@EngineComponent
 public class EngineConsoleManager
 {
 	/** A Trie that holds all auto-completable commands. */
@@ -50,7 +48,7 @@ public class EngineConsoleManager
 	/**
 	 * Adds the entries for commands and variables to the console manager.
 	 */
-	public void addEntries(Object instance)
+	public void addEntries(Object instance, boolean debug)
 	{
 		Class<?> type = instance.getClass();
 		TypeProfile<?> profile = TypeProfile.getTypeProfile(type);
@@ -60,6 +58,9 @@ public class EngineConsoleManager
 		{
 			EngineCCMD anno = null;
 			if ((anno = method.getAnnotation(EngineCCMD.class)) == null)
+				continue;
+			
+			if (anno.debug() && !debug)
 				continue;
 			
 			String cmdname = (Common.isEmpty(anno.value()) ? method.getName().toLowerCase() : anno.value()).toLowerCase();
@@ -101,6 +102,9 @@ public class EngineConsoleManager
 			Method method = signature.getMethod();
 
 			EngineCVAR anno = method.getAnnotation(EngineCVAR.class);
+			if (anno == null)
+				continue;
+			
 			String varname = (Common.isEmpty(anno.value()) ? getterName : anno.value()).toLowerCase();
 
 			if (variableMap.containsKey(varname))
@@ -122,6 +126,9 @@ public class EngineConsoleManager
 			Method method = signature.getMethod();
 
 			EngineCVAR anno = method.getAnnotation(EngineCVAR.class);
+			if (anno == null)
+				continue;
+
 			String varname = (Common.isEmpty(anno.value()) ? setterName : anno.value()).toLowerCase();
 			
 			if (variableMap.containsKey(varname))
@@ -358,11 +365,8 @@ public class EngineConsoleManager
 
 		Object call(Object ... args)
 		{
-			if (args.length < types.length)
-				throw new ConsoleCommandInvocationException("Not enough arguments for command.");
-			
 			Object[] params = new Object[types.length];
-			for (int i = 0; i < params.length; i++)
+			for (int i = 0; i < Math.min(args.length, params.length); i++)
 				params[i] = Reflect.createForType(args[i], types[i]);
 			return Reflect.invokeBlind(method, instance, params);
 		}
