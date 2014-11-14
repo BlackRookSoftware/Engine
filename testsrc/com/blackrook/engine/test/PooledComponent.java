@@ -1,7 +1,5 @@
 package com.blackrook.engine.test;
 
-import com.blackrook.engine.Engine;
-import com.blackrook.engine.annotation.EngineComponentConstructor;
 import com.blackrook.engine.annotation.EnginePooledComponent;
 import com.blackrook.engine.components.EnginePoolable;
 import com.blackrook.engine.EnginePool.PoolPolicy;
@@ -9,18 +7,13 @@ import com.blackrook.engine.EnginePool.PoolPolicy;
 @EnginePooledComponent(value = 10, policy = PoolPolicy.SENSIBLE)
 public class PooledComponent implements EnginePoolable
 {
-	private Engine engine;
-	
 	private boolean active;
 	private boolean expendable;
 	private long time;
 	
-	@EngineComponentConstructor
-	public PooledComponent(Engine engine)
+	public PooledComponent()
 	{
-		this.engine = engine;
 		reset();
-		System.out.println("Created");
 	}
 
 	public void reset()
@@ -28,7 +21,6 @@ public class PooledComponent implements EnginePoolable
 		this.active = false;
 		this.expendable = false;
 		this.time = 0L;
-		System.out.println("Reset");
 	}
 
 	public void init(boolean expend)
@@ -36,7 +28,6 @@ public class PooledComponent implements EnginePoolable
 		time = System.currentTimeMillis();
 		expendable = expend;
 		active = true;
-		System.out.println("Inited");
 	}
 	
 	@Override

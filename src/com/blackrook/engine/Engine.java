@@ -9,7 +9,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 
-import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
@@ -73,19 +72,39 @@ public final class Engine
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
 		messageListeners = new Queue<EngineMessageListener>();
-		loggingFactory = new LoggingFactory();
 
-		setUpLogging(config);
-		logger = getLogger(Engine.class);
-		
+		// set up logging.
+		loggingFactory = new LoggingFactory();
+		loggingFactory.addDriver(new ConsoleLogger());
+
 		boolean debugMode = config.getDebugMode();
-		
 		singletons.put(Engine.class, this);
-		singletons.put(EngineConfig.class, config); // uses runtime class.
+		singletons.put(EngineConfig.class, config); // uses base class.
 		singletons.put(config.getClass(), config); // uses runtime class.
+
+		logger = getLogger(Engine.class);
 
 		consoleManager = createOrGetComponent(EngineConsoleManager.class, debugMode);
 		console = createOrGetComponent(EngineConsole.class, debugMode);
+
+		PrintStream ps;
+		try {
+			FileOutputStream fos = new FileOutputStream(new File(config.getLogFilePath()));
+			if (fos != null)
+			{
+				ps = new PrintStream(fos, true);
+				PrintStreamLogger pslogger = new PrintStreamLogger(ps);
+				loggingFactory.addDriver(pslogger);
+			}
+			else
+			{
+				console.println("ERROR: Could not open log file "+config.getLogFilePath());
+			}
+		} catch (IOException e) {
+			console.println("ERROR: Could not open log file "+config.getLogFilePath());
+		}
+		
+		
 		loggingFactory.addDriver(new LoggingDriver()
 		{
 			final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -134,72 +153,6 @@ public final class Engine
 				logger.errorf("Failed starting device %s.", device.getName());
 		}
 		
-	}
-
-	/**
-	 * Creates a new component for a class and using one of its constructors.
-	 * @param clazz the class to instantiate.
-	 * @param constructor the constructor to call for instantiation.
-	 * @return the new class instance.
-	 */
-	<T> T createComponent(Class<T> clazz, Constructor<T> constructor)
-	{
-		return createComponent(clazz, constructor, false);
-	}
-
-	/**
-	 * Creates a new component for a class and using one of its constructors.
-	 * @param clazz the class to instantiate.
-	 * @param constructor the constructor to call for instantiation.
-	 * @return the new class instance.
-	 */
-	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean debugMode)
-	{
-		T object = null;
-		
-		if (constructor == null)
-			object = Reflect.create(clazz);
-		else
-		{
-			Class<?>[] types = constructor.getParameterTypes();
-			Object[] params = new Object[types.length]; 
-			for (int i = 0; i < types.length; i++)
-			{
-				if (types[i].equals(clazz))
-					throw new EngineSetupException("Circular dependency detected: class "+types[i].getSimpleName()+" is the same as this one: "+clazz.getSimpleName());
-				else if (Logger.class.isAssignableFrom(types[i]))
-					params[i] = getLogger(clazz);
-				else
-					params[i] = createOrGetComponent(types[i], debugMode);
-			}
-			
-			object = Reflect.construct(constructor, params);
-		}
-
-		if (!clazz.isAnnotationPresent(EngineComponent.class))
-			return object;
-		
-		consoleManager.addEntries(object, debugMode);
-		logger.debugf("Created component. %s", clazz.getSimpleName());
-		
-		// check if device.
-		if (EngineDevice.class.isAssignableFrom(clazz))
-		{
-			EngineDevice device = (EngineDevice)object;
-			devices.put(device.getName(), device);
-			logger.debugf("%s added to devices.", clazz.getSimpleName());
-		}
-
-		// check if message listener.
-		if (EngineMessageListener.class.isAssignableFrom(clazz))
-		{
-			EngineMessageListener listener = (EngineMessageListener)object;
-			messageListeners.add(listener);
-			logger.debugf("%s added to message listeners.", clazz.getSimpleName());
-		}
-
-		
-		return object;
 	}
 
 	/**
@@ -269,6 +222,72 @@ public final class Engine
 	}
 
 	/**
+	 * Creates a new component for a class and using one of its constructors.
+	 * @param clazz the class to instantiate.
+	 * @param constructor the constructor to call for instantiation.
+	 * @return the new class instance.
+	 */
+	<T> T createComponent(Class<T> clazz, Constructor<T> constructor)
+	{
+		return createComponent(clazz, constructor, false);
+	}
+
+	/**
+	 * Creates a new component for a class and using one of its constructors.
+	 * @param clazz the class to instantiate.
+	 * @param constructor the constructor to call for instantiation.
+	 * @return the new class instance.
+	 */
+	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean debugMode)
+	{
+		T object = null;
+		
+		if (constructor == null)
+			object = Reflect.create(clazz);
+		else
+		{
+			Class<?>[] types = constructor.getParameterTypes();
+			Object[] params = new Object[types.length]; 
+			for (int i = 0; i < types.length; i++)
+			{
+				if (types[i].equals(clazz))
+					throw new EngineSetupException("Circular dependency detected: class "+types[i].getSimpleName()+" is the same as this one: "+clazz.getSimpleName());
+				else if (Logger.class.isAssignableFrom(types[i]))
+					params[i] = getLogger(clazz);
+				else
+					params[i] = createOrGetComponent(types[i], debugMode);
+			}
+			
+			object = Reflect.construct(constructor, params);
+		}
+	
+		if (!clazz.isAnnotationPresent(EngineComponent.class))
+			return object;
+		
+		consoleManager.addEntries(object, debugMode);
+		logger.debugf("Created component. %s", clazz.getSimpleName());
+		
+		// check if device.
+		if (EngineDevice.class.isAssignableFrom(clazz))
+		{
+			EngineDevice device = (EngineDevice)object;
+			devices.put(device.getName(), device);
+			logger.debugf("%s added to devices.", clazz.getSimpleName());
+		}
+	
+		// check if message listener.
+		if (EngineMessageListener.class.isAssignableFrom(clazz))
+		{
+			EngineMessageListener listener = (EngineMessageListener)object;
+			messageListeners.add(listener);
+			logger.debugf("%s added to message listeners.", clazz.getSimpleName());
+		}
+	
+		
+		return object;
+	}
+
+	/**
 	 * Returns the names of all devices. 
 	 */
 	String[] getDeviceNames()
@@ -327,29 +346,6 @@ public final class Engine
 		return false;
 	}
 	
-	// Sets up the logger factory.
-	private void setUpLogging(EngineConfig config)
-	{		
-		PrintStream ps;
-		try {
-			FileOutputStream fos = new FileOutputStream(new File(config.getLogFilePath()));
-			if (fos != null)
-			{
-				ps = new PrintStream(fos, true);
-				PrintStreamLogger pslogger = new PrintStreamLogger(ps);
-				loggingFactory.addDriver(pslogger);
-			}
-			else
-			{
-				console.println("ERROR: Could not open log file "+config.getLogFilePath());
-			}
-		} catch (IOException e) {
-			console.println("ERROR: Could not open log file "+config.getLogFilePath());
-		}
-		
-		loggingFactory.addDriver(new ConsoleLogger());
-	}
-
 	/**
 	 * Creates or gets an engine singleton component by class.
 	 * @param clazz the class to create/retrieve.
