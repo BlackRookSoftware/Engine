@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * @author Matthew Tropiano
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.FIELD})
 public @interface Indexed
 {
 	/** Index name. */

@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface EngineCCMD
+public @interface CCMD
 {
 	/**
 	 * The command name. If not specified (or blank), this uses the method

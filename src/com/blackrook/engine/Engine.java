@@ -3,12 +3,18 @@ package com.blackrook.engine;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 
+import com.blackrook.archetext.ArcheTextIncluder;
+import com.blackrook.archetext.ArcheTextObject;
+import com.blackrook.archetext.ArcheTextReader;
+import com.blackrook.archetext.ArcheTextRoot;
+import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
@@ -20,18 +26,20 @@ import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.commons.logging.driver.ConsoleLogger;
 import com.blackrook.commons.logging.driver.PrintStreamLogger;
-import com.blackrook.engine.annotation.EngineComponent;
-import com.blackrook.engine.annotation.EngineComponentConstructor;
-import com.blackrook.engine.annotation.EnginePooledComponent;
+import com.blackrook.engine.annotation.Component;
+import com.blackrook.engine.annotation.ComponentConstructor;
+import com.blackrook.engine.annotation.PooledComponent;
+import com.blackrook.engine.annotation.ResourceComponent;
 import com.blackrook.engine.components.EngineDevice;
 import com.blackrook.engine.components.EngineMessageListener;
 import com.blackrook.engine.components.EnginePoolable;
+import com.blackrook.engine.components.EngineResource;
 import com.blackrook.engine.console.EngineConsole;
 import com.blackrook.engine.console.EngineConsoleManager;
-import com.blackrook.engine.exception.EnginePoolUnavailableException;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
 import com.blackrook.engine.struct.EngineMessage;
+import com.blackrook.fs.FSFile;
 
 /**
  * The main engine, created as the centerpoint of the communication between components
@@ -53,6 +61,9 @@ public final class Engine
 	private HashMap<Class<?>, EnginePool<EnginePoolable>> pools;
 	/** Engine devices. */
 	private HashMap<String, EngineDevice> devices;
+	/** Engine resources. */
+	private HashMap<Class<?>, EngineResourceList<?>> resources;
+	
 	/** Engine message receiver. */
 	private Queue<EngineMessageListener> messageListeners;
 	
@@ -71,6 +82,7 @@ public final class Engine
 		singletons = new HashMap<Class<?>, Object>();
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
+		resources = new HashMap<Class<?>, EngineResourceList<?>>();
 		messageListeners = new Queue<EngineMessageListener>();
 
 		// set up logging.
@@ -118,23 +130,49 @@ public final class Engine
 
 		fileSystem = new EngineFileSystem(this, config);
 		singletons.put(EngineFileSystem.class, fileSystem);
+
+		// load resource definitions.
+		ArcheTextRoot resourceDefinitionRoot = loadResourceDefinitions(config.getResourceDefinitionFile());
 		
 		Queue<EngineDevice> devicesToStart = new Queue<EngineDevice>();
 		
 		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
 		{
-			if (componentClass.isAnnotationPresent(EnginePooledComponent.class))
+			if (componentClass.isAnnotationPresent(ResourceComponent.class))
+			{
+				if (!EngineResource.class.isAssignableFrom(componentClass))
+					throw new EngineSetupException("Found EngineResourceComponent annotation on a class that does not implement EngineResource.");
+				
+				Class<EngineResource> resourceClass = (Class<EngineResource>)componentClass;
+				ResourceComponent anno = componentClass.getAnnotation(ResourceComponent.class);
+				String className = resourceClass.getSimpleName();
+				className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
+				String structName = Common.isEmpty(anno.value()) ? className : anno.value();
+
+				EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(resourceClass); 
+				resources.put(resourceClass, resourceList);
+				
+				int added = 0;
+				for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
+				{
+					resourceList.add(object.newObject(resourceClass));
+					added++;
+				}
+				
+				logger.infof("Created resource list. %s (count %d)", resourceClass.getSimpleName(), added);
+			}
+			else if (componentClass.isAnnotationPresent(PooledComponent.class))
 			{
 				if (!EnginePoolable.class.isAssignableFrom(componentClass))
-					throw new EngineSetupException("Found EnginePooled annotation on a class that does not implement EnginePoolable.");
+					throw new EngineSetupException("Found EnginePooledComponent annotation on a class that does not implement EnginePoolable.");
 				
 				Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
-				EnginePooledComponent anno = componentClass.getAnnotation(EnginePooledComponent.class);
+				PooledComponent anno = componentClass.getAnnotation(PooledComponent.class);
 				pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
-				logger.debugf("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
+				logger.infof("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
 			}
-			else if (componentClass.isAnnotationPresent(EngineComponent.class))
+			else if (componentClass.isAnnotationPresent(Component.class))
 			{
 				Object obj = createOrGetComponent(componentClass, debugMode);
 				if (obj instanceof EngineDevice)
@@ -168,9 +206,8 @@ public final class Engine
 	}
 	
 	/**
-	 * Gets the next available pooled component assigned to the provided class.
+	 * Gets the pool assigned to the provided class.
 	 * @throws NoSuchComponentException if the provided class is not a valid pooled component.
-	 * @throws EnginePoolUnavailableException if the pool's policy is to throw an exception if an object cannot be returned.
 	 */
 	@SuppressWarnings("unchecked")
 	public <T extends EnginePoolable> EnginePool<T> getPool(Class<T> clazz)
@@ -179,6 +216,20 @@ public final class Engine
 		if (pool == null)
 			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid pooled component.");
 		return pool;
+	}
+	
+	/**
+	 * Returns the resource list that stores a set of resources.
+	 * @param clazz the resource class to retrieve the list of.
+	 * @throws NoSuchComponentException if the provided class is not a valid resource component.
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends EngineResource> EngineResourceList<T> getResourceList(Class<T> clazz)
+	{
+		EngineResourceList<T> list = (EngineResourceList<T>)resources.get(clazz);
+		if (list == null)
+			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid resource component.");
+		return list;
 	}
 	
 	/**
@@ -261,7 +312,7 @@ public final class Engine
 			object = Reflect.construct(constructor, params);
 		}
 	
-		if (!clazz.isAnnotationPresent(EngineComponent.class))
+		if (!clazz.isAnnotationPresent(Component.class))
 			return object;
 		
 		consoleManager.addEntries(object, debugMode);
@@ -369,7 +420,7 @@ public final class Engine
 	{
 		for (Constructor<T> cons : (Constructor<T>[])clazz.getConstructors())
 		{
-			if (!cons.isAnnotationPresent(EngineComponentConstructor.class))
+			if (!cons.isAnnotationPresent(ComponentConstructor.class))
 				continue;
 			else
 				return cons;
@@ -412,9 +463,65 @@ public final class Engine
 	private boolean isValidComponent(Class<?> clazz)
 	{
 		return
-			clazz.isAnnotationPresent(EngineComponent.class)
-			|| clazz.isAnnotationPresent(EnginePooledComponent.class)
+			clazz.isAnnotationPresent(Component.class)
+			|| clazz.isAnnotationPresent(PooledComponent.class)
+			|| clazz.isAnnotationPresent(ResourceComponent.class)
 			;
+	}
+
+	private ArcheTextRoot loadResourceDefinitions(String resourceDefinitionFile)
+	{
+		FSFile[] resourceFiles;
+		try {
+			resourceFiles = fileSystem.getAllFileInstances(resourceDefinitionFile);
+		} catch (IOException ex) {
+			throw new EngineSetupException("Could not open resource file path instances: "+ ex.getLocalizedMessage());
+		}
+		
+		ArcheTextRoot out = new ArcheTextRoot();
+		ArcheTextIncluder includer = new ArcheTextIncluder()
+		{
+			@Override
+			public InputStream getIncludeResource(String streamName, String path) throws IOException
+			{
+				// convert backslash to slash.
+				path = path.replace("\\", "/");
+				
+				String parentPath = null;
+				int slashidx = streamName.lastIndexOf("/");
+				if (slashidx >= 0)
+					parentPath = streamName.substring(0, slashidx) + "/";
+				else
+					parentPath = "";
+
+				FSFile nextfile = fileSystem.getFile(parentPath + path);
+				if (nextfile != null)
+					return nextfile.getInputStream();
+				else
+				{
+					nextfile = fileSystem.getFile(path);
+					if (nextfile != null)
+						return nextfile.getInputStream();
+					return null;
+				}
+			}
+		};
+		
+		
+		for (int i = resourceFiles.length - 1; i >= 0; i--)
+		{
+			InputStream in = null;
+			try {
+				in = resourceFiles[i].getInputStream();
+				ArcheTextReader.apply(resourceFiles[i].getPath(), in, includer, out);
+			} catch (IOException e) {
+				throw new EngineSetupException(e);
+			} finally {
+				Common.close(in);
+			}
+		}
+		
+		return out;
 	}
 	
 }

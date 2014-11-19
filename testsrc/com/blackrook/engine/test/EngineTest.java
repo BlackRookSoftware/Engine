@@ -1,6 +1,7 @@
 package com.blackrook.engine.test;
 
 import java.awt.Image;
+import java.util.Arrays;
 
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
@@ -9,7 +10,7 @@ public final class EngineTest
 {
 	public static void main(String[] args)
 	{
-		new Engine(new EngineConfig()
+		Engine e = new Engine(new EngineConfig()
 		{
 			@Override
 			public String getPackageRoot()
@@ -20,8 +21,7 @@ public final class EngineTest
 			@Override
 			public String getResourceDefinitionFile()
 			{
-				// TODO Auto-generated method stub
-				return null;
+				return "resources.def";
 			}
 
 			@Override
@@ -41,24 +41,21 @@ public final class EngineTest
 
 			@Override
 			public String getFileSystemArchiveExtension() {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public String[] getFileSystemStack() {
-				return null; //new String[]{Common.WORK_DIR};
+				return new String[]{"base"};
 			}
 
 			@Override
 			public String getSettingsPath() {
-				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
 			public String getLogFilePath() {
-				// TODO Auto-generated method stub
 				return "test.log";
 			}
 

@@ -1,4 +1,4 @@
-package com.blackrook.engine.resources;
+package com.blackrook.engine.components;
 
 /**
  * Describes a resource descriptor 

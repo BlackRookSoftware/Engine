@@ -5,14 +5,17 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.blackrook.engine.components.EngineResource;
+
 /**
- * Annotation for classes that should be instantiated as singletons for the Engine.
- * These classes can be annotated with {@link EngineCCMD}, {@link EngineCVAR}, and {@link EngineComponentConstructor} annotations.
+ * Annotation for classes that are engine resources imported via Archetext.
+ * These classes must implement {@link EngineResource}.
  * @author Matthew Tropiano
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface EngineComponent
+public @interface ResourceComponent
 {
-	
+	/** The struct type associated with the class. */
+	String value() default "";
 }

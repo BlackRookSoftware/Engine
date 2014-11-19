@@ -1,13 +1,13 @@
 package com.blackrook.engine.test;
 
-import com.blackrook.engine.annotation.EngineCCMD;
-import com.blackrook.engine.annotation.EngineCVAR;
-import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.CCMD;
+import com.blackrook.engine.annotation.CVAR;
+import com.blackrook.engine.annotation.Component;
 
-@EngineComponent
+@Component
 public class TestComponent
 {
-	@EngineCVAR
+	@CVAR
 	public int buttvar;
 	
 	public TestComponent()
@@ -15,7 +15,7 @@ public class TestComponent
 		buttvar = 5;
 	}
 	
-	@EngineCCMD(value = "debug", description = "A debug description.", usage = {"some string"})
+	@CCMD(value = "debug", description = "A debug description.", usage = {"some string"})
 	public void debug(String name)
 	{
 		System.out.println(name);

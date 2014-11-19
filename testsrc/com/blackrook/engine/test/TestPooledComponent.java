@@ -1,17 +1,17 @@
 package com.blackrook.engine.test;
 
-import com.blackrook.engine.annotation.EnginePooledComponent;
+import com.blackrook.engine.annotation.PooledComponent;
 import com.blackrook.engine.components.EnginePoolable;
 import com.blackrook.engine.EnginePool.PoolPolicy;
 
-@EnginePooledComponent(value = 10, policy = PoolPolicy.SENSIBLE)
-public class PooledComponent implements EnginePoolable
+@PooledComponent(value = 10, policy = PoolPolicy.SENSIBLE)
+public class TestPooledComponent implements EnginePoolable
 {
 	private boolean active;
 	private boolean expendable;
 	private long time;
 	
-	public PooledComponent()
+	public TestPooledComponent()
 	{
 		reset();
 	}

@@ -26,9 +26,9 @@ import com.blackrook.commons.CommonTokenizer;
 import com.blackrook.commons.list.List;
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
-import com.blackrook.engine.annotation.EngineCCMD;
-import com.blackrook.engine.annotation.EngineComponent;
-import com.blackrook.engine.annotation.EngineComponentConstructor;
+import com.blackrook.engine.annotation.CCMD;
+import com.blackrook.engine.annotation.Component;
+import com.blackrook.engine.annotation.ComponentConstructor;
 import com.blackrook.engine.console.EngineConsoleManager.CCMDMapping;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 
@@ -36,7 +36,7 @@ import com.blackrook.engine.exception.ConsoleCommandInvocationException;
  * The console itself.
  * @author Matthew Tropiano
  */
-@EngineComponent
+@Component
 public class EngineConsole extends JFrame
 {
 	private static final long serialVersionUID = 3854911727580406755L;
@@ -62,7 +62,7 @@ public class EngineConsole extends JFrame
 	 * @param engine the engine instance.
 	 * @param config the configuration.
 	 */
-	@EngineComponentConstructor
+	@ComponentConstructor
 	public EngineConsole(Engine engine, EngineConfig config, EngineConsoleManager manager)
 	{
 		super();
@@ -414,8 +414,8 @@ public class EngineConsole extends JFrame
 		printf(formatting + '\n', args);
 	}
 
-	@EngineCCMD(value = "cmdlist", description = "Lists all console commands.")
-	public void ccmdCCMDList(String prefix)
+	@CCMD(description = "Lists all console commands.")
+	public void cmdList(String prefix)
 	{
 		String[] commands = null;
 		if (Common.isEmpty(prefix))

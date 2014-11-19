@@ -12,8 +12,8 @@ import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.CaseInsensitiveHashMap;
 import com.blackrook.commons.list.List;
 import com.blackrook.commons.trie.CaseInsensitiveTrie;
-import com.blackrook.engine.annotation.EngineCCMD;
-import com.blackrook.engine.annotation.EngineCVAR;
+import com.blackrook.engine.annotation.CCMD;
+import com.blackrook.engine.annotation.CVAR;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 import com.blackrook.engine.exception.ConsoleSetupException;
 import com.blackrook.engine.exception.ConsoleVariableException;
@@ -56,8 +56,8 @@ public class EngineConsoleManager
 		// add commands.
 		for (Method method : type.getMethods())
 		{
-			EngineCCMD anno = null;
-			if ((anno = method.getAnnotation(EngineCCMD.class)) == null)
+			CCMD anno = null;
+			if ((anno = method.getAnnotation(CCMD.class)) == null)
 				continue;
 			
 			if (anno.debug() && !debug)
@@ -76,9 +76,9 @@ public class EngineConsoleManager
 		}
 
 		// add variables.
-		for (Field field : profile.getAnnotatedPublicFields(EngineCVAR.class))
+		for (Field field : profile.getAnnotatedPublicFields(CVAR.class))
 		{
-			EngineCVAR anno = field.getAnnotation(EngineCVAR.class);
+			CVAR anno = field.getAnnotation(CVAR.class);
 			String varname = Common.isEmpty(anno.value()) ? field.getName() : anno.value();
 
 			if (variableMap.containsKey(varname))
@@ -101,7 +101,7 @@ public class EngineConsoleManager
 			MethodSignature signature = pair.getValue();
 			Method method = signature.getMethod();
 
-			EngineCVAR anno = method.getAnnotation(EngineCVAR.class);
+			CVAR anno = method.getAnnotation(CVAR.class);
 			if (anno == null)
 				continue;
 			
@@ -125,7 +125,7 @@ public class EngineConsoleManager
 			MethodSignature signature = pair.getValue();
 			Method method = signature.getMethod();
 
-			EngineCVAR anno = method.getAnnotation(EngineCVAR.class);
+			CVAR anno = method.getAnnotation(CVAR.class);
 			if (anno == null)
 				continue;
 
