@@ -1,4 +1,4 @@
-package com.blackrook.engine.console;
+package com.blackrook.engine;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -37,7 +37,7 @@ public class EngineConsoleManager
 	/**
 	 * Default constructor.
 	 */
-	public EngineConsoleManager()
+	EngineConsoleManager()
 	{
 		commandTrie = new CaseInsensitiveTrie();
 		commandMap = new CaseInsensitiveHashMap<CCMDMapping>();
@@ -366,8 +366,11 @@ public class EngineConsoleManager
 		Object call(Object ... args)
 		{
 			Object[] params = new Object[types.length];
-			for (int i = 0; i < Math.min(args.length, params.length); i++)
+			int i = 0;
+			for (; i < Math.min(args.length, params.length); i++)
 				params[i] = Reflect.createForType(args[i], types[i]);
+			for (; i < params.length; i++)
+				params[i] = Reflect.createForType(null, types[i]);
 			return Reflect.invokeBlind(method, instance, params);
 		}
 		
@@ -438,6 +441,14 @@ public class EngineConsoleManager
 		public boolean isArchived()
 		{
 			return archived;
+		}
+
+		/**
+		 * Gets if this variable is to be archived.
+		 */
+		public boolean isReadOnly()
+		{
+			return field == null && setter == null && getter != null;
 		}
 
 		Object get()

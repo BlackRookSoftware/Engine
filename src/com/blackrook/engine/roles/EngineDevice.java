@@ -1,4 +1,4 @@
-package com.blackrook.engine.components;
+package com.blackrook.engine.roles;
 
 /**
  * Describes a device started by the engine after object creation and configuration

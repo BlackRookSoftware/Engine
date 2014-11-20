@@ -1,4 +1,4 @@
-package com.blackrook.engine.console;
+package com.blackrook.engine;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -11,7 +11,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
-import java.util.Arrays;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -24,12 +23,9 @@ import javax.swing.border.BevelBorder;
 import com.blackrook.commons.Common;
 import com.blackrook.commons.CommonTokenizer;
 import com.blackrook.commons.list.List;
-import com.blackrook.engine.Engine;
-import com.blackrook.engine.EngineConfig;
-import com.blackrook.engine.annotation.CCMD;
+import com.blackrook.engine.EngineConsoleManager.CCMDMapping;
 import com.blackrook.engine.annotation.Component;
 import com.blackrook.engine.annotation.ComponentConstructor;
-import com.blackrook.engine.console.EngineConsoleManager.CCMDMapping;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 
 /**
@@ -70,8 +66,9 @@ public class EngineConsole extends JFrame
 		String windowTitle = config.getApplicationName() + (config.getApplicationVersion() == null ? "" : " v"+config.getApplicationVersion());
 		setTitle(windowTitle);
 		setIconImage(config.getApplicationIcon());
+		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		setVisible(false);
-	
+		
 		toolkit = Toolkit.getDefaultToolkit();
 		commandHistory = new List<String>(50);
 
@@ -414,25 +411,4 @@ public class EngineConsole extends JFrame
 		printf(formatting + '\n', args);
 	}
 
-	@CCMD(description = "Lists all console commands.")
-	public void cmdList(String prefix)
-	{
-		String[] commands = null;
-		if (Common.isEmpty(prefix))
-			commands = consoleManager.getCommandNames();
-		else
-			commands = consoleManager.getCommandNamesForPrefix(prefix);
-		
-		Arrays.sort(commands);
-		
-		int i = 0;
-		for (String cmd : commands)
-		{
-			printfln("%s\t\t%s", cmd, consoleManager.getCommandDefinition(cmd).getDescription());
-			i++;
-		}
-		
-		printfln("count %d", i);
-	}
-	
 }

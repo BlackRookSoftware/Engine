@@ -20,8 +20,8 @@ import com.blackrook.commons.spatialhash.IntervalHashable;
 import com.blackrook.engine.annotation.Indexed;
 import com.blackrook.engine.annotation.Interval;
 import com.blackrook.engine.annotation.IntervalBound;
-import com.blackrook.engine.components.EngineResource;
 import com.blackrook.engine.exception.EngineSetupException;
+import com.blackrook.engine.roles.EngineResource;
 
 /**
  * Mapping of name-to-resource and id-to-resource.

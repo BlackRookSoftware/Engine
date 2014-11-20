@@ -1,7 +1,7 @@
 package com.blackrook.engine.test;
 
 import com.blackrook.engine.annotation.PooledComponent;
-import com.blackrook.engine.components.EnginePoolable;
+import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.EnginePool.PoolPolicy;
 
 @PooledComponent(value = 10, policy = PoolPolicy.SENSIBLE)

@@ -1,5 +1,7 @@
 package com.blackrook.engine.test;
 
+import java.util.Arrays;
+
 import com.blackrook.engine.annotation.CCMD;
 import com.blackrook.engine.annotation.CVAR;
 import com.blackrook.engine.annotation.Component;
@@ -16,9 +18,9 @@ public class TestComponent
 	}
 	
 	@CCMD(value = "debug", description = "A debug description.", usage = {"some string"})
-	public void debug(String name)
+	public void debug(String ... name)
 	{
-		System.out.println(name);
+		System.out.println(Arrays.toString(name));
 	}
 	
 	

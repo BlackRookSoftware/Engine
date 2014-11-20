@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.blackrook.engine.components.EngineResource;
+import com.blackrook.engine.roles.EngineResource;
 
 /**
  * Annotation for classes that are engine resources imported via Archetext.

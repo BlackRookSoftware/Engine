@@ -15,6 +15,7 @@ import com.blackrook.archetext.ArcheTextObject;
 import com.blackrook.archetext.ArcheTextReader;
 import com.blackrook.archetext.ArcheTextRoot;
 import com.blackrook.commons.Common;
+import com.blackrook.commons.ObjectPair;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
@@ -30,14 +31,13 @@ import com.blackrook.engine.annotation.Component;
 import com.blackrook.engine.annotation.ComponentConstructor;
 import com.blackrook.engine.annotation.PooledComponent;
 import com.blackrook.engine.annotation.ResourceComponent;
-import com.blackrook.engine.components.EngineDevice;
-import com.blackrook.engine.components.EngineMessageListener;
-import com.blackrook.engine.components.EnginePoolable;
-import com.blackrook.engine.components.EngineResource;
-import com.blackrook.engine.console.EngineConsole;
-import com.blackrook.engine.console.EngineConsoleManager;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
+import com.blackrook.engine.roles.EngineDevice;
+import com.blackrook.engine.roles.EngineListener;
+import com.blackrook.engine.roles.EngineMessageListener;
+import com.blackrook.engine.roles.EnginePoolable;
+import com.blackrook.engine.roles.EngineResource;
 import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.fs.FSFile;
 
@@ -64,6 +64,8 @@ public final class Engine
 	/** Engine resources. */
 	private HashMap<Class<?>, EngineResourceList<?>> resources;
 	
+	/** Engine listener. */
+	private Queue<EngineListener> listeners;
 	/** Engine message receiver. */
 	private Queue<EngineMessageListener> messageListeners;
 	
@@ -83,6 +85,7 @@ public final class Engine
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
 		resources = new HashMap<Class<?>, EngineResourceList<?>>();
+		listeners = new Queue<EngineListener>();
 		messageListeners = new Queue<EngineMessageListener>();
 
 		// set up logging.
@@ -97,7 +100,7 @@ public final class Engine
 		logger = getLogger(Engine.class);
 
 		consoleManager = createOrGetComponent(EngineConsoleManager.class, debugMode);
-		console = createOrGetComponent(EngineConsole.class, debugMode);
+		console = createOrGetComponent(EngineConsole.class, debugMode); 
 
 		PrintStream ps;
 		try {
@@ -133,8 +136,6 @@ public final class Engine
 
 		// load resource definitions.
 		ArcheTextRoot resourceDefinitionRoot = loadResourceDefinitions(config.getResourceDefinitionFile());
-		
-		Queue<EngineDevice> devicesToStart = new Queue<EngineDevice>();
 		
 		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
@@ -176,19 +177,23 @@ public final class Engine
 			{
 				Object obj = createOrGetComponent(componentClass, debugMode);
 				if (obj instanceof EngineDevice)
-					devicesToStart.enqueue((EngineDevice)obj);
+					devices.put(((EngineDevice)obj).getName(), (EngineDevice)obj);
+				if (obj instanceof EngineListener)
+					listeners.enqueue((EngineListener)obj);
+				if (obj instanceof EngineMessageListener)
+					messageListeners.enqueue((EngineMessageListener)obj);
 			}
 		}
 
 		// Starts the devices.
-		while (!devicesToStart.isEmpty())
+		for (ObjectPair<?, EngineDevice> device : devices)
 		{
-			EngineDevice device = devicesToStart.dequeue();
-			logger.infof("Starting device %s.", device.getName());
-			if (device.create())
-				logger.infof("Finished starting device %s.", device.getName());
+			EngineDevice ed = device.getValue(); 
+			logger.infof("Starting device %s.", ed.getName());
+			if (ed.create())
+				logger.infof("Finished starting device %s.", ed.getName());
 			else
-				logger.errorf("Failed starting device %s.", device.getName());
+				logger.errorf("Failed starting device %s.", ed.getName());
 		}
 		
 	}
@@ -273,6 +278,28 @@ public final class Engine
 	}
 
 	/**
+	 * Initiates engine shutdown.
+	 * <p>All listeners have {@link EngineListener#onShutDown()} called on them, all
+	 * devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 */
+	public void shutDown(int status)
+	{
+		logger.infof("Shutdown initiated.");
+		for (EngineListener listener : listeners)
+			listener.onShutDown();
+		for (ObjectPair<?, EngineDevice> device : devices)
+		{
+			EngineDevice ed = device.getValue(); 
+			logger.infof("Destroying device %s.", ed.getName());
+			if (ed.destroy())
+				logger.infof("Finished destroying device %s.", ed.getName());
+			else
+				logger.errorf("Failed destroying device %s.", ed.getName());
+		}
+		System.exit(status);
+	}
+	
+	/**
 	 * Creates a new component for a class and using one of its constructors.
 	 * @param clazz the class to instantiate.
 	 * @param constructor the constructor to call for instantiation.
@@ -333,7 +360,6 @@ public final class Engine
 			messageListeners.add(listener);
 			logger.debugf("%s added to message listeners.", clazz.getSimpleName());
 		}
-	
 		
 		return object;
 	}
@@ -439,7 +465,7 @@ public final class Engine
 		
 		// Scan for singletons to instantiate.
 		Hash<String> packageMap = new Hash<String>();
-		for (String className : Reflect.getClasses(Engine.class.getPackage().getName()))
+		for (String className : Reflect.getClasses(Engine.class.getPackage().getName()+".components"))
 			packageMap.put(className);
 		for (String className : Reflect.getClasses(config.getPackageRoot()))
 			packageMap.put(className);

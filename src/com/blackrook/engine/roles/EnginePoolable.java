@@ -1,4 +1,4 @@
-package com.blackrook.engine.components;
+package com.blackrook.engine.roles;
 
 /**
  * Describes a poolable element, i.e. one that is a pooled instance of a class in

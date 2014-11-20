@@ -2,8 +2,8 @@ package com.blackrook.engine;
 
 import java.lang.reflect.Constructor;
 
-import com.blackrook.engine.components.EnginePoolable;
 import com.blackrook.engine.exception.EnginePoolUnavailableException;
+import com.blackrook.engine.roles.EnginePoolable;
 
 /**
  * Implementation of a pool of reusable objects.
