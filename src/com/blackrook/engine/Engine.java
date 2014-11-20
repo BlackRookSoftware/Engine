@@ -38,6 +38,7 @@ import com.blackrook.engine.roles.EngineListener;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.roles.EngineResource;
+import com.blackrook.engine.roles.EngineWindowedComponent;
 import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.fs.FSFile;
 
@@ -137,6 +138,58 @@ public final class Engine
 		// load resource definitions.
 		ArcheTextRoot resourceDefinitionRoot = loadResourceDefinitions(config.getResourceDefinitionFile());
 		
+		final EngineWindowEventReceiver windowEventReceiver = new EngineWindowEventReceiver()
+		{
+			@Override
+			public void fireRestore()
+			{
+				for (EngineListener listener : listeners)
+					listener.onRestore();
+			}
+			
+			@Override
+			public void fireMouseExit()
+			{
+				for (EngineListener listener : listeners)
+					listener.onMouseExit();
+			}
+			
+			@Override
+			public void fireMouseEnter()
+			{
+				for (EngineListener listener : listeners)
+					listener.onMouseEnter();
+			}
+			
+			@Override
+			public void fireMinimize()
+			{
+				for (EngineListener listener : listeners)
+					listener.onMinimize();
+			}
+			
+			@Override
+			public void fireFocus()
+			{
+				for (EngineListener listener : listeners)
+					listener.onFocus();
+			}
+			
+			@Override
+			public void fireClosing()
+			{
+				for (EngineListener listener : listeners)
+					listener.onClosing();
+			}
+			
+			@Override
+			public void fireBlur()
+			{
+				for (EngineListener listener : listeners)
+					listener.onBlur();
+			}
+		};
+		
 		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
 		{
@@ -182,6 +235,8 @@ public final class Engine
 					listeners.enqueue((EngineListener)obj);
 				if (obj instanceof EngineMessageListener)
 					messageListeners.enqueue((EngineMessageListener)obj);
+				if (obj instanceof EngineWindowedComponent)
+					((EngineWindowedComponent)obj).addWindowEventReceiver(windowEventReceiver);
 			}
 		}
 

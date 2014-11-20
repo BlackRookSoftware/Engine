@@ -106,7 +106,6 @@ public class EngineConsole extends JFrame
 		});
 		
 		pack();
-		setVisible(true);
 	}
 	
 	// Creates the text area.
