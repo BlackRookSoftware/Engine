@@ -8,7 +8,7 @@ import com.blackrook.engine.EngineWindowEventReceiver;
  * to attach itself to in order to pass window events along to the EngineListeners.
  * @author Matthew Tropiano
  */
-public interface EngineWindowedComponent
+public interface EngineWindow
 {
 
 	/**

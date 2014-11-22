@@ -59,6 +59,12 @@ public interface EngineConfig
 	public String getResourceDefinitionFile();
 	
 	/**
+	 * Returns how many updates per second that the main updating thread needs to do.
+	 * If the returned value is 0 or less, this runs full bore. 
+	 */
+	public int getUpdatesPerSecond();
+	
+	/**
 	 * Returns if this Engine should start in debug mode. 
 	 */
 	public boolean getDebugMode();

@@ -64,6 +64,12 @@ public final class EngineTest
 			{
 				return true;
 			}
+
+			@Override
+			public int getUpdatesPerSecond()
+			{
+				return 30;
+			}
 		});
 		
 	}

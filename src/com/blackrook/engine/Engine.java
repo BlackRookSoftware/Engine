@@ -38,13 +38,16 @@ import com.blackrook.engine.roles.EngineListener;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.roles.EngineResource;
-import com.blackrook.engine.roles.EngineWindowedComponent;
+import com.blackrook.engine.roles.EngineState;
+import com.blackrook.engine.roles.EngineUpdatable;
+import com.blackrook.engine.roles.EngineWindow;
 import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.fs.FSFile;
 
 /**
  * The main engine, created as the centerpoint of the communication between components
  * or as a main mediator between system components.
+ * TODO: Add updater stuff and state manager stuff.
  * @author Matthew Tropiano
  */
 public final class Engine
@@ -69,6 +72,10 @@ public final class Engine
 	private Queue<EngineListener> listeners;
 	/** Engine message receiver. */
 	private Queue<EngineMessageListener> messageListeners;
+	/** Engine state manager. */
+	private EngineStateManager stateManager;
+	/** Engine update ticker. */
+	private EngineTicker updateTicker;
 	
 	/** Engine console. */
 	private EngineConsole console;
@@ -103,6 +110,9 @@ public final class Engine
 		consoleManager = createOrGetComponent(EngineConsoleManager.class, debugMode);
 		console = createOrGetComponent(EngineConsole.class, debugMode); 
 
+		stateManager = new EngineStateManager();
+		updateTicker = new EngineTicker(this, config);
+		
 		PrintStream ps;
 		try {
 			FileOutputStream fos = new FileOutputStream(new File(config.getLogFilePath()));
@@ -235,8 +245,11 @@ public final class Engine
 					listeners.enqueue((EngineListener)obj);
 				if (obj instanceof EngineMessageListener)
 					messageListeners.enqueue((EngineMessageListener)obj);
-				if (obj instanceof EngineWindowedComponent)
-					((EngineWindowedComponent)obj).addWindowEventReceiver(windowEventReceiver);
+				if (obj instanceof EngineWindow)
+					((EngineWindow)obj).addWindowEventReceiver(windowEventReceiver);
+
+				if ((obj instanceof EngineUpdatable) && !(obj instanceof EngineState))
+					/* Add to updater */;
 			}
 		}
 

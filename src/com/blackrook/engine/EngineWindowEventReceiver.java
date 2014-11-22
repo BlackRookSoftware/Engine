@@ -1,10 +1,10 @@
 package com.blackrook.engine;
 
 import com.blackrook.engine.annotation.Component;
-import com.blackrook.engine.roles.EngineWindowedComponent;
+import com.blackrook.engine.roles.EngineWindow;
 
 /**
- * This class is designed to be the class that implementors of {@link EngineWindowedComponent}
+ * This class is designed to be the class that implementors of {@link EngineWindow}
  * use to fire window events to the engine.
  * <p>
  * Basically, if a {@link Component} is supposed to spawn the main window of the

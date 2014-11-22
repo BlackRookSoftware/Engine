@@ -1,11 +1,13 @@
 package com.blackrook.engine.roles;
 
+import com.blackrook.engine.EngineStateManager;
+
 /**
- * Defines an engine state that can be pushed or popped from the Engine's
- * State manager.
+ * Defines an engine state that can be pushed or popped from the {@link EngineStateManager}.
+ * Despite these classes extending {@link EngineUpdatable}, these are not added to the main ticker.
  * @author Matthew Tropiano
  */
-public interface EngineState
+public interface EngineState extends EngineUpdatable
 {
 	/**
 	 * Called when this state has been activated or made current.
