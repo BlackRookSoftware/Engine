@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * <p>
  * Should be paired up in getters/setters. If only on a getter, it is
  * a read-only variable. It cannot only be on a setter.
- * <p> 
+ * <p>
  * The getter is the authority on descriptions and archival.
  * @author Matthew Tropiano
  */
@@ -33,6 +33,6 @@ public @interface CVAR
 	/**
 	 * Variable description.
 	 */
-	String description() default "Console command.";
+	String description() default "Console variable.";
 	
 }

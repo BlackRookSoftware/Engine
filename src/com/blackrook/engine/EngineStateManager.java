@@ -1,7 +1,7 @@
 package com.blackrook.engine;
 
-import com.blackrook.commons.ResettableIterator;
-import com.blackrook.commons.linkedlist.Stack;
+import com.blackrook.commons.Sizable;
+import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineState;
 import com.blackrook.engine.roles.EngineUpdatable;
 
@@ -9,39 +9,30 @@ import com.blackrook.engine.roles.EngineUpdatable;
  * The state manager class for maintaining engine state.
  * @author Matthew Tropiano
  */
-public class EngineStateManager implements EngineUpdatable
+public class EngineStateManager implements EngineUpdatable, EngineInputListener, Sizable
 {
 	/** Current game state. */
-	private Stack<EngineState> currentState;
-	/** Stack iterator. */
-	private ResettableIterator<EngineState> currentStateIterator;
+	private EngineState[] states;
+	/** Size. */
+	private int size;
 
 	EngineStateManager()
 	{
-		currentState = new Stack<EngineState>();
-		currentStateIterator = currentState.iterator();
+		states = new EngineState[4];
+		size = 0;
 	}
 	
-	/**
-	 * Returns the current game state.
-	 * WARNING: Can be null.
-	 */
-	public EngineState getCurrentState()
-	{
-		return currentState.peek();
-	}
-
 	/**
 	 * Changes the current state by emptying the state 
 	 * stack and pushing new ones onto the stack by name.
 	 * Calls {@link EngineState#exit()} on each state popped and {@link EngineState#enter()} on each state pushed. 
 	 * @param states the states to push in the specified order.
 	 */
-	public void stateChange(EngineState ... states)
+	public synchronized void change(EngineState ... states)
 	{
-		while (!currentState.isEmpty()) 
-			statePop();
-		statePush(states);
+		while (!isEmpty()) 
+			pop();
+		push(states);
 	}
 
 	/**
@@ -50,21 +41,33 @@ public class EngineStateManager implements EngineUpdatable
 	 * @param states the states to push in the specified order.
 	 * onto the stack, false if at least one was not.
 	 */
-	public void statePush(EngineState ... states)
+	public synchronized void push(EngineState ... states)
 	{
 		for (EngineState s : states)
 		{
+			if (size() == states.length)
+			{
+				EngineState[] newarray = new EngineState[states.length * 2];
+				System.arraycopy(states, 0, newarray, 0, states.length);
+				states = newarray;
+			}
 			s.enter();
-			currentState.push(s);
+			states[size++] = s;
 		}
 	}
 
 	/**
-	 * Convenience method for <code>popState(1)</code>.
+	 * Pops a bunch of game states off of the state stack as returns it.
+	 * Calls {@link EngineState#exit()} on the state popped.
 	 */
-	public void statePop()
+	public synchronized EngineState pop()
 	{
-		statePop(1);
+		if (isEmpty())
+			return null;
+		
+		EngineState out = states[--size];
+		out.exit();
+		return out;
 	}
 
 	/**
@@ -72,31 +75,55 @@ public class EngineStateManager implements EngineUpdatable
 	 * Calls {@link EngineState#exit()} on each state popped.
 	 * @param stateCount the amount of states to pop.
 	 */
-	public void statePop(int stateCount)
+	public synchronized void pop(int stateCount)
 	{
-		while (stateCount > 0)
+		while (!isEmpty() && stateCount-- > 0)
 		{
-			if (currentState.peek() != null)
-			{
-				currentState.peek().exit();
-				currentState.pop();
-			}
-			stateCount--;
+			pop();
 		}
 	}
 
 	@Override
-	public boolean isUpdatable()
+	public synchronized boolean isUpdatable()
 	{
 		return true;
 	}
 
 	@Override
-	public void update(long tick, long currentNanos)
+	public synchronized void update(long tick, long currentNanos)
 	{
-		currentStateIterator.reset();
-		while (currentStateIterator.hasNext())
-			currentStateIterator.next().update(tick, currentNanos);
+		for (int i = size - 1; i >= 0; i--)
+			states[i].update(tick, currentNanos);
+	}
+
+	@Override
+	public synchronized boolean onInputSet(int code, boolean set)
+	{
+		for (int i = size - 1; i >= 0; i--)
+			if (states[i].onInputSet(code, set))
+				return true;
+		return false;
+	}
+
+	@Override
+	public synchronized boolean onInputValue(int code, double value)
+	{
+		for (int i = size - 1; i >= 0; i--)
+			if (states[i].onInputValue(code, value))
+				return true;
+		return false;
+	}
+
+	@Override
+	public int size()
+	{
+		return size;
+	}
+
+	@Override
+	public boolean isEmpty()
+	{
+		return size() == 0;
 	}
 	
 }

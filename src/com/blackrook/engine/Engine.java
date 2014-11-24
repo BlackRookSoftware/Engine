@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
@@ -29,11 +30,13 @@ import com.blackrook.commons.logging.driver.ConsoleLogger;
 import com.blackrook.commons.logging.driver.PrintStreamLogger;
 import com.blackrook.engine.annotation.Component;
 import com.blackrook.engine.annotation.ComponentConstructor;
-import com.blackrook.engine.annotation.PooledComponent;
-import com.blackrook.engine.annotation.ResourceComponent;
+import com.blackrook.engine.annotation.Pooled;
+import com.blackrook.engine.annotation.Resource;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
 import com.blackrook.engine.roles.EngineDevice;
+import com.blackrook.engine.roles.EngineInput;
+import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineListener;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EnginePoolable;
@@ -43,11 +46,11 @@ import com.blackrook.engine.roles.EngineUpdatable;
 import com.blackrook.engine.roles.EngineWindow;
 import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.fs.FSFile;
+import com.blackrook.fs.FSFileFilter;
 
 /**
  * The main engine, created as the centerpoint of the communication between components
  * or as a main mediator between system components.
- * TODO: Add updater stuff and state manager stuff.
  * @author Matthew Tropiano
  */
 public final class Engine
@@ -58,6 +61,10 @@ public final class Engine
 	private LoggingFactory loggingFactory;
 	/** Engine filesystem. */
 	private EngineFileSystem fileSystem;
+	/** Common window event receiver. */
+	private EngineInputEventReceiver inputEventReceiver; 
+	/** Common window event receiver. */
+	private EngineWindowEventReceiver windowEventReceiver; 
 
 	/** Engine singleton map. */
 	private HashMap<Class<?>, Object> singletons;
@@ -70,8 +77,10 @@ public final class Engine
 	
 	/** Engine listener. */
 	private Queue<EngineListener> listeners;
-	/** Engine message receiver. */
+	/** Engine message listeners. */
 	private Queue<EngineMessageListener> messageListeners;
+	/** Engine input listeners. */
+	private Queue<EngineInputListener> inputListeners;
 	/** Engine state manager. */
 	private EngineStateManager stateManager;
 	/** Engine update ticker. */
@@ -95,6 +104,7 @@ public final class Engine
 		resources = new HashMap<Class<?>, EngineResourceList<?>>();
 		listeners = new Queue<EngineListener>();
 		messageListeners = new Queue<EngineMessageListener>();
+		inputListeners = new Queue<EngineInputListener>();
 
 		// set up logging.
 		loggingFactory = new LoggingFactory();
@@ -107,11 +117,19 @@ public final class Engine
 
 		logger = getLogger(Engine.class);
 
-		consoleManager = createOrGetComponent(EngineConsoleManager.class, debugMode);
-		console = createOrGetComponent(EngineConsole.class, debugMode); 
+		// create console manager.
+		consoleManager = new EngineConsoleManager();
+		consoleManager.addEntries(EngineConsoleManager.class, debugMode);
 
+		// create console.
+		console = new EngineConsole(this, config, consoleManager);
+		consoleManager.addEntries(console, debugMode);
+		consoleManager.addEntries(new EngineCommon(this, console, consoleManager),  debugMode);
+		
 		stateManager = new EngineStateManager();
 		updateTicker = new EngineTicker(this, config);
+		
+		updateTicker.addUpdatable(stateManager);
 		
 		PrintStream ps;
 		try {
@@ -133,22 +151,37 @@ public final class Engine
 		
 		loggingFactory.addDriver(new LoggingDriver()
 		{
-			final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
 			
 			@Override
 			public void log(Date time, LogLevel level, String source, String message, Throwable throwable)
 			{
-				console.printfln("%s <%s> %s: %s", DATE_FORMAT.format(time), source, level, message);
+				console.printfln("[%s] <%s> %s: %s", DATE_FORMAT.format(time), source, level, message);
 			}
 		});
 
 		fileSystem = new EngineFileSystem(this, config);
-		singletons.put(EngineFileSystem.class, fileSystem);
 
 		// load resource definitions.
 		ArcheTextRoot resourceDefinitionRoot = loadResourceDefinitions(config.getResourceDefinitionFile());
 		
-		final EngineWindowEventReceiver windowEventReceiver = new EngineWindowEventReceiver()
+		inputEventReceiver = new EngineInputEventReceiver()
+		{
+			@Override
+			public void fireInputSet(int code, boolean set)
+			{
+				stateManager.onInputSet(code, set);
+			}
+
+			@Override
+			public void fireInputValue(int code, double value)
+			{
+				stateManager.onInputValue(code, value);
+			}
+		};
+		
+		// create event receiver.
+		windowEventReceiver = new EngineWindowEventReceiver()
 		{
 			@Override
 			public void fireRestore()
@@ -203,13 +236,13 @@ public final class Engine
 		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
 		{
-			if (componentClass.isAnnotationPresent(ResourceComponent.class))
+			if (componentClass.isAnnotationPresent(Resource.class))
 			{
 				if (!EngineResource.class.isAssignableFrom(componentClass))
 					throw new EngineSetupException("Found EngineResourceComponent annotation on a class that does not implement EngineResource.");
 				
 				Class<EngineResource> resourceClass = (Class<EngineResource>)componentClass;
-				ResourceComponent anno = componentClass.getAnnotation(ResourceComponent.class);
+				Resource anno = componentClass.getAnnotation(Resource.class);
 				String className = resourceClass.getSimpleName();
 				className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
 				String structName = Common.isEmpty(anno.value()) ? className : anno.value();
@@ -226,30 +259,22 @@ public final class Engine
 				
 				logger.infof("Created resource list. %s (count %d)", resourceClass.getSimpleName(), added);
 			}
-			else if (componentClass.isAnnotationPresent(PooledComponent.class))
-			{
-				if (!EnginePoolable.class.isAssignableFrom(componentClass))
-					throw new EngineSetupException("Found EnginePooledComponent annotation on a class that does not implement EnginePoolable.");
-				
-				Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
-				PooledComponent anno = componentClass.getAnnotation(PooledComponent.class);
-				pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
-				logger.infof("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
-			}
 			else if (componentClass.isAnnotationPresent(Component.class))
 			{
-				Object obj = createOrGetComponent(componentClass, debugMode);
-				if (obj instanceof EngineDevice)
-					devices.put(((EngineDevice)obj).getName(), (EngineDevice)obj);
-				if (obj instanceof EngineListener)
-					listeners.enqueue((EngineListener)obj);
-				if (obj instanceof EngineMessageListener)
-					messageListeners.enqueue((EngineMessageListener)obj);
-				if (obj instanceof EngineWindow)
-					((EngineWindow)obj).addWindowEventReceiver(windowEventReceiver);
-
-				if ((obj instanceof EngineUpdatable) && !(obj instanceof EngineState))
-					/* Add to updater */;
+				if (componentClass.isAnnotationPresent(Pooled.class))
+				{
+					if (!EnginePoolable.class.isAssignableFrom(componentClass))
+						throw new EngineSetupException("Found EnginePooledComponent annotation on a class that does not implement EnginePoolable.");
+					
+					Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
+					Pooled anno = componentClass.getAnnotation(Pooled.class);
+					pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
+					logger.infof("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
+				}
+				else
+				{
+					createOrGetComponent(componentClass, debugMode);
+				}
 			}
 		}
 
@@ -264,6 +289,8 @@ public final class Engine
 				logger.errorf("Failed starting device %s.", ed.getName());
 		}
 		
+		if (debugMode)
+			console.setVisible(true);
 	}
 
 	/**
@@ -346,6 +373,124 @@ public final class Engine
 	}
 
 	/**
+	 * Changes the current state by emptying the state 
+	 * stack and pushing new ones onto the stack by name.
+	 * Calls {@link EngineState#exit()} on each state popped and {@link EngineState#enter()} on each state pushed. 
+	 * @param states the states to push in the specified order.
+	 */
+	public void stateChange(EngineState ... states)
+	{
+		stateManager.change(states);
+	}
+
+	/**
+	 * Pushes new states onto the stack.
+	 * Calls {@link EngineState#enter()} on each state pushed. 
+	 * @param states the states to push in the specified order.
+	 * onto the stack, false if at least one was not.
+	 */
+	public void statePush(EngineState ... states)
+	{
+		stateManager.push(states);
+	}
+
+	/**
+	 * Convenience method for <code>popState(1)</code>.
+	 */
+	public void statePop()
+	{
+		stateManager.pop();
+	}
+
+	/**
+	 * Pops a bunch of game states off of the state stack.
+	 * Calls {@link EngineState#exit()} on each state popped.
+	 * @param stateCount the amount of states to pop.
+	 */
+	public void statePop(int stateCount)
+	{
+		stateManager.pop(stateCount);
+	}
+
+	/**
+	 * Retrieves a file from the system. Searches down the stack.
+	 * @param path	the file path.
+	 * @return		A reference to the file as an FSFile object, null if not found.
+	 */
+	public FSFile getFile(String path) throws IOException
+	{
+		return fileSystem.getFile(path);
+	}
+
+	/**
+	 * Retrieves all of the instances of a file from the system. Searches down the stack.
+	 * @param path	the file path.
+	 * @return A reference to the files as an FSFile array object. 
+	 * 	An empty array implies that no files were found.
+	 */
+	public FSFile[] getAllFileInstances(String path) throws IOException
+	{
+		return fileSystem.getAllFileInstances(path);
+	}
+
+	/**
+	 * Retrieves all of the recent instances of a file from the system. Searches down the stack.
+	 * @return A reference to the files as an FSFile array object.
+	 */
+	public FSFile[] getAllFiles() throws IOException
+	{
+		return fileSystem.getAllFiles();
+	}
+	
+	/**
+	 * Retrieves all of the recent instances of the files within this system that pass the filter test as FSFile objects.
+	 * @param filter the file filter to use.
+	 * @return A reference to the files as an FSFile array object.
+	 */
+	public FSFile[] getAllFiles(FSFileFilter filter) throws IOException
+	{
+		return fileSystem.getAllFiles(filter);
+	}
+	
+	/**
+	 * Retrieves all of the recent instances of the files within this system.
+	 * @param path the file path. Must be a directory.
+	 * @return A reference to the files as an FSFile array object.
+	 */
+	public FSFile[] getAllFilesInDir(String path) throws IOException
+	{
+		return fileSystem.getAllFilesInDir(path);
+	}
+	
+	/**
+	 * Retrieves all of the recent instances of the files within this system that pass the filter test as FSFile objects.
+	 * @param path the file path. Must be a directory.
+	 * @param filter the file filter to use.
+	 * @return A reference to the files as an FSFile array object.
+	 */
+	public FSFile[] getAllFilesInDir(String path, FSFileFilter filter) throws IOException
+	{
+		return fileSystem.getAllFilesInDir(path, filter);
+	}
+	
+	/**
+	 * Creates a file in this system using the name and path provided.
+	 * @return	an acceptable OutputStream for filling the file with data, or null if no stream can be made.
+	 */
+	public OutputStream createFile(String path) throws IOException
+	{
+		return fileSystem.createFile(path);
+	}
+
+	/**
+	 * Toggle console visibility.
+	 */
+	public void toggleConsole()
+	{
+		console.setVisible(console.isVisible());
+	}
+
+	/**
 	 * Initiates engine shutdown.
 	 * <p>All listeners have {@link EngineListener#onShutDown()} called on them, all
 	 * devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
@@ -366,7 +511,7 @@ public final class Engine
 		}
 		System.exit(status);
 	}
-	
+
 	/**
 	 * Creates a new component for a class and using one of its constructors.
 	 * @param clazz the class to instantiate.
@@ -414,21 +559,62 @@ public final class Engine
 		logger.debugf("Created component. %s", clazz.getSimpleName());
 		
 		// check if device.
+
 		if (EngineDevice.class.isAssignableFrom(clazz))
 		{
-			EngineDevice device = (EngineDevice)object;
-			devices.put(device.getName(), device);
+			EngineDevice obj = (EngineDevice)object;
+			devices.put(obj.getName(), obj);
 			logger.debugf("%s added to devices.", clazz.getSimpleName());
 		}
 	
 		// check if message listener.
 		if (EngineMessageListener.class.isAssignableFrom(clazz))
 		{
-			EngineMessageListener listener = (EngineMessageListener)object;
-			messageListeners.add(listener);
+			EngineMessageListener obj = (EngineMessageListener)object;
+			messageListeners.add(obj);
 			logger.debugf("%s added to message listeners.", clazz.getSimpleName());
 		}
+
+		// check if engine listener.
+		if (EngineListener.class.isAssignableFrom(clazz))
+		{
+			EngineListener obj = (EngineListener)object;
+			listeners.enqueue(obj);
+			logger.debugf("%s added to engine listeners.", clazz.getSimpleName());
+		}
+
+		// check if input listener.
+		if (EngineInputListener.class.isAssignableFrom(clazz))
+		{
+			EngineInputListener obj = (EngineInputListener)object;
+			inputListeners.add(obj);
+			logger.debugf("%s added to input listeners.", clazz.getSimpleName());
+		}
 		
+		// check if update listener.
+		if (EngineUpdatable.class.isAssignableFrom(clazz))
+		{
+			EngineUpdatable obj = (EngineUpdatable)object;
+			updateTicker.addUpdatable(obj);
+			logger.debugf("%s added to updatables.", clazz.getSimpleName());
+		}
+
+		// check if engine window.
+		if (EngineWindow.class.isAssignableFrom(clazz))
+		{
+			EngineWindow obj = (EngineWindow)object;
+			obj.addWindowEventReceiver(windowEventReceiver);
+			logger.debugf("%s was passed a window event receiver.", clazz.getSimpleName());
+		}
+				
+		// check if engine input.
+		if (EngineInput.class.isAssignableFrom(clazz))
+		{
+			EngineInput obj = (EngineInput)object;
+			obj.addInputReceiver(inputEventReceiver);
+			logger.debugf("%s was passed an input event receiver.", clazz.getSimpleName());
+		}
+				
 		return object;
 	}
 
@@ -558,8 +744,7 @@ public final class Engine
 	{
 		return
 			clazz.isAnnotationPresent(Component.class)
-			|| clazz.isAnnotationPresent(PooledComponent.class)
-			|| clazz.isAnnotationPresent(ResourceComponent.class)
+			|| clazz.isAnnotationPresent(Resource.class)
 			;
 	}
 

@@ -29,10 +29,16 @@ public interface EngineConfig
 	public String getPackageRoot();
 
 	/**
+	 * Returns the directory path for storing global configuration.
+	 * NOTE: This is OUTSIDE of the file system path.  
+	 */
+	public String getGlobalSettingsPath();
+
+	/**
 	 * Returns the directory path for storing user configuration.
 	 * NOTE: This is OUTSIDE of the file system path.  
 	 */
-	public String getSettingsPath();
+	public String getUserSettingsPath();
 
 	/**
 	 * Returns the file to log console output to (other than the console itself).

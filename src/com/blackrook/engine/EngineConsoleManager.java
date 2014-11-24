@@ -29,10 +29,12 @@ public class EngineConsoleManager
 
 	/** Mapping of commands to invocation targets. */
 	private CaseInsensitiveHashMap<CCMDMapping> commandMap;
+	/** Longest command length. */
+	private int commandLongestLength;
 	/** Mapping of variables to variable fields/methods. */
 	private CaseInsensitiveHashMap<CVARMapping> variableMap;
-	/** Mapping of names to command aliases. */
-	private CaseInsensitiveHashMap<String> aliasMap;
+	/** Longest variable length. */
+	private int variableLongestLength;
 
 	/**
 	 * Default constructor.
@@ -41,8 +43,9 @@ public class EngineConsoleManager
 	{
 		commandTrie = new CaseInsensitiveTrie();
 		commandMap = new CaseInsensitiveHashMap<CCMDMapping>();
+		commandLongestLength = 0;
 		variableMap = new CaseInsensitiveHashMap<CVARMapping>();
-		aliasMap = new CaseInsensitiveHashMap<String>();
+		variableLongestLength = 0;
 	}
 	
 	/**
@@ -73,6 +76,7 @@ public class EngineConsoleManager
 			
 			commandMap.put(cmdname, new CCMDMapping(instance, method, anno.description(), anno.usage()));
 			commandTrie.put(cmdname);
+			commandLongestLength = Math.max(commandLongestLength, cmdname.length());
 		}
 
 		// add variables.
@@ -93,6 +97,7 @@ public class EngineConsoleManager
 			}
 			
 			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), field));
+			variableLongestLength = Math.max(variableLongestLength, varname.length());
 		}
 		
 		for (ObjectPair<String, MethodSignature> pair : profile.getGetterMethods())
@@ -117,6 +122,7 @@ public class EngineConsoleManager
 			}
 			
 			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), method));
+			variableLongestLength = Math.max(variableLongestLength, varname.length());
 		}
 		
 		for (ObjectPair<String, MethodSignature> pair : profile.getSetterMethods())
@@ -289,36 +295,16 @@ public class EngineConsoleManager
 			return commandMap.get(name).call(args);
 	}
 	
-	/**
-	 * Checks if a command alias exists.
-	 * @param name the name of the command.
-	 * @return true if it exists, false if not.
-	 */
-	public boolean containsAlias(String name)
+	/** Returns the length of the command with the longest name. */
+	public int getCommandLongestLength()
 	{
-		return aliasMap.containsKey(name);
+		return commandLongestLength;
 	}
 
-	/**
-	 * Returns all alias names in an array.
-	 */
-	public String[] getAliasNames()
+	/** Returns the length of the variable with the longest name. */
+	public int getVariableLongestLength()
 	{
-		String[] out = new String[aliasMap.size()];
-		Iterator<String> it = aliasMap.keyIterator();
-		int i = 0;
-		while (it.hasNext())
-			out[i++] = it.next();
-		return out;
-	}
-
-	/**
-	 * Gets a command alias by name.
-	 * @param name the name of the command.
-	 */
-	public String getAlias(String name)
-	{
-		return aliasMap.get(name);
+		return variableLongestLength;
 	}
 
 	/**
@@ -414,7 +400,7 @@ public class EngineConsoleManager
 			this.archived = archived;
 			this.getter = getter;
 			this.setter = null;
-			type = field.getType();
+			type = getter.getReturnType();
 		}
 
 		CVARMapping(Object instance, String descripton, boolean archived, Method getter, Method setter)
@@ -424,7 +410,7 @@ public class EngineConsoleManager
 			this.archived = archived;
 			this.getter = getter;
 			this.setter = setter;
-			type = field.getType();
+			type = getter.getReturnType();
 		}
 
 		/**

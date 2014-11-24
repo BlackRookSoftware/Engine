@@ -15,29 +15,23 @@
 	<property name="S" value="${path.separator}" />
 
 	<!-- Project Libs -->
-	<property name="gluegen.lib.jar" value="${lib.base}/GlueGen2/jar/gluegen-rt.jar" />
-	<property name="jogl.lib.jar" value="${lib.base}/JOGL2/jar/jogl-all.jar" />
-	<property name="joal.lib.jar" value="${lib.base}/JOAL2/jar/joal.jar" />
-	<property name="jinput.lib.jar" value="${lib.base}/JInput/jar/jinput.jar" />
 	<property name="common.lib" value="${dev.base}/Common/bin" />
 	<property name="common.io.lib" value="${dev.base}/CommonIO/bin"/>
 	<property name="common.lang.lib" value="${dev.base}/CommonLang/bin" />
-	<property name="dl.lib" value="${dev.base}/DL/bin"/>
 	<property name="fs.lib" value="${dev.base}/FileSystem/bin"/>
-	<property name="brogla.lib" value="${dev.base}/GraphicsOGL/bin"/>
-	<property name="brogla.util.lib" value="${dev.base}/GraphicsOGLUtil/bin"/>
-	<property name="brogla.gui.lib" value="${dev.base}/GraphicsOGLGUI/bin"/>
-	<property name="broala.lib" value="${dev.base}/SoundOAL/bin"/>
-	<property name="broala.util.lib" value="${dev.base}/SoundOALUtil/bin"/>
-	<property name="brophy2d.lib" value="${dev.base}/Physics2D/bin"/>
-	<property name="brinput.lib" value="${dev.base}/Input/bin"/>
+	<property name="archetext.lib" value="${dev.base}/ArcheText/bin"/>
 
 	<!-- Project Info -->
-	<property name="project.archive" value="blackrook-archetext" />
-	<property name="project.javadoc.title" value="Black Rook ArcheText" />
-	<property name="project.classpath" value="${common.lib}${S}${common.lang.lib}" />
+	<property name="project.archive" value="blackrook-engine" />
+	<property name="project.javadoc.title" value="Black Rook Engine" />
+	<property name="project.classpath" value="${common.lib}${S}${common.io.lib}${S}${common.lang.lib}${S}${fs.lib}${S}${archetext.lib}" />
 	<property name="project.javadoc.packages" value="
-		"
+		com.blackrook.engine,
+		com.blackrook.engine.annotation,
+		com.blackrook.engine.exception,
+		com.blackrook.engine.roles,
+		com.blackrook.engine.struct
+	"
 	/>
 	
 	<import file="build-import.xml" />
@@ -61,6 +55,7 @@
         	notree="false"
     		>
             <link href="http://blackrooksoftware.com/docs/common/"/>
+            <link href="http://blackrooksoftware.com/docs/commonio/"/>
             <link href="http://blackrooksoftware.com/docs/commonlang/"/>
             <link href="http://download.oracle.com/javase/7/docs/api/"/>
         </javadoc>

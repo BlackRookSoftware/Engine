@@ -17,7 +17,7 @@ import com.blackrook.engine.EnginePool.PoolPolicy;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface PooledComponent
+public @interface Pooled
 {
 	/**
 	 * This number is the initial amount of elements in the pool.

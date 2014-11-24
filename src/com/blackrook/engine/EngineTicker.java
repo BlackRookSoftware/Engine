@@ -18,7 +18,6 @@ import com.blackrook.engine.roles.EngineUpdatable;
 
 /**
  * An update thread class that updates all updatable objects on a set interval.
- * TODO: Add mechanism for adding the {@link EngineUpdatable} objects.
  * @author Matthew Tropiano
  */
 public class EngineTicker
@@ -79,10 +78,18 @@ public class EngineTicker
 		logger.info("Ticker stopped.");
 	}
 	
+	/** Adds an updatable. */
+	public void addUpdatable(EngineUpdatable updatable)
+	{
+		updatables.add(updatable);
+	}
+	
 	// updates all attached updatables.
 	private void update(long tick, long currentNanos)
 	{
-		// TODO: Finish.
+		updatableIterator.reset();
+		while (updatableIterator.hasNext())
+			updatableIterator.next().update(tick, currentNanos);
 	}
 
 	// Update Ticker

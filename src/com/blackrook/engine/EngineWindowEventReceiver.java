@@ -5,7 +5,10 @@ import com.blackrook.engine.roles.EngineWindow;
 
 /**
  * This class is designed to be the class that implementors of {@link EngineWindow}
- * use to fire window events to the engine.
+ * use to fire window events to the engine. 
+ * <p>
+ * This is because there might be different implementations of windowing toolkits, 
+ * and the engine would still need to have a consistent way to hear window events. 
  * <p>
  * Basically, if a {@link Component} is supposed to spawn the main window of the
  * application, it should fire all of its main window events through this object so

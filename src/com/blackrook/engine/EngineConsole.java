@@ -4,6 +4,9 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -24,15 +27,12 @@ import com.blackrook.commons.Common;
 import com.blackrook.commons.CommonTokenizer;
 import com.blackrook.commons.list.List;
 import com.blackrook.engine.EngineConsoleManager.CCMDMapping;
-import com.blackrook.engine.annotation.Component;
-import com.blackrook.engine.annotation.ComponentConstructor;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 
 /**
  * The console itself.
  * @author Matthew Tropiano
  */
-@Component
 public class EngineConsole extends JFrame
 {
 	private static final long serialVersionUID = 3854911727580406755L;
@@ -58,12 +58,11 @@ public class EngineConsole extends JFrame
 	 * @param engine the engine instance.
 	 * @param config the configuration.
 	 */
-	@ComponentConstructor
-	public EngineConsole(Engine engine, EngineConfig config, EngineConsoleManager manager)
+	EngineConsole(Engine engine, EngineConfig config, EngineConsoleManager manager)
 	{
 		super();
 		
-		String windowTitle = config.getApplicationName() + (config.getApplicationVersion() == null ? "" : " v"+config.getApplicationVersion());
+		String windowTitle = config.getApplicationName() + (config.getApplicationVersion() == null ? "" : " v"+config.getApplicationVersion()) + " Console";
 		setTitle(windowTitle);
 		setIconImage(config.getApplicationIcon());
 		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -88,7 +87,10 @@ public class EngineConsole extends JFrame
 		base.add(entryField, BorderLayout.SOUTH);
 		
 		contentPane.add(base, BorderLayout.CENTER);
-		contentPane.setPreferredSize(new Dimension(640, 480));
+		
+		Rectangle maxwin = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+		
+		contentPane.setPreferredSize(new Dimension(maxwin.width/2, maxwin.height/2));
 		
 		addWindowFocusListener(new WindowFocusListener()
 		{
@@ -115,6 +117,7 @@ public class EngineConsole extends JFrame
 		out.setEditable(false);
 		out.setDisabledTextColor(Color.BLACK);
 		out.setLineWrap(true);
+		out.setFont(new Font("Courier", Font.PLAIN, 12));
 		return out;
 	}
 	
@@ -323,8 +326,6 @@ public class EngineConsole extends JFrame
 			
 			if (consoleManager.containsCommand(cmd))
 				out = consoleManager.callCommand(cmd, (Object[])args);
-			else if (consoleManager.containsAlias(cmd))
-				parseCommand(consoleManager.getAlias(cmd));
 			else if (consoleManager.containsVariable(cmd))
 			{
 				if (args.length == 0)
@@ -370,6 +371,7 @@ public class EngineConsole extends JFrame
 	public void print(Object object)
 	{
 		textArea.append(String.valueOf(object));
+		textArea.setCaretPosition(textArea.getText().length());
 	}
 	
 	/**
@@ -380,6 +382,7 @@ public class EngineConsole extends JFrame
 	public void printf(String formatting, Object ... args)
 	{
 		textArea.append(String.format(formatting, args));
+		textArea.setCaretPosition(textArea.getText().length());
 	}
 	
 	/**

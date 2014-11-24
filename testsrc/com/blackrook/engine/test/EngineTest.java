@@ -1,7 +1,6 @@
 package com.blackrook.engine.test;
 
 import java.awt.Image;
-import java.util.Arrays;
 
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
@@ -25,37 +24,38 @@ public final class EngineTest
 			}
 
 			@Override
-			public String getApplicationName() {
+			public String getApplicationName()
+			{
 				return "Test";
 			}
 
 			@Override
-			public String getApplicationVersion() {
+			public String getApplicationVersion()
+			{
 				return "0.9";
 			}
 
 			@Override
-			public Image getApplicationIcon() {
+			public Image getApplicationIcon() 
+			{
 				return null;
 			}
 
 			@Override
-			public String getFileSystemArchiveExtension() {
+			public String getFileSystemArchiveExtension() 
+			{
 				return null;
 			}
 
 			@Override
-			public String[] getFileSystemStack() {
+			public String[] getFileSystemStack() 
+			{
 				return new String[]{"base"};
 			}
 
 			@Override
-			public String getSettingsPath() {
-				return null;
-			}
-
-			@Override
-			public String getLogFilePath() {
+			public String getLogFilePath()
+			{
 				return "test.log";
 			}
 
@@ -69,6 +69,18 @@ public final class EngineTest
 			public int getUpdatesPerSecond()
 			{
 				return 30;
+			}
+
+			@Override
+			public String getGlobalSettingsPath()
+			{
+				return null;
+			}
+
+			@Override
+			public String getUserSettingsPath()
+			{
+				return null;
 			}
 		});
 		

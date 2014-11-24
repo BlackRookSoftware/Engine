@@ -14,7 +14,7 @@ import com.blackrook.engine.roles.EngineResource;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface ResourceComponent
+public @interface Resource
 {
 	/** The struct type associated with the class. */
 	String value() default "";
