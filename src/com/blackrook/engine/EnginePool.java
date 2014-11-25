@@ -185,8 +185,7 @@ public class EnginePool<P extends EnginePoolable>
 	
 	/**
 	 * Searches for the next available object in the pool.
-	 * @param considerExpendable
-	 * @return
+	 * @param considerExpendable if true, consider expendable objects as candidates for return.
 	 */
 	@SuppressWarnings("unchecked")
 	private P searchForAvailable(boolean considerExpendable)
