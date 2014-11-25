@@ -38,6 +38,7 @@ import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInput;
 import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineListener;
+import com.blackrook.engine.roles.EngineMain;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.roles.EngineResource;
@@ -233,6 +234,8 @@ public final class Engine
 			}
 		};
 		
+		Queue<EngineMain> mainComponents = new Queue<EngineMain>();
+		
 		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
 		{
@@ -273,7 +276,9 @@ public final class Engine
 				}
 				else
 				{
-					createOrGetComponent(componentClass, debugMode);
+					Object component = createOrGetComponent(componentClass, debugMode);
+					if (EngineMain.class.isAssignableFrom(componentClass))
+						mainComponents.enqueue((EngineMain)component);
 				}
 			}
 		}
@@ -288,6 +293,14 @@ public final class Engine
 			else
 				logger.errorf("Failed starting device %s.", ed.getName());
 		}
+		
+		logger.info("Invoking main methods.");
+		// invoke start on stuff.
+		while (!mainComponents.isEmpty())
+			mainComponents.dequeue().start();
+		
+		updateTicker.start();
+		logger.info("Started update ticker.");
 		
 		if (debugMode)
 			console.setVisible(true);
@@ -534,7 +547,9 @@ public final class Engine
 		T object = null;
 		
 		if (constructor == null)
+		{
 			object = Reflect.create(clazz);
+		}
 		else
 		{
 			Class<?>[] types = constructor.getParameterTypes();
