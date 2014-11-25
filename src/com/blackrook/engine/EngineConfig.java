@@ -28,7 +28,7 @@ public interface EngineConfig
 	/**
 	 * Returns the package root name for scanning stuff in the engine application. 
 	 */
-	public String getPackageRoot();
+	public String[] getPackageRoot();
 
 	/**
 	 * Returns the directory path for storing global configuration.

@@ -734,10 +734,10 @@ public final class Engine
 		
 		// Scan for singletons to instantiate.
 		Hash<String> packageMap = new Hash<String>();
-		for (String className : Reflect.getClasses(Engine.class.getPackage().getName()+".components"))
-			packageMap.put(className);
-		for (String className : Reflect.getClasses(config.getPackageRoot()))
-			packageMap.put(className);
+
+		for (String root : config.getPackageRoot())
+			for (String className : Reflect.getClasses(root))
+				packageMap.put(className);
 		
 		for (String className : packageMap)
 		{

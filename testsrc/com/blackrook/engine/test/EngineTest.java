@@ -13,9 +13,9 @@ public final class EngineTest
 		Engine e = new Engine(new EngineConfig()
 		{
 			@Override
-			public String getPackageRoot()
+			public String[] getPackageRoot()
 			{
-				return "com.blackrook.engine.test";
+				return new String[]{"com.blackrook.engine.test"};
 			}
 
 			@Override
