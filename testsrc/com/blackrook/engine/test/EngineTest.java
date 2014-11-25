@@ -2,6 +2,7 @@ package com.blackrook.engine.test;
 
 import java.awt.Image;
 
+import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
 
@@ -81,6 +82,12 @@ public final class EngineTest
 			public String getUserSettingsPath()
 			{
 				return null;
+			}
+
+			@Override
+			public LogLevel getLogLevel()
+			{
+				return LogLevel.INFO;
 			}
 		});
 		

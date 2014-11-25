@@ -109,6 +109,7 @@ public final class Engine
 
 		// set up logging.
 		loggingFactory = new LoggingFactory();
+		loggingFactory.setLoggingLevel(config.getLogLevel() != null ? config.getLogLevel() : LogLevel.DEBUG);
 		loggingFactory.addDriver(new ConsoleLogger());
 
 		boolean debugMode = config.getDebugMode();
@@ -277,6 +278,7 @@ public final class Engine
 				else
 				{
 					Object component = createOrGetComponent(componentClass, debugMode);
+					logger.infof("Created component. %s", componentClass.getSimpleName());
 					if (EngineMain.class.isAssignableFrom(componentClass))
 						mainComponents.enqueue((EngineMain)component);
 				}
@@ -571,10 +573,8 @@ public final class Engine
 			return object;
 		
 		consoleManager.addEntries(object, debugMode);
-		logger.debugf("Created component. %s", clazz.getSimpleName());
 		
 		// check if device.
-
 		if (EngineDevice.class.isAssignableFrom(clazz))
 		{
 			EngineDevice obj = (EngineDevice)object;

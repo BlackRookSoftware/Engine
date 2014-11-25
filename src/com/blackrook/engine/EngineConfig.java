@@ -2,6 +2,8 @@ package com.blackrook.engine;
 
 import java.awt.Image;
 
+import com.blackrook.commons.logging.LoggingFactory.LogLevel;
+
 /**
  * Configuration for the Engine, which declares basic principles for its application setup.
  * @author Matthew Tropiano
@@ -45,6 +47,11 @@ public interface EngineConfig
 	 * NOTE: This is OUTSIDE of the file system path.  
 	 */
 	public String getLogFilePath();
+
+	/**
+	 * Returns the logging level for the log.
+	 */
+	public LogLevel getLogLevel();
 
 	/**
 	 * Returns the file system extension for archive systems.

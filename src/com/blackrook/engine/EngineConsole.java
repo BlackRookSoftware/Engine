@@ -329,11 +329,11 @@ public class EngineConsole extends JFrame
 			else if (consoleManager.containsVariable(cmd))
 			{
 				if (args.length == 0)
-					println(cmd + " is " + String.valueOf(consoleManager.getVariable(cmd)));
+					println(cmd + " is " + getVariableRepresentation(consoleManager.getVariable(cmd)));
 				else
 				{
 					consoleManager.setVariable(cmd, args[0]);
-					println(cmd + " set to " + String.valueOf(consoleManager.getVariable(cmd)));
+					println(cmd + " set to " + getVariableRepresentation(consoleManager.getVariable(cmd)));
 				}
 			}
 			else
@@ -363,6 +363,15 @@ public class EngineConsole extends JFrame
 	}
 	
 	
+	private String getVariableRepresentation(Object obj)
+	{
+		if (obj == null)
+			return "[null]";
+		else if (obj instanceof CharSequence)
+			return '"' + String.valueOf(obj) + '"';
+		else
+			return String.valueOf(obj);
+	}
 	
 	/**
 	 * Prints a message to the console.
