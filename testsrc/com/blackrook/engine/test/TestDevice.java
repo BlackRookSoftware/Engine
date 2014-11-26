@@ -18,7 +18,7 @@ public class TestDevice implements EngineDevice
 	}
 	
 	@Override
-	public String getName()
+	public String getDeviceName()
 	{
 		return "TestDevice";
 	}

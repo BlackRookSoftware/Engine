@@ -289,11 +289,11 @@ public final class Engine
 		for (ObjectPair<?, EngineDevice> device : devices)
 		{
 			EngineDevice ed = device.getValue(); 
-			logger.infof("Starting device %s.", ed.getName());
+			logger.infof("Starting device %s.", ed.getDeviceName());
 			if (ed.create())
-				logger.infof("Finished starting device %s.", ed.getName());
+				logger.infof("Finished starting device %s.", ed.getDeviceName());
 			else
-				logger.errorf("Failed starting device %s.", ed.getName());
+				logger.errorf("Failed starting device %s.", ed.getDeviceName());
 		}
 
 		// call console commands.
@@ -528,11 +528,11 @@ public final class Engine
 		for (ObjectPair<?, EngineDevice> device : devices)
 		{
 			EngineDevice ed = device.getValue(); 
-			logger.infof("Destroying device %s.", ed.getName());
+			logger.infof("Destroying device %s.", ed.getDeviceName());
 			if (ed.destroy())
-				logger.infof("Finished destroying device %s.", ed.getName());
+				logger.infof("Finished destroying device %s.", ed.getDeviceName());
 			else
-				logger.errorf("Failed destroying device %s.", ed.getName());
+				logger.errorf("Failed destroying device %s.", ed.getDeviceName());
 		}
 		System.exit(status);
 	}
@@ -588,7 +588,7 @@ public final class Engine
 		if (EngineDevice.class.isAssignableFrom(clazz))
 		{
 			EngineDevice obj = (EngineDevice)object;
-			devices.put(obj.getName(), obj);
+			devices.put(obj.getDeviceName(), obj);
 			logger.debugf("%s added to devices.", clazz.getSimpleName());
 		}
 	
@@ -672,7 +672,7 @@ public final class Engine
 			}
 			else
 			{
-				logger.infof("Created device %s.", device.getName());
+				logger.infof("Created device %s.", device.getDeviceName());
 				return true;
 			}
 		}
@@ -695,7 +695,7 @@ public final class Engine
 			}
 			else
 			{
-				logger.infof("Destroyed device %s.", device.getName());
+				logger.infof("Destroyed device %s.", device.getDeviceName());
 				return true;
 			}
 		}

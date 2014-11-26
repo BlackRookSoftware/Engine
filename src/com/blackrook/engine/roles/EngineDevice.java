@@ -11,7 +11,7 @@ public interface EngineDevice
 	 * Returns a friendlier name for this device.
 	 * This cannot return null.
 	 */
-	public String getName();
+	public String getDeviceName();
 	
 	/**
 	 * Returns true if this device was "created" and can be destroyed.
