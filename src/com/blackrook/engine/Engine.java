@@ -523,6 +523,11 @@ public final class Engine
 	public void shutDown(int status)
 	{
 		logger.infof("Shutdown initiated.");
+
+		logger.infof("Stopping ticker...");
+		updateTicker.stop();
+		
+		logger.infof("Notifying listeners...");
 		for (EngineListener listener : listeners)
 			listener.onShutDown();
 		for (ObjectPair<?, EngineDevice> device : devices)
