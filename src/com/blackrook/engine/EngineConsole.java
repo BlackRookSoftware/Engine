@@ -240,7 +240,7 @@ public class EngineConsole extends JFrame
 	/**
 	 * Sends a command.
 	 */
-	private void parseCommand(String commandString)
+	void parseCommand(String commandString)
 	{
 		char[] cmdchars = commandString.toCharArray();
 		StringBuilder sb = new StringBuilder();

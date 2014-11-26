@@ -82,4 +82,9 @@ public interface EngineConfig
 	 */
 	public boolean getDebugMode();
 
+	/**
+	 * Returns a list of console commands to execute after startup. 
+	 */
+	public String[] getConsoleCommandsToExecute();
+
 }

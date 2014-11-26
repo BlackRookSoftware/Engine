@@ -295,12 +295,22 @@ public final class Engine
 			else
 				logger.errorf("Failed starting device %s.", ed.getName());
 		}
+
+		// call console commands.
+		if (!Common.isEmpty(config.getConsoleCommandsToExecute()))
+		{
+			logger.info("Calling queued console commands...");
+			for (String command : config.getConsoleCommandsToExecute())
+				console.parseCommand(command);
+		}
 		
+		// invokes main methods.
 		logger.info("Invoking main methods.");
 		// invoke start on stuff.
 		while (!mainComponents.isEmpty())
 			mainComponents.dequeue().start();
 		
+		// start ticker.
 		updateTicker.start();
 		logger.info("Started update ticker.");
 		

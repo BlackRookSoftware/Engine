@@ -89,6 +89,12 @@ public final class EngineTest
 			{
 				return LogLevel.INFO;
 			}
+
+			@Override
+			public String[] getConsoleCommandsToExecute()
+			{
+				return null;
+			}
 		});
 		
 	}
