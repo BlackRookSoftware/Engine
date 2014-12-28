@@ -43,6 +43,20 @@ public interface EngineConfig
 	public String getUserSettingsPath();
 
 	/**
+	 * Returns the file off of the global directory path for storing/reading archived variables.
+	 * If null, saves/reads nothing.
+	 * @see #getGlobalSettingsPath()
+	 */
+	public String getGlobalVariablesPath();
+
+	/**
+	 * Returns the file off of the user directory path for storing/reading archived variables.
+	 * If null, saves/reads nothing.
+	 * @see #getUserSettingsPath()
+	 */
+	public String getUserVariablesPath();
+
+	/**
 	 * Returns the file to log console output to (other than the console itself).
 	 * NOTE: This is OUTSIDE of the file system path.  
 	 */

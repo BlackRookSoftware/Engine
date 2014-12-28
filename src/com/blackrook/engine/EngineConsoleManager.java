@@ -96,7 +96,7 @@ public class EngineConsoleManager
 					throw new ConsoleSetupException("Variable \""+varname+"\" already declared in setter "+declaring.getter.toGenericString());
 			}
 			
-			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), field));
+			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), anno.global(), field));
 			variableLongestLength = Math.max(variableLongestLength, varname.length());
 		}
 		
@@ -121,7 +121,7 @@ public class EngineConsoleManager
 					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by getter "+declaring.getter.toGenericString());
 			}
 			
-			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), method));
+			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), anno.global(), method));
 			variableLongestLength = Math.max(variableLongestLength, varname.length());
 		}
 		
@@ -182,6 +182,26 @@ public class EngineConsoleManager
 		int i = 0;
 		while (it.hasNext())
 			out[i++] = it.next();
+		return out;
+	}
+
+	/**
+	 * Returns all variable names in an array according to some.
+	 */
+	public String[] getVariableNames(boolean archived, boolean global)
+	{
+		List<String> outList = new List<>();
+		Iterator<ObjectPair<String, CVARMapping>> it = variableMap.iterator();
+		while (it.hasNext())
+		{
+			ObjectPair<String, CVARMapping> pair = it.next();
+			String name = pair.getKey();
+			CVARMapping mapping = pair.getValue();
+			if (mapping.archived == archived && mapping.global == global)
+				outList.add(name);
+		}
+		String[] out = new String[outList.size()];
+		outList.toArray(out);
 		return out;
 	}
 
@@ -373,6 +393,8 @@ public class EngineConsoleManager
 		String description;
 		/** Archived? */
 		boolean archived;
+		/** Global? */
+		boolean global;
 		
 		/** Field to change. */
 		Field field;
@@ -384,30 +406,33 @@ public class EngineConsoleManager
 		/** Type to set. */
 		Class<?> type;
 		
-		CVARMapping(Object instance, String descripton, boolean archived, Field field)
+		CVARMapping(Object instance, String descripton, boolean archived, boolean global, Field field)
 		{
 			this.instance = instance;
 			this.description = descripton;
 			this.archived = archived;
+			this.global = global;
 			this.field = field;
 			type = field.getType();
 		}
 		
-		CVARMapping(Object instance, String descripton, boolean archived, Method getter)
+		CVARMapping(Object instance, String descripton, boolean archived, boolean global, Method getter)
 		{
 			this.instance = instance;
 			this.description = descripton;
 			this.archived = archived;
+			this.global = global;
 			this.getter = getter;
 			this.setter = null;
 			type = getter.getReturnType();
 		}
 
-		CVARMapping(Object instance, String descripton, boolean archived, Method getter, Method setter)
+		CVARMapping(Object instance, String descripton, boolean archived, boolean global, Method getter, Method setter)
 		{
 			this.instance = instance;
 			this.description = descripton;
 			this.archived = archived;
+			this.global = global;
 			this.getter = getter;
 			this.setter = setter;
 			type = getter.getReturnType();
@@ -429,6 +454,14 @@ public class EngineConsoleManager
 			return archived;
 		}
 
+		/**
+		 * Gets if this variable is to stored/read from global.
+		 */
+		public boolean isGlobal()
+		{
+			return global;
+		}
+		
 		/**
 		 * Gets if this variable is to be archived.
 		 */

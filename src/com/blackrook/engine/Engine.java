@@ -1,6 +1,8 @@
 package com.blackrook.engine;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,7 +11,9 @@ import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.Properties;
 
 import com.blackrook.archetext.ArcheTextIncluder;
 import com.blackrook.archetext.ArcheTextObject;
@@ -60,6 +64,8 @@ public final class Engine
 	private Logger logger;
 	/** Engine logging factory. */
 	private LoggingFactory loggingFactory;
+	/** Engine config. */
+	private EngineConfig config;
 	/** Engine filesystem. */
 	private EngineFileSystem fileSystem;
 	/** Common window event receiver. */
@@ -100,6 +106,8 @@ public final class Engine
 	@SuppressWarnings("unchecked")
 	public Engine(EngineConfig config)
 	{
+		this.config = config;
+		
 		singletons = new HashMap<Class<?>, Object>();
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
@@ -285,6 +293,10 @@ public final class Engine
 				}
 			}
 		}
+
+		logger.infof("Reading settings...");
+		readGlobalVariables(config.getGlobalVariablesPath());
+		readUserVariables(config.getUserVariablesPath());
 
 		// Starts the devices.
 		for (ObjectPair<?, EngineDevice> device : devices)
@@ -500,12 +512,242 @@ public final class Engine
 	}
 	
 	/**
-	 * Creates a file in this system using the name and path provided.
+	 * Creates a file in the filesystem stack system using the name and path provided.
 	 * @return	an acceptable OutputStream for filling the file with data, or null if no stream can be made.
 	 */
-	public OutputStream createFile(String path) throws IOException
+	public OutputStream createFilesystemFile(String path) throws IOException
 	{
 		return fileSystem.createFile(path);
+	}
+
+	/**
+	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open OutputStream for writing to the file.
+	 * @see EngineConfig#getGlobalSettingsPath()
+	 */
+	public OutputStream createGlobalSettingFile(String path) throws IOException
+	{
+		String fullPath = getOutPath(config.getGlobalSettingsPath(), path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Creating global setting path \"%s\"...", fullPath);
+		if (!Common.createPathForFile(fullPath))
+			return null;
+		OutputStream out = new FileOutputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Creates a new file off of the user settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open OutputStream for writing to the file.
+	 * @see EngineConfig#getUserSettingsPath()
+	 */
+	public OutputStream createUserSettingFile(String path) throws IOException
+	{
+		String fullPath = getOutPath(config.getUserSettingsPath(), path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Creating user setting path \"%s\"...", fullPath);
+		if (!Common.createPathForFile(fullPath))
+			return null;
+		OutputStream out = new FileOutputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open InputStream for reading from the file.
+	 * @see EngineConfig#getGlobalSettingsPath()
+	 */
+	public InputStream openGlobalSettingFile(String path) throws IOException
+	{
+		String fullPath = getOutPath(config.getGlobalSettingsPath(), path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Opening global setting path \"%s\"...", fullPath);
+		InputStream out = new FileInputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Creates a new file off of the user settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open InputStream for reading from the file.
+	 * @see EngineConfig#getUserSettingsPath()
+	 */
+	public InputStream openUserSettingFile(String path) throws IOException
+	{
+		String fullPath = getOutPath(config.getUserSettingsPath(), path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Opening user setting path \"%s\"...", fullPath);
+		InputStream out = new FileInputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Saves all archived global variables to a global settings file path.
+	 */
+	public void saveGlobalVariables(String fileName)
+	{
+		if (Common.isEmpty(fileName))
+		{
+			logger.error("No file to save global variables to.");
+			return;
+		}
+		
+		OutputStream out = null;
+		try {
+
+			out = createGlobalSettingFile(fileName);
+			if (out == null)
+			{
+				logger.error("Couldn't open file.");
+			}
+			else
+			{
+				Properties properties = new Properties();
+				for (String key : consoleManager.getVariableNames(true, true))
+					properties.setProperty(key, consoleManager.getVariable(key, String.class));
+				logger.info("Saving global variables....");
+				properties.store(out, "Generated by "+Engine.class);
+				logger.info("Done.");
+			}
+			
+		} catch (IOException e) {
+			logger.error(e, "Error occurred saving global settings.");
+		} finally {
+			Common.close(out);
+		}
+	}
+	
+	/**
+	 * Saves all archived user variables to a user settings file path.
+	 */
+	public void saveUserVariables(String fileName)
+	{
+		if (Common.isEmpty(fileName))
+		{
+			logger.error("No file to save user variables to.");
+			return;
+		}
+		
+		OutputStream out = null;
+		try {
+
+			out = createUserSettingFile(fileName);
+			if (out == null)
+			{
+				logger.error("Couldn't open file.");
+			}
+			else
+			{
+				Properties properties = new Properties();
+				for (String key : consoleManager.getVariableNames(true, false))
+					properties.setProperty(key, consoleManager.getVariable(key, String.class));
+				logger.info("Saving user variables....");
+				properties.store(out, "Generated by "+Engine.class);
+				logger.info("Done.");
+			}
+			
+		} catch (IOException e) {
+			logger.error(e, "Error occurred saving user settings.");
+		} finally {
+			Common.close(out);
+		}
+	}
+	
+	/**
+	 * Reads archived global variables from a global settings file path.
+	 */
+	public void readGlobalVariables(String fileName)
+	{
+		if (Common.isEmpty(fileName))
+		{
+			logger.error("No file to read global variables from.");
+			return;
+		}
+		
+		InputStream in = null;
+		try {
+	
+			in = openGlobalSettingFile(fileName);
+			if (in == null)
+			{
+				logger.error("Couldn't open file.");
+			}
+			else
+			{
+				Properties properties = new Properties();
+				properties.load(in);
+				Enumeration<Object> keyEnum = (Enumeration<Object>)properties.keys();
+				
+				String key = null;
+				while (keyEnum.hasMoreElements())
+				{
+					key = (String)keyEnum.nextElement();
+					consoleManager.setVariable(key, properties.get(key));
+				}
+			}
+			
+		} catch (FileNotFoundException e) {
+			logger.info("No settings to read.");
+		} catch (IOException e) {
+			logger.error(e, "Error occurred reading global settings.");
+		} finally {
+			Common.close(in);
+		}
+	
+	}
+
+	/**
+	 * Reads archived user variables from a user settings file path.
+	 */
+	public void readUserVariables(String fileName)
+	{
+		if (Common.isEmpty(fileName))
+		{
+			logger.error("No file to read user variables from.");
+			return;
+		}
+		
+		InputStream in = null;
+		try {
+	
+			in = openUserSettingFile(fileName);
+			if (in == null)
+			{
+				logger.error("Couldn't open file.");
+			}
+			else
+			{
+				Properties properties = new Properties();
+				properties.load(in);
+				Enumeration<Object> keyEnum = (Enumeration<Object>)properties.keys();
+				
+				String key = null;
+				while (keyEnum.hasMoreElements())
+				{
+					key = (String)keyEnum.nextElement();
+					consoleManager.setVariable(key, properties.get(key));
+				}
+			}
+			
+		} catch (FileNotFoundException e) {
+			logger.info("No settings to read.");
+		} catch (IOException e) {
+			logger.error(e, "Error occurred reading user settings.");
+		} finally {
+			Common.close(in);
+		}
+	
 	}
 
 	/**
@@ -528,6 +770,10 @@ public final class Engine
 		logger.infof("Stopping ticker...");
 		updateTicker.stop();
 		
+		logger.infof("Saving settings...");
+		saveGlobalVariables(config.getGlobalVariablesPath());
+		saveUserVariables(config.getUserVariablesPath());
+
 		logger.infof("Notifying listeners...");
 		for (EngineListener listener : listeners)
 			listener.onShutDown();
@@ -832,6 +1078,17 @@ public final class Engine
 		}
 		
 		return out;
+	}
+
+	// assembles an out path.
+	private String getOutPath(String prefix, String path)
+	{
+		if (path == null)
+			return null;
+		if (prefix == null)
+			prefix = Common.WORK_DIR;
+		prefix = prefix.endsWith(File.separator) || prefix.endsWith("/") ? prefix : prefix + File.separator; 
+		return prefix + path;
 	}
 	
 }

@@ -51,8 +51,9 @@ public final class EngineCommon
 		{
 			CVARMapping mapping = consoleManager.getVariableDefinition(var);
 			console.printfln(
-				"%s%s %-"+maxlen+"s %s",  
+				"%s%s%s %-"+maxlen+"s %s",  
 				mapping.isArchived() ? "A" : "-", 
+				mapping.isGlobal() ? "G" : "-", 
 				mapping.isReadOnly() ? "R" : "-", 
 				var, 
 				mapping.getDescription()

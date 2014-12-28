@@ -31,6 +31,11 @@ public @interface CVAR
 	boolean archived() default false;
 	
 	/**
+	 * Is this a globally-saved variable (as opposed to user)?
+	 */
+	boolean global() default false;
+	
+	/**
 	 * Variable description.
 	 */
 	String description() default "Console variable.";

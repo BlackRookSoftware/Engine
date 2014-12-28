@@ -85,6 +85,18 @@ public final class EngineTest
 			}
 
 			@Override
+			public String getGlobalVariablesPath()
+			{
+				return null;
+			}
+
+			@Override
+			public String getUserVariablesPath()
+			{
+				return null;
+			}
+
+			@Override
 			public LogLevel getLogLevel()
 			{
 				return LogLevel.INFO;
