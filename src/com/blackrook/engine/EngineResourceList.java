@@ -239,7 +239,9 @@ public class EngineResourceList<R extends EngineResource>
 	}
 
 	/**
-	 * Gets a resource by a tag name.
+	 * Gets resources by a tag name.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
 	 * @param tagName the tag name.
 	 * @param out the output array to put the objects into.
 	 * @return the amount of objects returned, up to the size of the provided array.
@@ -247,23 +249,43 @@ public class EngineResourceList<R extends EngineResource>
 	 */
 	public int getByTag(String tagName, R[] out)
 	{
+		return getByTag(tagName, out, 0);
+	}
+
+	/**
+	 * Gets resources by a tag name.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
+	 * @param tagName the tag name.
+	 * @param out the output array to put the objects into.
+	 * @param offset the offset into the array to start putting objects. 
+	 * @return the amount of objects returned, up to the size of the provided array.
+	 * @throws NullPointerException if the tagName or array provided is {@code null}. 
+	 */
+	public int getByTag(String tagName, R[] out, int offset)
+	{
 		Queue<R> queue = tagHash.get(tagName);
 		if (queue == null)
 			return 0;
-		
-		int i = 0;
+
+		int count = 0;
+		int i = offset;
 		for (R object : queue)
 		{
-			out[i++] = object;
 			if (i >= out.length)
 				break;
+			
+			out[i++] = object;
+			count++;
 		}
 		
-		return i;
+		return count;
 	}
 
 	/**
 	 * Gets all objects that match an index value.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
 	 * @param indexName the name of the index.
 	 * @param value the value to search for.
 	 * @param out the output array to put the objects into.
@@ -271,6 +293,22 @@ public class EngineResourceList<R extends EngineResource>
 	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
 	 */
 	public int getByIndex(String indexName, Number value, R[] out)
+	{
+		return getByIndex(indexName, value, out, 0);
+	}
+
+	/**
+	 * Gets all objects that match an index value.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
+	 * @param indexName the name of the index.
+	 * @param value the value to search for.
+	 * @param out the output array to put the objects into.
+	 * @param offset the offset into the array to start putting objects. 
+	 * @return the amount of objects returned, up to the size of the provided array.
+	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
+	 */
+	public int getByIndex(String indexName, Number value, R[] out, int offset)
 	{
 		Index index = new Index(value);
 		
@@ -282,19 +320,24 @@ public class EngineResourceList<R extends EngineResource>
 		if (queue == null)
 			return 0;
 		
-		int i = 0;
+		int count = 0;
+		int i = offset;
 		for (R object : queue)
 		{
-			out[i++] = object;
 			if (i >= out.length)
 				break;
+			
+			out[i++] = object;
+			count++;
 		}
 		
-		return i;
+		return count;
 	}
 
 	/**
 	 * Gets all objects that are before an index value.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
 	 * @param indexName the name of the index.
 	 * @param value the value to search for.
 	 * @param out the output array to put the objects into.
@@ -302,6 +345,22 @@ public class EngineResourceList<R extends EngineResource>
 	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
 	 */
 	public int getBeforeIndex(String indexName, Number value, R[] out)
+	{
+		return getBeforeIndex(indexName, value, out, 0);
+	}
+
+	/**
+	 * Gets all objects that are before an index value.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
+	 * @param indexName the name of the index.
+	 * @param value the value to search for.
+	 * @param out the output array to put the objects into.
+	 * @param offset the offset into the array to start putting objects. 
+	 * @return the amount of objects returned, up to the size of the provided array.
+	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
+	 */
+	public int getBeforeIndex(String indexName, Number value, R[] out, int offset)
 	{
 		Index index = new Index(value);
 
@@ -313,25 +372,30 @@ public class EngineResourceList<R extends EngineResource>
 		
 		if (q < 0)
 			return 0;
-		
-		int i = 0;
+
+		int count = 0;
+		int i = offset;
 		for (int x = q; x > 0 && i < out.length; x--)
 		{
 			Queue<R> queue = map.getValueAtIndex(q);
 			
 			for (R object : queue)
 			{
-				out[i++] = object;
 				if (i >= out.length)
 					break;
+				
+				out[i++] = object;
+				count++;
 			}
 		}
 		
-		return i;
+		return count;
 	}
 
 	/**
 	 * Gets all objects that are after an index value.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
 	 * @param indexName the name of the index.
 	 * @param value the value to search for.
 	 * @param out the output array to put the objects into.
@@ -339,6 +403,22 @@ public class EngineResourceList<R extends EngineResource>
 	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
 	 */
 	public int getAfterIndex(String indexName, Number value, R[] out)
+	{
+		return getAfterIndex(indexName, value, out, 0);
+	}
+	
+	/**
+	 * Gets all objects that are after an index value.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
+	 * @param indexName the name of the index.
+	 * @param value the value to search for.
+	 * @param out the output array to put the objects into.
+	 * @param offset the offset into the array to start putting objects. 
+	 * @return the amount of objects returned, up to the size of the provided array.
+	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
+	 */
+	public int getAfterIndex(String indexName, Number value, R[] out, int offset)
 	{
 		Index index = new Index(value);
 
@@ -350,33 +430,54 @@ public class EngineResourceList<R extends EngineResource>
 		
 		if (q < 0)
 			return 0;
-		
-		int i = 0;
+
+		int count = 0;
+		int i = offset;
 		for (int x = q; x < map.size() && i < out.length; x++)
 		{
 			Queue<R> queue = map.getValueAtIndex(q);
 			
 			for (R object : queue)
 			{
-				out[i++] = object;
 				if (i >= out.length)
 					break;
+				
+				out[i++] = object;
+				count++;
 			}
 		}
 		
-		return i;
+		return count;
 	}
 
 	/**
-	 * Gets all objects that straddles a value in a particular interval index.
+	 * Gets all objects that straddle a value in a particular interval index.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
 	 * @param indexName the interval index name.
 	 * @param value the value to use as an intersection point.
 	 * @param out the output array to put the objects into.
 	 * @return the amount of objects returned, up to the size of the provided array.
 	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
 	 */
-	@SuppressWarnings("unchecked")
 	public int getIntervalIntersection(String indexName, Number value, R[] out)
+	{
+		return getIntervalIntersection(indexName, value, out, 0);
+	}
+	
+	/**
+	 * Gets all objects that straddle a value in a particular interval index.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
+	 * @param indexName the interval index name.
+	 * @param value the value to use as an intersection point.
+	 * @param out the output array to put the objects into.
+	 * @param offset the offset into the array to start putting objects. 
+	 * @return the amount of objects returned, up to the size of the provided array.
+	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
+	 */
+	@SuppressWarnings("unchecked")
+	public int getIntervalIntersection(String indexName, Number value, R[] out, int offset)
 	{
 		IntervalHash<IntervalRange> hash = intervalMap.get(indexName);
 		if (hash == null)
@@ -384,15 +485,20 @@ public class EngineResourceList<R extends EngineResource>
 		
 		Cache cache = getIntervalCache();
 		int amt = hash.getIntersections(value.doubleValue(), (List<IntervalRange>)cache.intervalObjects, true);
-		int i = 0;
-		for (i = 0; i < amt && i < out.length; i++)
+		int count = 0;
+		for (int i = offset; i < amt && i < out.length; i++)
+		{
 			out[i++] = (R)cache.intervalObjects.getByIndex(i).object;
+			count++;
+		}
 		
-		return i;
+		return count;
 	}
 	
 	/**
-	 * Gets all objects that overlaps a value range in a particular interval index.
+	 * Gets all objects that overlap a value range in a particular interval index.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
 	 * @param indexName the interval index name.
 	 * @param valueMin the minimum value to use as an intersection point.
 	 * @param valueMax the maximum value to use as an intersection point.
@@ -400,8 +506,25 @@ public class EngineResourceList<R extends EngineResource>
 	 * @return the amount of objects returned, up to the size of the provided array.
 	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
 	 */
-	@SuppressWarnings("unchecked")
 	public int getIntervalIntersection(String indexName, Number valueMin, Number valueMax, R[] out)
+	{
+		return getIntervalIntersection(indexName, valueMin, valueMax, out, 0);
+	}
+
+	/**
+	 * Gets all objects that overlap a value range in a particular interval index.
+	 * The target array provided will be filled with the qualifying objects sequentially
+	 * and will stop if the end is reached, even if there may be more to return.
+	 * @param indexName the interval index name.
+	 * @param valueMin the minimum value to use as an intersection point.
+	 * @param valueMax the maximum value to use as an intersection point.
+	 * @param out the output array to put the objects into.
+	 * @param offset the offset into the array to start putting objects. 
+	 * @return the amount of objects returned, up to the size of the provided array.
+	 * @throws NullPointerException if the indexName, value, or array provided is {@code null}. 
+	 */
+	@SuppressWarnings("unchecked")
+	public int getIntervalIntersection(String indexName, Number valueMin, Number valueMax, R[] out, int offset)
 	{
 		IntervalHash<IntervalRange> hash = intervalMap.get(indexName);
 		if (hash == null)
@@ -409,11 +532,14 @@ public class EngineResourceList<R extends EngineResource>
 		
 		Cache cache = getIntervalCache();
 		int amt = hash.getIntersections(valueMin.doubleValue(), valueMax.doubleValue(), (List<IntervalRange>)cache.intervalObjects, true);
-		int i = 0;
-		for (i = 0; i < amt && i < out.length; i++)
+		int count = 0;
+		for (int i = offset; i < amt && i < out.length; i++)
+		{
 			out[i++] = (R)cache.intervalObjects.getByIndex(i).object;
+			count++;
+		}
 		
-		return i;
+		return count;
 	}
 	
 	// Find closest index.
