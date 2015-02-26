@@ -98,7 +98,6 @@ public final class Engine
 	/**
 	 * Creates the engine and all of the other stuff.
 	 * @param config the configuration to use for engine setup.
-	 * FIXME If this throws an exception, the program stays running.
 	 */
 	@SuppressWarnings("unchecked")
 	public Engine(EngineConfig config)
