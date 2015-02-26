@@ -11,6 +11,8 @@ import com.blackrook.engine.struct.InputHandler;
  * Input codes should be defined by the layer that reads device input.
  * A good strategy for handling heterogeneous input systems like GUIs are to have those handle system input,
  * and then if the input wasn't handled, pass it along to the Engine.
+ * <p>
+ * You cannot guarantee the order in which these objects have their methods called on them.
  * @author Matthew Tropiano
  */
 public interface EngineInputListener extends InputHandler

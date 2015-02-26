@@ -3,7 +3,8 @@ package com.blackrook.engine.roles;
 /**
  * Describes a component that is automatically added to a listener group that
  * has its functions called whenever important engine things happen.
- * You cannot guarantee the order in which EngineListener objects get called.
+ * <p>
+ * You cannot guarantee the order in which these objects have their methods called on them.
  * @author Matthew Tropiano
  */
 public interface EngineListener

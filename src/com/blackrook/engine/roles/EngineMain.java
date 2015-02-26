@@ -6,7 +6,9 @@ import com.blackrook.engine.Engine;
 /**
  * This is a component that has a method invoked on it after startup to kickstart the application (set gamestates and such).
  * These are called before the update ticker is started.
- * If more than one class has this, they all have their {@link #start()} method invoked. The order is not guaranteed.
+ * If more than one class has this, they all have their {@link #start()} method invoked.
+ * <p>
+ * You cannot guarantee the order in which these objects have their methods called on them.
  * @author Matthew Tropiano
  */
 public interface EngineMain

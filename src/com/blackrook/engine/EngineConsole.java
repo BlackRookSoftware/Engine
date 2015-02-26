@@ -50,6 +50,7 @@ public class EngineConsole extends JFrame
 	private EngineConsoleManager consoleManager;
 	/** Command history. */
 	private List<String> commandHistory;
+
 	/** Command history index. */
 	private int commandIndex;
 	
@@ -107,7 +108,6 @@ public class EngineConsole extends JFrame
 			}
 		});
 		
-		pack();
 	}
 	
 	// Creates the text area.
