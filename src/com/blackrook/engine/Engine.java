@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
@@ -813,17 +814,31 @@ public final class Engine
 	@SuppressWarnings("unchecked")
 	private <T> Constructor<T> getAnnotatedConstructor(Class<T> clazz)
 	{
+		Constructor<T> out = null;
+		boolean hasDefaultConstructor = false;
 		for (Constructor<T> cons : (Constructor<T>[])clazz.getConstructors())
 		{
-			if (!cons.isAnnotationPresent(ComponentConstructor.class))
-				continue;
-			else
-				return cons;
+			if (cons.isAnnotationPresent(ComponentConstructor.class))
+			{
+				if (out != null)
+					throw new EngineSetupException("Found more than one constructor annotated with @ComponentConstructor in class "+clazz.getName());
+				else
+					out = cons;
+			}
+			else if (cons.getParameterTypes().length == 0 && (cons.getModifiers() & Modifier.PUBLIC) != 0)
+			{
+				hasDefaultConstructor = true;
+			}	
+		}
+
+		if (out == null && !hasDefaultConstructor)
+		{
+			throw new EngineSetupException("Class "+clazz.getName()+" has no viable constructors.");
 		}
 		
-		return null;
+		return out;
 	}
-	
+
 	/**
 	 * Adds engine singletons to the engine singleton manager.
 	 * @param config the configuration to use for engine setup.
