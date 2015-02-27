@@ -175,15 +175,21 @@ public final class Engine
 		inputEventReceiver = new EngineInputEventReceiver()
 		{
 			@Override
-			public void fireInputSet(int code, boolean set)
+			public void fireInputFlag(int code, boolean set)
 			{
-				stateManager.onInputSet(code, set);
+				if (!stateManager.onInputSet(code, set))
+					for (EngineInputListener listener : inputListeners)
+						if (listener.onInputSet(code, set))
+							break;
 			}
 
 			@Override
 			public void fireInputValue(int code, double value)
 			{
-				stateManager.onInputValue(code, value);
+				if (!stateManager.onInputValue(code, value))
+					for (EngineInputListener listener : inputListeners)
+						if (listener.onInputValue(code, value))
+							break;
 			}
 		};
 		
