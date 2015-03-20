@@ -17,9 +17,9 @@ import com.blackrook.commons.list.List;
 import com.blackrook.commons.list.SortedMap;
 import com.blackrook.commons.spatialhash.IntervalHash;
 import com.blackrook.commons.spatialhash.IntervalHashable;
-import com.blackrook.engine.annotation.Indexed;
-import com.blackrook.engine.annotation.Interval;
-import com.blackrook.engine.annotation.IntervalBound;
+import com.blackrook.engine.annotation.resource.Indexed;
+import com.blackrook.engine.annotation.resource.Interval;
+import com.blackrook.engine.annotation.resource.IntervalBound;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.roles.EngineResource;
 

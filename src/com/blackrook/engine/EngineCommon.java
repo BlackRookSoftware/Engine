@@ -4,8 +4,8 @@ import java.util.Arrays;
 
 import com.blackrook.commons.Common;
 import com.blackrook.engine.EngineConsoleManager.CVARMapping;
-import com.blackrook.engine.annotation.CCMD;
-import com.blackrook.engine.annotation.CVAR;
+import com.blackrook.engine.annotation.component.CCMD;
+import com.blackrook.engine.annotation.component.CVAR;
 
 /**
  * 

@@ -1,15 +1,13 @@
-package com.blackrook.engine.annotation;
+package com.blackrook.engine.annotation.resource;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.blackrook.engine.roles.EngineResource;
-
 /**
  * Annotation for classes that are engine resources imported via Archetext.
- * These classes must implement {@link EngineResource}.
+ * These classes must implement {@link Resource}.
  * @author Matthew Tropiano
  */
 @Retention(RetentionPolicy.RUNTIME)

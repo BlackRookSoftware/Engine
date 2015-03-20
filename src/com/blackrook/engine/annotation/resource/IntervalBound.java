@@ -1,4 +1,4 @@
-package com.blackrook.engine.annotation;
+package com.blackrook.engine.annotation.resource;
 
 /**
  * Describes a interval portion.

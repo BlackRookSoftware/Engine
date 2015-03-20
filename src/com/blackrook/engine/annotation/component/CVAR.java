@@ -1,4 +1,4 @@
-package com.blackrook.engine.annotation;
+package com.blackrook.engine.annotation.component;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

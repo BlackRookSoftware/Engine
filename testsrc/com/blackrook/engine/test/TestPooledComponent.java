@@ -1,7 +1,7 @@
 package com.blackrook.engine.test;
 
-import com.blackrook.engine.annotation.Component;
-import com.blackrook.engine.annotation.Pooled;
+import com.blackrook.engine.annotation.component.Component;
+import com.blackrook.engine.annotation.component.Pooled;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.EnginePool.PoolPolicy;
 
