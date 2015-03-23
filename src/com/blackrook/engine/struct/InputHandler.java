@@ -13,7 +13,7 @@ public interface InputHandler
 	 * <p>This method is called if the previous input listeners did not handle this.
 	 * @param code the input code.
 	 * @param set true if active, false if inactive. 
-	 * @return true if this method handled the call and should NOT pass it along to other listeners, false otherwise. 
+	 * @return true if this method handled the call, false otherwise. 
 	 */
 	public boolean onInputSet(int code, boolean set);
 
@@ -23,7 +23,7 @@ public interface InputHandler
 	 * <p>This method is called if the previous input listeners did not handle this.
 	 * @param code the input code. 
 	 * @param value the value of the input.
-	 * @return true if this method handled the call and should NOT pass it along to other listeners, false otherwise. 
+	 * @return true if this method handled the call, false otherwise. 
 	 */
 	public boolean onInputValue(int code, double value);
 

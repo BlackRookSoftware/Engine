@@ -44,7 +44,6 @@ import com.blackrook.engine.roles.EngineMain;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.roles.EngineResource;
-import com.blackrook.engine.roles.EngineState;
 import com.blackrook.engine.roles.EngineUpdatable;
 import com.blackrook.engine.roles.EngineWindow;
 import com.blackrook.engine.struct.EngineMessage;
@@ -86,8 +85,6 @@ public final class Engine
 	private Queue<EngineMessageListener> messageListeners;
 	/** Engine input listeners. */
 	private Queue<EngineInputListener> inputListeners;
-	/** Engine state manager. */
-	private EngineStateManager stateManager;
 	/** Engine update ticker. */
 	private EngineTicker updateTicker;
 	
@@ -134,10 +131,7 @@ public final class Engine
 		consoleManager.addEntries(console, debugMode);
 		consoleManager.addEntries(new EngineCommon(this, console, consoleManager),  debugMode);
 		
-		stateManager = new EngineStateManager();
 		updateTicker = new EngineTicker(this, config);
-		
-		updateTicker.addUpdatable(stateManager);
 		
 		PrintStream ps;
 		try {
@@ -178,19 +172,17 @@ public final class Engine
 			@Override
 			public void fireInputFlag(int code, boolean set)
 			{
-				if (!stateManager.onInputSet(code, set))
-					for (EngineInputListener listener : inputListeners)
-						if (listener.onInputSet(code, set))
-							break;
+				for (EngineInputListener listener : inputListeners)
+					if (listener.onInputSet(code, set))
+						break;
 			}
 
 			@Override
 			public void fireInputValue(int code, double value)
 			{
-				if (!stateManager.onInputValue(code, value))
-					for (EngineInputListener listener : inputListeners)
-						if (listener.onInputValue(code, value))
-							break;
+				for (EngineInputListener listener : inputListeners)
+					if (listener.onInputValue(code, value))
+						break;
 			}
 		};
 		
@@ -409,46 +401,6 @@ public final class Engine
 	public boolean restartDevice(String name)
 	{
 		return destroyDevice(name) && createDevice(name);
-	}
-
-	/**
-	 * Changes the current state by emptying the state 
-	 * stack and pushing new ones onto the stack by name.
-	 * Calls {@link EngineState#exit()} on each state popped and {@link EngineState#enter()} on each state pushed. 
-	 * @param states the states to push in the specified order.
-	 */
-	public void stateChange(EngineState ... states)
-	{
-		stateManager.change(states);
-	}
-
-	/**
-	 * Pushes new states onto the stack.
-	 * Calls {@link EngineState#enter()} on each state pushed. 
-	 * @param states the states to push in the specified order.
-	 * onto the stack, false if at least one was not.
-	 */
-	public void statePush(EngineState ... states)
-	{
-		stateManager.push(states);
-	}
-
-	/**
-	 * Convenience method for <code>popState(1)</code>.
-	 */
-	public void statePop()
-	{
-		stateManager.pop();
-	}
-
-	/**
-	 * Pops a bunch of game states off of the state stack.
-	 * Calls {@link EngineState#exit()} on each state popped.
-	 * @param stateCount the amount of states to pop.
-	 */
-	public void statePop(int stateCount)
-	{
-		stateManager.pop(stateCount);
 	}
 
 	/**

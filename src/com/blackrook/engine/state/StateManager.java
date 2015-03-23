@@ -1,34 +1,33 @@
-package com.blackrook.engine;
+package com.blackrook.engine.state;
 
 import com.blackrook.commons.Sizable;
 import com.blackrook.engine.roles.EngineInputListener;
-import com.blackrook.engine.roles.EngineState;
 import com.blackrook.engine.roles.EngineUpdatable;
 
 /**
- * The state manager class for maintaining engine state.
+ * The state manager class for maintaining exclusive, updatable states.
  * @author Matthew Tropiano
  */
-public class EngineStateManager implements EngineUpdatable, EngineInputListener, Sizable
+public class StateManager implements EngineUpdatable, EngineInputListener, Sizable
 {
 	/** Current game state. */
-	private EngineState[] states;
+	private State[] states;
 	/** Size. */
 	private int size;
 
-	EngineStateManager()
+	StateManager()
 	{
-		states = new EngineState[4];
+		states = new State[4];
 		size = 0;
 	}
 	
 	/**
 	 * Changes the current state by emptying the state 
 	 * stack and pushing new ones onto the stack by name.
-	 * Calls {@link EngineState#exit()} on each state popped and {@link EngineState#enter()} on each state pushed. 
+	 * Calls {@link State#exit()} on each state popped and {@link State#enter()} on each state pushed. 
 	 * @param states the states to push in the specified order.
 	 */
-	public synchronized void change(EngineState ... states)
+	public synchronized void change(State ... states)
 	{
 		while (!isEmpty()) 
 			pop();
@@ -37,17 +36,17 @@ public class EngineStateManager implements EngineUpdatable, EngineInputListener,
 
 	/**
 	 * Pushes new states onto the stack.
-	 * Calls {@link EngineState#enter()} on each state pushed. 
+	 * Calls {@link State#enter()} on each state pushed. 
 	 * @param states the states to push in the specified order.
 	 * onto the stack, false if at least one was not.
 	 */
-	public synchronized void push(EngineState ... states)
+	public synchronized void push(State ... states)
 	{
-		for (EngineState s : states)
+		for (State s : states)
 		{
 			if (size() == states.length)
 			{
-				EngineState[] newarray = new EngineState[states.length * 2];
+				State[] newarray = new State[states.length * 2];
 				System.arraycopy(states, 0, newarray, 0, states.length);
 				states = newarray;
 			}
@@ -58,21 +57,21 @@ public class EngineStateManager implements EngineUpdatable, EngineInputListener,
 
 	/**
 	 * Pops a bunch of game states off of the state stack as returns it.
-	 * Calls {@link EngineState#exit()} on the state popped.
+	 * Calls {@link State#exit()} on the state popped.
 	 */
-	public synchronized EngineState pop()
+	public synchronized State pop()
 	{
 		if (isEmpty())
 			return null;
 		
-		EngineState out = states[--size];
+		State out = states[--size];
 		out.exit();
 		return out;
 	}
 
 	/**
 	 * Pops a bunch of game states off of the state stack.
-	 * Calls {@link EngineState#exit()} on each state popped.
+	 * Calls {@link State#exit()} on each state popped.
 	 * @param stateCount the amount of states to pop.
 	 */
 	public synchronized void pop(int stateCount)
