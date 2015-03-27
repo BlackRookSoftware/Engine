@@ -40,7 +40,7 @@ import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInput;
 import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineListener;
-import com.blackrook.engine.roles.EngineMain;
+import com.blackrook.engine.roles.EngineStart;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.roles.EngineResource;
@@ -239,7 +239,7 @@ public final class Engine
 			}
 		};
 		
-		Queue<EngineMain> mainComponents = new Queue<EngineMain>();
+		Queue<EngineStart> mainComponents = new Queue<EngineStart>();
 		
 		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
@@ -283,8 +283,8 @@ public final class Engine
 				{
 					Object component = createOrGetComponent(componentClass, false, debugMode);
 					logger.infof("Created component. %s", componentClass.getSimpleName());
-					if (EngineMain.class.isAssignableFrom(componentClass))
-						mainComponents.enqueue((EngineMain)component);
+					if (EngineStart.class.isAssignableFrom(componentClass))
+						mainComponents.enqueue((EngineStart)component);
 				}
 			}
 		}
