@@ -281,7 +281,7 @@ public final class Engine
 				}
 				else
 				{
-					Object component = createOrGetComponent(componentClass, debugMode);
+					Object component = createOrGetComponent(componentClass, false, debugMode);
 					logger.infof("Created component. %s", componentClass.getSimpleName());
 					if (EngineMain.class.isAssignableFrom(componentClass))
 						mainComponents.enqueue((EngineMain)component);
@@ -581,23 +581,26 @@ public final class Engine
 	}
 
 	/**
-	 * Creates a new component for a class and using one of its constructors.
+	 * Creates a new component for a class and using one of its constructors, 
+	 * skipping console annotation processing and debug mode processing.
 	 * @param clazz the class to instantiate.
 	 * @param constructor the constructor to call for instantiation.
 	 * @return the new class instance.
 	 */
 	<T> T createComponent(Class<T> clazz, Constructor<T> constructor)
 	{
-		return createComponent(clazz, constructor, false);
+		return createComponent(clazz, constructor, true, false);
 	}
 
 	/**
 	 * Creates a new component for a class and using one of its constructors.
 	 * @param clazz the class to instantiate.
 	 * @param constructor the constructor to call for instantiation.
+	 * @param skipConsole if true, skips the CVAR and CCMD steps.
+	 * @param debugMode if true, processes CVARs and CCMDs only available in debug mode.
 	 * @return the new class instance.
 	 */
-	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean debugMode)
+	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean skipConsole, boolean debugMode)
 	{
 		T object = null;
 		
@@ -616,7 +619,7 @@ public final class Engine
 				else if (Logger.class.isAssignableFrom(types[i]))
 					params[i] = getLogger(clazz);
 				else
-					params[i] = createOrGetComponent(types[i], debugMode);
+					params[i] = createOrGetComponent(types[i], skipConsole, debugMode);
 			}
 			
 			object = Reflect.construct(constructor, params);
@@ -625,7 +628,8 @@ public final class Engine
 		if (!clazz.isAnnotationPresent(Component.class))
 			return object;
 		
-		consoleManager.addEntries(object, debugMode);
+		if (!skipConsole)
+			consoleManager.addEntries(object, debugMode);
 		
 		// check if device.
 		if (EngineDevice.class.isAssignableFrom(clazz))
@@ -750,12 +754,12 @@ public final class Engine
 	 * @param clazz the class to create/retrieve.
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> T createOrGetComponent(Class<T> clazz, boolean debug)
+	private <T> T createOrGetComponent(Class<T> clazz, boolean skipConsole, boolean debug)
 	{
 		if (singletons.containsKey(clazz))
 			return (T)singletons.get(clazz);
 		
-		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), debug);
+		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), skipConsole, debug);
 		singletons.put(clazz, instance);
 		return instance;
 	}

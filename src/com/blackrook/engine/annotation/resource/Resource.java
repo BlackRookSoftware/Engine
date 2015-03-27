@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation for classes that are engine resources imported via Archetext.
+ * By default, if no value is specified, the structure name is the class name, lower camel case ("IntervalType" -&gt; "intervalType").
  * These classes must implement {@link Resource}.
  * @author Matthew Tropiano
  */

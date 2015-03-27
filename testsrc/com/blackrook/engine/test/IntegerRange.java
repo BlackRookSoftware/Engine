@@ -1,25 +1,26 @@
 package com.blackrook.engine.test;
 
 import com.blackrook.archetext.annotation.ATName;
-import com.blackrook.engine.annotation.resource.Indexed;
+import com.blackrook.engine.annotation.resource.Interval;
+import com.blackrook.engine.annotation.resource.IntervalBound;
 import com.blackrook.engine.annotation.resource.Resource;
 import com.blackrook.engine.roles.EngineResource;
 
 @Resource
-public class Pair implements EngineResource
+public class IntegerRange implements EngineResource
 {
 	private String id;
 	
-	@Indexed
-	public int x;
-	@Indexed
-	public int y;
+	@Interval(value = "value", bound = IntervalBound.MIN)
+	public int min;
+	@Interval(value = "value", bound = IntervalBound.MAX)
+	public int max;
 	
-	public Pair()
+	public IntegerRange()
 	{
 		id = null;
-		x = 0;
-		y = 0;
+		min = Integer.MIN_VALUE;
+		max = Integer.MAX_VALUE;
 	}
 
 	@ATName

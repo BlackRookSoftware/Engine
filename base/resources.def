@@ -3,3 +3,9 @@ pair "Some Pair"
 	x = 2;
 	y = 3;
 }
+
+integerRange "origin"
+{
+	min = 5;
+	max = 10;
+}

@@ -12,11 +12,13 @@ import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
 import com.blackrook.commons.hash.HashedQueueMap;
+import com.blackrook.commons.index.SpatialGrid1D;
+import com.blackrook.commons.index.SpatialIndex1DModel;
 import com.blackrook.commons.linkedlist.Queue;
 import com.blackrook.commons.list.List;
 import com.blackrook.commons.list.SortedMap;
-import com.blackrook.commons.spatialhash.IntervalHash;
-import com.blackrook.commons.spatialhash.IntervalHashable;
+import com.blackrook.commons.math.Tuple1D;
+import com.blackrook.commons.math.geometry.Point1D;
 import com.blackrook.engine.annotation.resource.Indexed;
 import com.blackrook.engine.annotation.resource.Interval;
 import com.blackrook.engine.annotation.resource.IntervalBound;
@@ -54,13 +56,15 @@ public class EngineResourceList<R extends EngineResource>
 	/** Object index. */
 	private HashMap<String, SortedMap<Index, Queue<R>>> indexMap;
 	/** Object interval index. */
-	private HashMap<String, IntervalHash<IntervalRange>> intervalMap;
+	private HashMap<String, IntervalMap> intervalMap;
 	
 	/** Index names. */
 	private HashMap<String, ValueGetter> indexNameList;
 	/** Interval names. */
 	private Hash<String> intervalNameList;
+	/** List for interval construction - min names. */
 	private HashMap<String, ValueGetter> intervalMinNameList;
+	/** List for interval construction - max names. */
 	private HashMap<String, ValueGetter> intervalMaxNameList;
 	
 	/**
@@ -72,7 +76,7 @@ public class EngineResourceList<R extends EngineResource>
 		idMap = new HashMap<String, R>();
 		tagHash = new HashedQueueMap<String, R>();
 		indexMap = new HashMap<String, SortedMap<Index,Queue<R>>>();
-		intervalMap = new HashMap<String, IntervalHash<IntervalRange>>();
+		intervalMap = new HashMap<String, IntervalMap>();
 		indexNameList = new HashMap<String, ValueGetter>();
 		intervalNameList = new Hash<String>();
 		intervalMinNameList = new HashMap<String, ValueGetter>();
@@ -211,10 +215,10 @@ public class EngineResourceList<R extends EngineResource>
 		
 		for (String name : intervalNameList)
 		{
-			IntervalHash<IntervalRange> hash = intervalMap.get(name);
+			IntervalMap hash = intervalMap.get(name);
 			if (hash == null)
 			{
-				hash = new IntervalHash<IntervalRange>(10);
+				hash = new IntervalMap(10);
 				intervalMap.put(name, hash);
 			}
 			
@@ -479,16 +483,16 @@ public class EngineResourceList<R extends EngineResource>
 	@SuppressWarnings("unchecked")
 	public int getIntervalIntersection(String indexName, Number value, R[] out, int offset)
 	{
-		IntervalHash<IntervalRange> hash = intervalMap.get(indexName);
+		IntervalMap hash = intervalMap.get(indexName);
 		if (hash == null)
 			return 0;
 		
 		Cache cache = getIntervalCache();
-		int amt = hash.getIntersections(value.doubleValue(), (List<IntervalRange>)cache.intervalObjects, true);
+		int amt = hash.getIntersections(value.doubleValue(), cache.intervalObjects, offset);
 		int count = 0;
 		for (int i = offset; i < amt && i < out.length; i++)
 		{
-			out[i++] = (R)cache.intervalObjects.getByIndex(i).object;
+			out[i] = (R)cache.intervalObjects.getByIndex(i).object;
 			count++;
 		}
 		
@@ -526,12 +530,12 @@ public class EngineResourceList<R extends EngineResource>
 	@SuppressWarnings("unchecked")
 	public int getIntervalIntersection(String indexName, Number valueMin, Number valueMax, R[] out, int offset)
 	{
-		IntervalHash<IntervalRange> hash = intervalMap.get(indexName);
+		IntervalMap hash = intervalMap.get(indexName);
 		if (hash == null)
 			return 0;
 		
 		Cache cache = getIntervalCache();
-		int amt = hash.getIntersections(valueMin.doubleValue(), valueMax.doubleValue(), (List<IntervalRange>)cache.intervalObjects, true);
+		int amt = hash.getIntersections(valueMin.doubleValue(), valueMax.doubleValue(), cache.intervalObjects, offset);
 		int count = 0;
 		for (int i = offset; i < amt && i < out.length; i++)
 		{
@@ -675,7 +679,7 @@ public class EngineResourceList<R extends EngineResource>
 	/**
 	 * Interval type.
 	 */
-	public static class IntervalRange implements IntervalHashable
+	public static class IntervalRange
 	{
 		/** The object. */
 		private Object object;
@@ -696,25 +700,43 @@ public class EngineResourceList<R extends EngineResource>
 			return object;
 		}
 		
-		@Override
-		public double getObjectCenterX()
+		public double getCenter()
 		{
 			return center;
 		}
-
-		@Override
-		public double getObjectHalfWidth()
+		
+		public double getHalfwidth()
 		{
 			return halfwidth;
 		}
+	}
+	
+	/* Built-in interval map. */
+	private class IntervalMap extends SpatialGrid1D<IntervalRange>
+	{
+		public IntervalMap(int resolution)
+		{
+			super(new IntervalModel(), resolution);
+		}
+	}
+	
+	private class IntervalModel implements SpatialIndex1DModel<IntervalRange>
+	{
 
 		@Override
-		public double getObjectSweepX()
+		public void getCenter(IntervalRange object, Point1D point)
 		{
-			return 0.0;
+			point.x = object.center;
+		}
+
+		@Override
+		public void getHalfWidths(IntervalRange object, Tuple1D halfwidths)
+		{
+			halfwidths.x = object.halfwidth;
 		}
 		
 	}
+	
 	
 	/** Reused cache per thread. */
 	private static class Cache

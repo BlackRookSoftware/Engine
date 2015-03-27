@@ -2,15 +2,17 @@ package com.blackrook.engine.test;
 
 import java.awt.Image;
 
+import com.blackrook.commons.Common;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
+import com.blackrook.engine.EngineResourceList;
 
 public final class EngineTest
 {
 	public static void main(String[] args)
 	{
-		new Engine(new EngineConfig()
+		Engine engine = new Engine(new EngineConfig()
 		{
 			@Override
 			public String[] getPackageRoot()
@@ -109,6 +111,10 @@ public final class EngineTest
 			}
 		});
 		
+		IntegerRange[] out = new IntegerRange[5];
+		EngineResourceList<IntegerRange> list = engine.getResourceList(IntegerRange.class);
+		list.getIntervalIntersection("value", 8, out);
+		Common.noop();
 	}
 
 }
