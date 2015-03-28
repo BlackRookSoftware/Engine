@@ -1,4 +1,4 @@
-package com.blackrook.engine.roles;
+package com.blackrook.engine.resource;
 
 /**
  * Describes a resource descriptor 

@@ -23,7 +23,7 @@ import com.blackrook.engine.annotation.resource.Indexed;
 import com.blackrook.engine.annotation.resource.Interval;
 import com.blackrook.engine.annotation.resource.IntervalBound;
 import com.blackrook.engine.exception.EngineSetupException;
-import com.blackrook.engine.roles.EngineResource;
+import com.blackrook.engine.resource.EngineResource;
 
 /**
  * Mapping of name-to-resource and id-to-resource.

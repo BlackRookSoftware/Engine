@@ -1,10 +1,12 @@
 package com.blackrook.engine.roles;
 
+import com.blackrook.engine.annotation.component.Ordering;
+
 /**
  * Describes a component that is automatically added to a listener group that
  * has its functions called whenever important engine things happen.
  * <p>
- * You cannot guarantee the order in which these objects have their methods called on them.
+ * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
 public interface EngineListener

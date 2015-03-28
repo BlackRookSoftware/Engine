@@ -4,7 +4,7 @@ import com.blackrook.archetext.annotation.ATName;
 import com.blackrook.engine.annotation.resource.Interval;
 import com.blackrook.engine.annotation.resource.IntervalBound;
 import com.blackrook.engine.annotation.resource.Resource;
-import com.blackrook.engine.roles.EngineResource;
+import com.blackrook.engine.resource.EngineResource;
 
 @Resource
 public class IntegerRange implements EngineResource

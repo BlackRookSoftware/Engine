@@ -1,6 +1,7 @@
 package com.blackrook.engine.roles;
 
 import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.component.Ordering;
 import com.blackrook.engine.struct.EngineMessage;
 
 /**
@@ -8,7 +9,7 @@ import com.blackrook.engine.struct.EngineMessage;
  * added to the message broadcaster. Each call to the implementing method is done
  * in series, so do NOT spend lots of time in the {@link #onEngineMessage(EngineMessage)} call!
  * <p>
- * You cannot guarantee the order in which these objects have their methods called on them.
+ * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
 public interface EngineMessageListener

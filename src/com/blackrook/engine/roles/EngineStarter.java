@@ -1,6 +1,7 @@
 package com.blackrook.engine.roles;
 
 import com.blackrook.engine.Engine;
+import com.blackrook.engine.annotation.component.Ordering;
 
 
 /**
@@ -8,7 +9,7 @@ import com.blackrook.engine.Engine;
  * These are called before the update ticker is started.
  * If more than one class has this, they all have their {@link #start()} method invoked.
  * <p>
- * You cannot guarantee the order in which these objects have their methods called on them.
+ * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
 public interface EngineStarter

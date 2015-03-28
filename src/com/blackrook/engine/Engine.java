@@ -37,14 +37,14 @@ import com.blackrook.engine.annotation.component.Pooled;
 import com.blackrook.engine.annotation.resource.Resource;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
+import com.blackrook.engine.resource.EnginePoolable;
+import com.blackrook.engine.resource.EngineResource;
 import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInput;
 import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineListener;
 import com.blackrook.engine.roles.EngineStarter;
 import com.blackrook.engine.roles.EngineMessageListener;
-import com.blackrook.engine.roles.EnginePoolable;
-import com.blackrook.engine.roles.EngineResource;
 import com.blackrook.engine.roles.EngineUpdatable;
 import com.blackrook.engine.roles.EngineWindow;
 import com.blackrook.engine.struct.EngineMessage;
@@ -635,6 +635,42 @@ public final class Engine
 	}
 
 	/**
+	 * Returns the names of all devices. 
+	 */
+	String[] getDeviceNames()
+	{
+		String[] out = new String[devices.size()];
+		Iterator<String> it = devices.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+	
+	/**
+	 * Creates an engine device. 
+	 * @param name the name of the device.
+	 * @return true if successful, false if not.
+	 */
+	private boolean createDevice(String name)
+	{
+		EngineDevice device = devices.get(name);
+		if (device != null)
+		{
+			if (device.isActive())
+			{
+				return false;
+			}
+			else
+			{
+				logger.infof("Created device %s.", device.getDeviceName());
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * Creates a new component for a class and using one of its constructors.
 	 * @param clazz the class to instantiate.
 	 * @param constructor the constructor to call for instantiation.
@@ -691,7 +727,7 @@ public final class Engine
 		
 		if (lists == null)
 			return object;
-
+	
 		/* The listeners. */
 		
 		Ordering anno = clazz.getAnnotation(Ordering.class);
@@ -710,14 +746,14 @@ public final class Engine
 			EngineListener obj = (EngineListener)object;
 			lists.listeners.add(new OrderingNode<EngineListener>(ordering, obj));
 		}
-
+	
 		// check if message listener.
 		if (EngineMessageListener.class.isAssignableFrom(clazz))
 		{
 			EngineMessageListener obj = (EngineMessageListener)object;
 			lists.messageListeners.add(new OrderingNode<EngineMessageListener>(ordering, obj));
 		}
-
+	
 		// check if input listener.
 		if (EngineInputListener.class.isAssignableFrom(clazz))
 		{
@@ -731,53 +767,17 @@ public final class Engine
 			EngineStarter obj = (EngineStarter)object;
 			lists.starters.add(new OrderingNode<EngineStarter>(ordering, obj));
 		}
-
+	
 		// check if update listener.
 		if (EngineUpdatable.class.isAssignableFrom(clazz))
 		{
 			EngineUpdatable obj = (EngineUpdatable)object;
 			lists.updatables.add(new OrderingNode<EngineUpdatable>(ordering, obj));
 		}
-
+	
 		return object;
 	}
 
-	/**
-	 * Returns the names of all devices. 
-	 */
-	String[] getDeviceNames()
-	{
-		String[] out = new String[devices.size()];
-		Iterator<String> it = devices.keyIterator();
-		int i = 0;
-		while (it.hasNext())
-			out[i++] = it.next();
-		return out;
-	}
-	
-	/**
-	 * Creates an engine device. 
-	 * @param name the name of the device.
-	 * @return true if successful, false if not.
-	 */
-	private boolean createDevice(String name)
-	{
-		EngineDevice device = devices.get(name);
-		if (device != null)
-		{
-			if (device.isActive())
-			{
-				return false;
-			}
-			else
-			{
-				logger.infof("Created device %s.", device.getDeviceName());
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	/**
 	 * Creates an engine device. 
 	 * @param name the name of the device.

@@ -3,7 +3,7 @@ package com.blackrook.engine.test;
 import com.blackrook.archetext.annotation.ATName;
 import com.blackrook.engine.annotation.resource.Indexed;
 import com.blackrook.engine.annotation.resource.Resource;
-import com.blackrook.engine.roles.EngineResource;
+import com.blackrook.engine.resource.EngineResource;
 
 @Resource
 public class Pair implements EngineResource

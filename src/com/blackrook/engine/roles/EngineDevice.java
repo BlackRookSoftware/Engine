@@ -1,10 +1,12 @@
 package com.blackrook.engine.roles;
 
+import com.blackrook.engine.annotation.component.Ordering;
+
 /**
  * Describes a device started by the engine after object creation and configuration
  * script execution.
  * <p>
- * You cannot guarantee the order in which these objects have their methods called on them.
+ * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
 public interface EngineDevice

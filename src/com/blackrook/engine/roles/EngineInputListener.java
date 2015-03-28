@@ -1,5 +1,6 @@
 package com.blackrook.engine.roles;
 
+import com.blackrook.engine.annotation.component.Ordering;
 import com.blackrook.engine.struct.InputHandler;
 
 /**
@@ -12,7 +13,7 @@ import com.blackrook.engine.struct.InputHandler;
  * A good strategy for handling heterogeneous input systems like GUIs are to have those handle system input,
  * and then if the input wasn't handled, pass it along to the Engine.
  * <p>
- * You cannot guarantee the order in which these objects have their methods called on them.
+ * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
 public interface EngineInputListener extends InputHandler

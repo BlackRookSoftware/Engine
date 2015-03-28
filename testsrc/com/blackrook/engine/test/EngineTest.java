@@ -101,7 +101,7 @@ public final class EngineTest
 			@Override
 			public LogLevel getLogLevel()
 			{
-				return LogLevel.INFO;
+				return LogLevel.DEBUG;
 			}
 
 			@Override
