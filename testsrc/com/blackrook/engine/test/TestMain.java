@@ -1,16 +1,16 @@
 package com.blackrook.engine.test;
 
 import com.blackrook.commons.logging.Logger;
-import com.blackrook.engine.annotation.component.Component;
-import com.blackrook.engine.annotation.component.ComponentConstructor;
-import com.blackrook.engine.roles.EngineStart;
+import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.EngineComponentConstructor;
+import com.blackrook.engine.roles.EngineStarter;
 
-@Component
-public class TestMain implements EngineStart
+@EngineComponent
+public class TestMain implements EngineStarter
 {
 	private Logger logger;
 
-	@ComponentConstructor
+	@EngineComponentConstructor
 	public TestMain(Logger logger)
 	{
 		this.logger = logger;

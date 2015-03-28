@@ -2,11 +2,11 @@ package com.blackrook.engine.test;
 
 import java.util.Arrays;
 
+import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.annotation.component.CCMD;
 import com.blackrook.engine.annotation.component.CVAR;
-import com.blackrook.engine.annotation.component.Component;
 
-@Component
+@EngineComponent
 public class TestComponent
 {
 	@CVAR

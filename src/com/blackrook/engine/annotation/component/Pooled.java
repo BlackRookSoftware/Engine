@@ -7,11 +7,13 @@ import java.lang.annotation.Target;
 
 import com.blackrook.engine.EnginePool;
 import com.blackrook.engine.EnginePool.PoolPolicy;
+import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.EngineComponentConstructor;
 
 /**
  * Annotation for classes that instantiated as pooled objects for the Engine.
- * This annotation only has an effect on classes annotated with {@link Component}. 
- * Constructors {@link ComponentConstructor} annotations are called for each object to create the pool.
+ * This annotation only has an effect on classes annotated with {@link EngineComponent}. 
+ * Constructors {@link EngineComponentConstructor} annotations are called for each object to create the pool.
  * Pooled objects cannot have commands or variables associated with them.
  * @author Matthew Tropiano
  */

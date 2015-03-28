@@ -1,6 +1,6 @@
 package com.blackrook.engine;
 
-import com.blackrook.engine.annotation.component.Component;
+import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.roles.EngineWindow;
 
 /**
@@ -10,7 +10,7 @@ import com.blackrook.engine.roles.EngineWindow;
  * This is because there might be different implementations of windowing toolkits, 
  * and the engine would still need to have a consistent way to hear window events. 
  * <p>
- * Basically, if a {@link Component} is supposed to spawn the main window of the
+ * Basically, if a {@link EngineComponent} is supposed to spawn the main window of the
  * application, it should fire all of its main window events through this object so
  * that it is broadcast to all listening components. 
  * @author Matthew Tropiano 

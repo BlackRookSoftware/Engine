@@ -1,11 +1,11 @@
 package com.blackrook.engine.test;
 
-import com.blackrook.engine.annotation.component.Component;
+import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.annotation.component.Pooled;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.EnginePool.PoolPolicy;
 
-@Component
+@EngineComponent
 @Pooled(value = 10, policy = PoolPolicy.SENSIBLE)
 public class TestPooledComponent implements EnginePoolable
 {

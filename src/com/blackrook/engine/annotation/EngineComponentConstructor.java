@@ -1,4 +1,4 @@
-package com.blackrook.engine.annotation.component;
+package com.blackrook.engine.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import com.blackrook.commons.logging.Logger;
 
 /**
- * Annotation on {@link Component}s that signify the constructor for this
+ * Annotation on {@link EngineComponent}s that signify the constructor for this
  * component (rather than using the default). The classes in the parameters
  * should be singletons that the engine should instantiate. If the type is {@link Logger},
  * a logger designated for the class is created.
@@ -16,7 +16,7 @@ import com.blackrook.commons.logging.Logger;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.CONSTRUCTOR)
-public @interface ComponentConstructor
+public @interface EngineComponentConstructor
 {
 
 }

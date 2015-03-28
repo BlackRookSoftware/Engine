@@ -79,7 +79,7 @@ public class EngineTicker
 	}
 	
 	/** Adds an updatable. */
-	public void addUpdatable(EngineUpdatable updatable)
+	public void add(EngineUpdatable updatable)
 	{
 		updatables.add(updatable);
 	}

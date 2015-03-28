@@ -30,8 +30,9 @@ import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.commons.logging.driver.ConsoleLogger;
 import com.blackrook.commons.logging.driver.PrintStreamLogger;
-import com.blackrook.engine.annotation.component.Component;
-import com.blackrook.engine.annotation.component.ComponentConstructor;
+import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.EngineComponentConstructor;
+import com.blackrook.engine.annotation.component.Ordering;
 import com.blackrook.engine.annotation.component.Pooled;
 import com.blackrook.engine.annotation.resource.Resource;
 import com.blackrook.engine.exception.EngineSetupException;
@@ -40,7 +41,7 @@ import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInput;
 import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineListener;
-import com.blackrook.engine.roles.EngineStart;
+import com.blackrook.engine.roles.EngineStarter;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EnginePoolable;
 import com.blackrook.engine.roles.EngineResource;
@@ -80,7 +81,7 @@ public final class Engine
 	private HashMap<Class<?>, EngineResourceList<?>> resources;
 	
 	/** Engine listener. */
-	private Queue<EngineListener> listeners;
+	private Queue<EngineListener> engineListeners;
 	/** Engine message listeners. */
 	private Queue<EngineMessageListener> messageListeners;
 	/** Engine input listeners. */
@@ -106,7 +107,7 @@ public final class Engine
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
 		resources = new HashMap<Class<?>, EngineResourceList<?>>();
-		listeners = new Queue<EngineListener>();
+		engineListeners = new Queue<EngineListener>();
 		messageListeners = new Queue<EngineMessageListener>();
 		inputListeners = new Queue<EngineInputListener>();
 
@@ -192,54 +193,55 @@ public final class Engine
 			@Override
 			public void fireRestore()
 			{
-				for (EngineListener listener : listeners)
+				for (EngineListener listener : engineListeners)
 					listener.onRestore();
 			}
 			
 			@Override
 			public void fireMouseExit()
 			{
-				for (EngineListener listener : listeners)
+				for (EngineListener listener : engineListeners)
 					listener.onMouseExit();
 			}
 			
 			@Override
 			public void fireMouseEnter()
 			{
-				for (EngineListener listener : listeners)
+				for (EngineListener listener : engineListeners)
 					listener.onMouseEnter();
 			}
 			
 			@Override
 			public void fireMinimize()
 			{
-				for (EngineListener listener : listeners)
+				for (EngineListener listener : engineListeners)
 					listener.onMinimize();
 			}
 			
 			@Override
 			public void fireFocus()
 			{
-				for (EngineListener listener : listeners)
+				for (EngineListener listener : engineListeners)
 					listener.onFocus();
 			}
 			
 			@Override
 			public void fireClosing()
 			{
-				for (EngineListener listener : listeners)
+				for (EngineListener listener : engineListeners)
 					listener.onClosing();
 			}
 			
 			@Override
 			public void fireBlur()
 			{
-				for (EngineListener listener : listeners)
+				for (EngineListener listener : engineListeners)
 					listener.onBlur();
 			}
 		};
 		
-		Queue<EngineStart> mainComponents = new Queue<EngineStart>();
+		Queue<EngineStarter> starterComponents = new Queue<EngineStarter>();
+		OrderingLists lists = new OrderingLists();
 		
 		logger.debug("Scanning classes...");
 		for (Class<?> componentClass : getComponentClasses(config))
@@ -267,7 +269,7 @@ public final class Engine
 				
 				logger.infof("Created resource list. %s (count %d)", resourceClass.getSimpleName(), added);
 			}
-			else if (componentClass.isAnnotationPresent(Component.class))
+			else if (componentClass.isAnnotationPresent(EngineComponent.class))
 			{
 				if (componentClass.isAnnotationPresent(Pooled.class))
 				{
@@ -281,13 +283,53 @@ public final class Engine
 				}
 				else
 				{
-					Object component = createOrGetComponent(componentClass, false, debugMode);
+					createOrGetComponent(componentClass, lists, false, debugMode);
 					logger.infof("Created component. %s", componentClass.getSimpleName());
-					if (EngineStart.class.isAssignableFrom(componentClass))
-						mainComponents.enqueue((EngineStart)component);
 				}
 			}
 		}
+		
+		/* Sort and add role singletons. */
+
+		lists.sort();
+		
+		for (OrderingNode<EngineDevice> obj : lists.devices)
+		{
+			devices.put(obj.object.getDeviceName(), obj.object);
+			logger.debugf("%s added to devices.", obj.object.getClass().getSimpleName());
+		}
+		
+		for (OrderingNode<EngineListener> obj : lists.listeners)
+		{
+			engineListeners.enqueue(obj.object);
+			logger.debugf("%s added to engine listeners.", obj.object.getClass().getSimpleName());
+		}
+
+		for (OrderingNode<EngineInputListener> obj : lists.inputListeners)
+		{
+			inputListeners.enqueue(obj.object);
+			logger.debugf("%s added to input listeners.", obj.object.getClass().getSimpleName());
+		}
+		
+		for (OrderingNode<EngineMessageListener> obj : lists.messageListeners)
+		{
+			messageListeners.enqueue(obj.object);
+			logger.debugf("%s added to message listeners.", obj.object.getClass().getSimpleName());
+		}
+		
+		for (OrderingNode<EngineStarter> obj : lists.starters)
+		{
+			starterComponents.enqueue(obj.object);
+			logger.debugf("%s added to starters.", obj.object.getClass().getSimpleName());
+		}
+
+		for (OrderingNode<EngineUpdatable> obj : lists.updatables)
+		{
+			updateTicker.add(obj.object);
+			logger.debugf("%s added to updatables.", obj.object.getClass().getSimpleName());
+		}
+		
+		/* Invoke and call. */
 
 		// Starts the devices.
 		for (ObjectPair<?, EngineDevice> device : devices)
@@ -309,10 +351,10 @@ public final class Engine
 		}
 		
 		// invokes main methods.
-		logger.info("Invoking main methods.");
+		logger.info("Invoking engine start methods.");
 		// invoke start on stuff.
-		while (!mainComponents.isEmpty())
-			mainComponents.dequeue().start();
+		while (!starterComponents.isEmpty())
+			starterComponents.dequeue().start();
 		
 		// start ticker.
 		updateTicker.start();
@@ -566,7 +608,7 @@ public final class Engine
 		updateTicker.stop();
 		
 		logger.infof("Notifying listeners...");
-		for (EngineListener listener : listeners)
+		for (EngineListener listener : engineListeners)
 			listener.onShutDown();
 		for (ObjectPair<?, EngineDevice> device : devices)
 		{
@@ -589,7 +631,7 @@ public final class Engine
 	 */
 	<T> T createComponent(Class<T> clazz, Constructor<T> constructor)
 	{
-		return createComponent(clazz, constructor, true, false);
+		return createComponent(clazz, constructor, null, true, false);
 	}
 
 	/**
@@ -600,7 +642,7 @@ public final class Engine
 	 * @param debugMode if true, processes CVARs and CCMDs only available in debug mode.
 	 * @return the new class instance.
 	 */
-	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean skipConsole, boolean debugMode)
+	private <T> T createComponent(Class<T> clazz, Constructor<T> constructor, OrderingLists lists, boolean skipConsole, boolean debugMode)
 	{
 		T object = null;
 		
@@ -619,58 +661,18 @@ public final class Engine
 				else if (Logger.class.isAssignableFrom(types[i]))
 					params[i] = getLogger(clazz);
 				else
-					params[i] = createOrGetComponent(types[i], skipConsole, debugMode);
+					params[i] = createOrGetComponent(types[i], lists, skipConsole, debugMode);
 			}
 			
 			object = Reflect.construct(constructor, params);
 		}
 	
-		if (!clazz.isAnnotationPresent(Component.class))
+		if (!clazz.isAnnotationPresent(EngineComponent.class))
 			return object;
 		
 		if (!skipConsole)
 			consoleManager.addEntries(object, debugMode);
 		
-		// check if device.
-		if (EngineDevice.class.isAssignableFrom(clazz))
-		{
-			EngineDevice obj = (EngineDevice)object;
-			devices.put(obj.getDeviceName(), obj);
-			logger.debugf("%s added to devices.", clazz.getSimpleName());
-		}
-	
-		// check if message listener.
-		if (EngineMessageListener.class.isAssignableFrom(clazz))
-		{
-			EngineMessageListener obj = (EngineMessageListener)object;
-			messageListeners.add(obj);
-			logger.debugf("%s added to message listeners.", clazz.getSimpleName());
-		}
-
-		// check if engine listener.
-		if (EngineListener.class.isAssignableFrom(clazz))
-		{
-			EngineListener obj = (EngineListener)object;
-			listeners.enqueue(obj);
-			logger.debugf("%s added to engine listeners.", clazz.getSimpleName());
-		}
-
-		// check if input listener.
-		if (EngineInputListener.class.isAssignableFrom(clazz))
-		{
-			EngineInputListener obj = (EngineInputListener)object;
-			inputListeners.add(obj);
-			logger.debugf("%s added to input listeners.", clazz.getSimpleName());
-		}
-		
-		// check if update listener.
-		if (EngineUpdatable.class.isAssignableFrom(clazz))
-		{
-			EngineUpdatable obj = (EngineUpdatable)object;
-			updateTicker.addUpdatable(obj);
-			logger.debugf("%s added to updatables.", clazz.getSimpleName());
-		}
-
 		// check if engine window.
 		if (EngineWindow.class.isAssignableFrom(clazz))
 		{
@@ -686,7 +688,57 @@ public final class Engine
 			obj.addInputReceiver(inputEventReceiver);
 			logger.debugf("%s was passed an input event receiver.", clazz.getSimpleName());
 		}
-				
+		
+		if (lists == null)
+			return object;
+
+		/* The listeners. */
+		
+		Ordering anno = clazz.getAnnotation(Ordering.class);
+		int ordering = anno == null ? 0 : anno.value();
+		
+		// check if device.
+		if (EngineDevice.class.isAssignableFrom(clazz))
+		{
+			EngineDevice obj = (EngineDevice)object;
+			lists.devices.add(new OrderingNode<EngineDevice>(ordering, obj));
+		}
+	
+		// check if engine listener.
+		if (EngineListener.class.isAssignableFrom(clazz))
+		{
+			EngineListener obj = (EngineListener)object;
+			lists.listeners.add(new OrderingNode<EngineListener>(ordering, obj));
+		}
+
+		// check if message listener.
+		if (EngineMessageListener.class.isAssignableFrom(clazz))
+		{
+			EngineMessageListener obj = (EngineMessageListener)object;
+			lists.messageListeners.add(new OrderingNode<EngineMessageListener>(ordering, obj));
+		}
+
+		// check if input listener.
+		if (EngineInputListener.class.isAssignableFrom(clazz))
+		{
+			EngineInputListener obj = (EngineInputListener)object;
+			lists.inputListeners.add(new OrderingNode<EngineInputListener>(ordering, obj));
+		}
+		
+		// check if engine starter.
+		if (EngineStarter.class.isAssignableFrom(clazz))
+		{
+			EngineStarter obj = (EngineStarter)object;
+			lists.starters.add(new OrderingNode<EngineStarter>(ordering, obj));
+		}
+
+		// check if update listener.
+		if (EngineUpdatable.class.isAssignableFrom(clazz))
+		{
+			EngineUpdatable obj = (EngineUpdatable)object;
+			lists.updatables.add(new OrderingNode<EngineUpdatable>(ordering, obj));
+		}
+
 		return object;
 	}
 
@@ -754,12 +806,12 @@ public final class Engine
 	 * @param clazz the class to create/retrieve.
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> T createOrGetComponent(Class<T> clazz, boolean skipConsole, boolean debug)
+	private <T> T createOrGetComponent(Class<T> clazz, OrderingLists lists, boolean skipConsole, boolean debug)
 	{
 		if (singletons.containsKey(clazz))
 			return (T)singletons.get(clazz);
 		
-		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), skipConsole, debug);
+		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), lists, skipConsole, debug);
 		singletons.put(clazz, instance);
 		return instance;
 	}
@@ -774,7 +826,7 @@ public final class Engine
 		boolean hasDefaultConstructor = false;
 		for (Constructor<T> cons : (Constructor<T>[])clazz.getConstructors())
 		{
-			if (cons.isAnnotationPresent(ComponentConstructor.class))
+			if (cons.isAnnotationPresent(EngineComponentConstructor.class))
 			{
 				if (out != null)
 					throw new EngineSetupException("Found more than one constructor annotated with @ComponentConstructor in class "+clazz.getName());
@@ -829,7 +881,7 @@ public final class Engine
 	private boolean isValidComponent(Class<?> clazz)
 	{
 		return
-			clazz.isAnnotationPresent(Component.class)
+			clazz.isAnnotationPresent(EngineComponent.class)
 			|| clazz.isAnnotationPresent(Resource.class)
 			;
 	}
@@ -898,6 +950,58 @@ public final class Engine
 			prefix = Common.WORK_DIR;
 		prefix = prefix.endsWith(File.separator) || prefix.endsWith("/") ? prefix : prefix + File.separator; 
 		return prefix + path;
+	}
+	
+	
+	/** Node for ordering lists of components. */
+	private static class OrderingLists
+	{
+		private List<OrderingNode<EngineDevice>> devices;
+		private List<OrderingNode<EngineListener>> listeners;
+		private List<OrderingNode<EngineInputListener>> inputListeners;
+		private List<OrderingNode<EngineMessageListener>> messageListeners;
+		private List<OrderingNode<EngineStarter>> starters;
+		private List<OrderingNode<EngineUpdatable>> updatables;
+		
+		private OrderingLists()
+		{
+			devices = new List<Engine.OrderingNode<EngineDevice>>();
+			listeners = new List<Engine.OrderingNode<EngineListener>>();
+			inputListeners = new List<Engine.OrderingNode<EngineInputListener>>();
+			messageListeners = new List<Engine.OrderingNode<EngineMessageListener>>();
+			starters = new List<Engine.OrderingNode<EngineStarter>>();
+			updatables = new List<Engine.OrderingNode<EngineUpdatable>>();
+		}
+		
+		private void sort()
+		{
+			devices.sort();
+			listeners.sort();
+			inputListeners.sort();
+			messageListeners.sort();
+			starters.sort();
+			updatables.sort();
+		}
+		
+	}
+	
+	/** Node for ordering components. */
+	private static class OrderingNode<X extends Object> implements Comparable<OrderingNode<?>>
+	{
+		private int ordering;
+		private X object;
+		
+		private OrderingNode(int ordering, X object)
+		{
+			this.ordering = ordering;
+			this.object = object;
+		}
+
+		@Override
+		public int compareTo(OrderingNode<?> o)
+		{
+			return ordering - o.ordering;
+		}
 	}
 	
 }

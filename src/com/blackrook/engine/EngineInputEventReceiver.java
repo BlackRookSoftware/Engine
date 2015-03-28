@@ -1,6 +1,6 @@
 package com.blackrook.engine;
 
-import com.blackrook.engine.annotation.component.Component;
+import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.roles.EngineInput;
 
 /**
@@ -10,7 +10,7 @@ import com.blackrook.engine.roles.EngineInput;
  * This is because there might be different implementations of input libraries, 
  * and the engine would still need to have a consistent way to hear input events. 
  * <p>
- * Basically, if a {@link Component} is supposed to hear input events, it should 
+ * Basically, if a {@link EngineComponent} is supposed to hear input events, it should 
  * fire all of its main input events through this object so that it is broadcast
  * to all listening components. 
  * <p>
