@@ -28,8 +28,12 @@
 	<property name="project.javadoc.packages" value="
 		com.blackrook.engine,
 		com.blackrook.engine.annotation,
+		com.blackrook.engine.annotation.component,
+		com.blackrook.engine.annotation.resource,
 		com.blackrook.engine.exception,
+		com.blackrook.engine.resource,
 		com.blackrook.engine.roles,
+		com.blackrook.engine.state,
 		com.blackrook.engine.struct
 	"
 	/>
@@ -57,6 +61,8 @@
             <link href="http://blackrooksoftware.com/docs/common/"/>
             <link href="http://blackrooksoftware.com/docs/commonio/"/>
             <link href="http://blackrooksoftware.com/docs/commonlang/"/>
+            <link href="http://blackrooksoftware.com/docs/filesystem/"/>
+            <link href="http://blackrooksoftware.com/docs/engine/"/>
             <link href="http://download.oracle.com/javase/7/docs/api/"/>
         </javadoc>
     </target>	
