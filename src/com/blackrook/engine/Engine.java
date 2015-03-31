@@ -2,6 +2,7 @@ package com.blackrook.engine;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +13,7 @@ import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Properties;
 
 import com.blackrook.archetext.ArcheTextIncluder;
 import com.blackrook.archetext.ArcheTextObject;
@@ -136,7 +138,7 @@ public final class Engine
 		
 		PrintStream ps;
 		try {
-			FileOutputStream fos = new FileOutputStream(new File(config.getLogFilePath()));
+			FileOutputStream fos = new FileOutputStream(new File(config.getLogFile()));
 			if (fos != null)
 			{
 				ps = new PrintStream(fos, true);
@@ -145,10 +147,10 @@ public final class Engine
 			}
 			else
 			{
-				console.println("ERROR: Could not open log file "+config.getLogFilePath());
+				console.println("ERROR: Could not open log file "+config.getLogFile());
 			}
 		} catch (IOException e) {
-			console.println("ERROR: Could not open log file "+config.getLogFilePath());
+			console.println("ERROR: Could not open log file "+config.getLogFile());
 		}
 		
 		
@@ -328,6 +330,57 @@ public final class Engine
 			updateTicker.add(obj.object);
 			logger.debugf("%s added to updatables.", obj.object.getClass().getSimpleName());
 		}
+		
+		/* Load settings. */
+
+		Properties settings = null;
+		InputStream inStream = null;
+		Object settingValue = null;
+
+		if (config.getGlobalVariablesFile() != null)
+		{
+			logger.infof("Loading global settings...");
+			settings = new Properties();
+			try {
+				inStream = openGlobalSettingFile(config.getGlobalVariablesFile());
+				settings = new Properties();
+				settings.load(inStream);
+			} catch (FileNotFoundException e) {
+				logger.infof("Could not open global settings from file \"%s\". Doesn't exist.", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+			} catch (IOException e) {
+				logger.errorf(e, "Could not read global settings from file \"%s\".", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+			} finally {
+				Common.close(inStream);
+			}
+			for (String var : consoleManager.getVariableNames(true, true))
+			{
+				if ((settingValue = settings.getProperty(var)) != null)
+					consoleManager.setVariable(var, settingValue);
+			}
+		}
+
+		if (config.getUserVariablesFile() != null)
+		{
+			logger.infof("Loading user settings...");
+			settings = new Properties();
+			try {
+				inStream = openUserSettingFile(config.getUserVariablesFile());
+				settings = new Properties();
+				settings.load(inStream);
+			} catch (FileNotFoundException e) {
+				logger.infof("Could not open user settings from file \"%s\". Doesn't exist.", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+			} catch (IOException e) {
+				logger.errorf(e, "Could not read user settings from file \"%s\".", getOutPath(config.getUserSettingsPath(), config.getUserVariablesFile()));
+			} finally {
+				Common.close(inStream);
+			}
+			for (String var : consoleManager.getVariableNames(true, false))
+			{
+				if ((settingValue = settings.getProperty(var)) != null)
+					consoleManager.setVariable(var, settingValue);
+			}
+		}
+
 		
 		/* Invoke and call. */
 
@@ -597,8 +650,8 @@ public final class Engine
 
 	/**
 	 * Initiates engine shutdown.
-	 * <p>All listeners have {@link EngineListener#onShutDown()} called on them, all
-	 * devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 * <p>The ticker is stopped, all listeners have {@link EngineListener#onShutDown()} called on them, all settings are saved, 
+	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
 	 */
 	public void shutDown(int status)
 	{
@@ -606,6 +659,42 @@ public final class Engine
 
 		logger.infof("Stopping ticker...");
 		updateTicker.stop();
+		
+		String applicationString = config.getApplicationName() + " v" + config.getApplicationVersion();
+		Properties settings = null;
+		OutputStream outStream = null;
+
+		if (config.getUserVariablesFile() != null)
+		{
+			logger.infof("Saving user settings...");
+			settings = new Properties();
+			for (String var : consoleManager.getVariableNames(true, false))
+				settings.setProperty(var, consoleManager.getVariable(var, String.class));
+			try {
+				outStream = createUserSettingFile(config.getUserVariablesFile());
+				settings.store(outStream, "User settings for " + applicationString);
+			} catch (IOException e) {
+				logger.errorf(e, "Could not write user settings to file \"%s\".", getOutPath(config.getUserSettingsPath(), config.getUserVariablesFile()));
+			} finally {
+				Common.close(outStream);
+			}
+		}
+		
+		if (config.getGlobalVariablesFile() != null)
+		{
+			logger.infof("Saving global settings...");
+			settings = new Properties();
+			for (String var : consoleManager.getVariableNames(true, true))
+				settings.setProperty(var, consoleManager.getVariable(var, String.class));
+			try {
+				outStream = createGlobalSettingFile(config.getGlobalVariablesFile());
+				settings.store(outStream, "Global settings for " + applicationString);
+			} catch (IOException e) {
+				logger.errorf(e, "Could not write global settings to file \"%s\".", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+			} finally {
+				Common.close(outStream);
+			}
+		}
 		
 		logger.infof("Notifying listeners...");
 		for (EngineListener listener : engineListeners)
@@ -619,6 +708,7 @@ public final class Engine
 			else
 				logger.errorf("Failed destroying device %s.", ed.getDeviceName());
 		}
+		
 		System.exit(status);
 	}
 
@@ -942,14 +1032,14 @@ public final class Engine
 	}
 
 	// assembles an out path.
-	private String getOutPath(String prefix, String path)
+	private String getOutPath(String basePath, String filePath)
 	{
-		if (path == null)
+		if (filePath == null)
 			return null;
-		if (prefix == null)
-			prefix = Common.WORK_DIR;
-		prefix = prefix.endsWith(File.separator) || prefix.endsWith("/") ? prefix : prefix + File.separator; 
-		return prefix + path;
+		if (basePath == null)
+			basePath = Common.WORK_DIR;
+		basePath = basePath.endsWith(File.separator) || basePath.endsWith("/") ? basePath : basePath + File.separator; 
+		return basePath + filePath;
 	}
 	
 	

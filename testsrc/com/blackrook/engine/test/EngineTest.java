@@ -57,7 +57,7 @@ public final class EngineTest
 			}
 
 			@Override
-			public String getLogFilePath()
+			public String getLogFile()
 			{
 				return "test.log";
 			}
@@ -87,13 +87,13 @@ public final class EngineTest
 			}
 
 			@Override
-			public String getGlobalVariablesPath()
+			public String getGlobalVariablesFile()
 			{
 				return null;
 			}
 
 			@Override
-			public String getUserVariablesPath()
+			public String getUserVariablesFile()
 			{
 				return null;
 			}
