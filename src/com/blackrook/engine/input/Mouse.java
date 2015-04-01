@@ -8,7 +8,8 @@ import com.blackrook.input.annotation.ComponentBinding;
 import com.blackrook.input.annotation.OnChange;
 
 /**
- * Mouse interface.
+ * Mouse mapping.
+ * @author Matthew Tropiano
  */
 public class Mouse
 {

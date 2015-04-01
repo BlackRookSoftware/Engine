@@ -1,10 +1,10 @@
 package com.blackrook.engine;
 
 import com.blackrook.engine.annotation.EngineComponent;
-import com.blackrook.engine.roles.EngineWindow;
+import com.blackrook.engine.broadcaster.EngineWindowBroadcaster;
 
 /**
- * This class is designed to be the class that implementors of {@link EngineWindow}
+ * This class is designed to be the class that implementors of {@link EngineWindowBroadcaster}
  * use to fire window events to the engine. 
  * <p>
  * This is because there might be different implementations of windowing toolkits, 

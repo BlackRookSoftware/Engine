@@ -9,17 +9,8 @@ import com.blackrook.engine.annotation.component.Ordering;
  * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
-public interface EngineListener
+public interface EngineWindowListener
 {
-
-	/**
-	 * Called by Engine when it is shutting down. This is for saving state and
-	 * variables and configuration, if necessary, and is called before the
-	 * graphics and sound engines get called to shut down form the engine, in 
-	 * case their state is important.
-	 * <p><b>It would not be wise to call this from another method in this class.</b>
-	 */
-	public void onShutDown();
 
 	/**
 	 * Called by Engine when it detects that the main window is getting closed.

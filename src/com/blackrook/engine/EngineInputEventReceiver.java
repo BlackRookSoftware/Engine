@@ -1,10 +1,10 @@
 package com.blackrook.engine;
 
 import com.blackrook.engine.annotation.EngineComponent;
-import com.blackrook.engine.roles.EngineInput;
+import com.blackrook.engine.broadcaster.EngineInputBroadcaster;
 
 /**
- * This class is designed to be the class that implementors of {@link EngineInput}
+ * This class is designed to be the class that implementors of {@link EngineInputBroadcaster}
  * use to fire input events to the engine.
  * <p>
  * This is because there might be different implementations of input libraries, 

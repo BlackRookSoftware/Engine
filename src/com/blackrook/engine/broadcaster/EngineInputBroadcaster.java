@@ -1,4 +1,4 @@
-package com.blackrook.engine.roles;
+package com.blackrook.engine.broadcaster;
 
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineInputEventReceiver;
@@ -17,7 +17,7 @@ import com.blackrook.engine.EngineInputEventReceiver;
  * You cannot guarantee the order in which these objects have their methods called on them.
  * @author Matthew Tropiano
  */
-public interface EngineInput
+public interface EngineInputBroadcaster
 {
 
 	/**

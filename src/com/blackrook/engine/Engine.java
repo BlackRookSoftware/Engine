@@ -37,18 +37,19 @@ import com.blackrook.engine.annotation.EngineComponentConstructor;
 import com.blackrook.engine.annotation.component.Ordering;
 import com.blackrook.engine.annotation.component.Pooled;
 import com.blackrook.engine.annotation.resource.Resource;
+import com.blackrook.engine.broadcaster.EngineInputBroadcaster;
+import com.blackrook.engine.broadcaster.EngineWindowBroadcaster;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
 import com.blackrook.engine.resource.EnginePoolable;
 import com.blackrook.engine.resource.EngineResource;
 import com.blackrook.engine.roles.EngineDevice;
-import com.blackrook.engine.roles.EngineInput;
 import com.blackrook.engine.roles.EngineInputListener;
-import com.blackrook.engine.roles.EngineListener;
-import com.blackrook.engine.roles.EngineStarter;
+import com.blackrook.engine.roles.EngineShutdownListener;
+import com.blackrook.engine.roles.EngineWindowListener;
+import com.blackrook.engine.roles.EngineStartupListener;
 import com.blackrook.engine.roles.EngineMessageListener;
-import com.blackrook.engine.roles.EngineUpdatable;
-import com.blackrook.engine.roles.EngineWindow;
+import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.fs.FSFile;
 import com.blackrook.fs.FSFileFilter;
@@ -82,8 +83,10 @@ public final class Engine
 	/** Engine resources. */
 	private HashMap<Class<?>, EngineResourceList<?>> resources;
 	
-	/** Engine listener. */
-	private Queue<EngineListener> engineListeners;
+	/** Engine shutdown listener. */
+	private Queue<EngineShutdownListener> shutdownListeners;
+	/** Engine window listener. */
+	private Queue<EngineWindowListener> windowListeners;
 	/** Engine message listeners. */
 	private Queue<EngineMessageListener> messageListeners;
 	/** Engine input listeners. */
@@ -109,7 +112,8 @@ public final class Engine
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
 		resources = new HashMap<Class<?>, EngineResourceList<?>>();
-		engineListeners = new Queue<EngineListener>();
+		windowListeners = new Queue<EngineWindowListener>();
+		shutdownListeners = new Queue<EngineShutdownListener>();
 		messageListeners = new Queue<EngineMessageListener>();
 		inputListeners = new Queue<EngineInputListener>();
 
@@ -195,54 +199,54 @@ public final class Engine
 			@Override
 			public void fireRestore()
 			{
-				for (EngineListener listener : engineListeners)
+				for (EngineWindowListener listener : windowListeners)
 					listener.onRestore();
 			}
 			
 			@Override
 			public void fireMouseExit()
 			{
-				for (EngineListener listener : engineListeners)
+				for (EngineWindowListener listener : windowListeners)
 					listener.onMouseExit();
 			}
 			
 			@Override
 			public void fireMouseEnter()
 			{
-				for (EngineListener listener : engineListeners)
+				for (EngineWindowListener listener : windowListeners)
 					listener.onMouseEnter();
 			}
 			
 			@Override
 			public void fireMinimize()
 			{
-				for (EngineListener listener : engineListeners)
+				for (EngineWindowListener listener : windowListeners)
 					listener.onMinimize();
 			}
 			
 			@Override
 			public void fireFocus()
 			{
-				for (EngineListener listener : engineListeners)
+				for (EngineWindowListener listener : windowListeners)
 					listener.onFocus();
 			}
 			
 			@Override
 			public void fireClosing()
 			{
-				for (EngineListener listener : engineListeners)
+				for (EngineWindowListener listener : windowListeners)
 					listener.onClosing();
 			}
 			
 			@Override
 			public void fireBlur()
 			{
-				for (EngineListener listener : engineListeners)
+				for (EngineWindowListener listener : windowListeners)
 					listener.onBlur();
 			}
 		};
 		
-		Queue<EngineStarter> starterComponents = new Queue<EngineStarter>();
+		Queue<EngineStartupListener> starterComponents = new Queue<EngineStartupListener>();
 		OrderingLists lists = new OrderingLists();
 		
 		logger.debug("Scanning classes...");
@@ -301,10 +305,10 @@ public final class Engine
 			logger.debugf("%s added to devices.", obj.object.getClass().getSimpleName());
 		}
 		
-		for (OrderingNode<EngineListener> obj : lists.listeners)
+		for (OrderingNode<EngineWindowListener> obj : lists.windowListeners)
 		{
-			engineListeners.enqueue(obj.object);
-			logger.debugf("%s added to engine listeners.", obj.object.getClass().getSimpleName());
+			windowListeners.enqueue(obj.object);
+			logger.debugf("%s added to window listeners.", obj.object.getClass().getSimpleName());
 		}
 
 		for (OrderingNode<EngineInputListener> obj : lists.inputListeners)
@@ -319,16 +323,22 @@ public final class Engine
 			logger.debugf("%s added to message listeners.", obj.object.getClass().getSimpleName());
 		}
 		
-		for (OrderingNode<EngineStarter> obj : lists.starters)
+		for (OrderingNode<EngineStartupListener> obj : lists.startupListeners)
 		{
 			starterComponents.enqueue(obj.object);
-			logger.debugf("%s added to starters.", obj.object.getClass().getSimpleName());
+			logger.debugf("%s added to startup listeners.", obj.object.getClass().getSimpleName());
 		}
 
-		for (OrderingNode<EngineUpdatable> obj : lists.updatables)
+		for (OrderingNode<EngineShutdownListener> obj : lists.shutdownListeners)
+		{
+			shutdownListeners.enqueue(obj.object);
+			logger.debugf("%s added to shutdown listeners.", obj.object.getClass().getSimpleName());
+		}
+
+		for (OrderingNode<EngineUpdateListener> obj : lists.updateListeners)
 		{
 			updateTicker.add(obj.object);
-			logger.debugf("%s added to updatables.", obj.object.getClass().getSimpleName());
+			logger.debugf("%s added to update listeners.", obj.object.getClass().getSimpleName());
 		}
 		
 		/* Load settings. */
@@ -407,7 +417,7 @@ public final class Engine
 		logger.info("Invoking engine start methods.");
 		// invoke start on stuff.
 		while (!starterComponents.isEmpty())
-			starterComponents.dequeue().start();
+			starterComponents.dequeue().onEngineStartup();
 		
 		// start ticker.
 		updateTicker.start();
@@ -650,7 +660,7 @@ public final class Engine
 
 	/**
 	 * Initiates engine shutdown.
-	 * <p>The ticker is stopped, all listeners have {@link EngineListener#onShutDown()} called on them, all settings are saved, 
+	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
 	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
 	 */
 	public void shutDown(int status)
@@ -697,8 +707,8 @@ public final class Engine
 		}
 		
 		logger.infof("Notifying listeners...");
-		for (EngineListener listener : engineListeners)
-			listener.onShutDown();
+		for (EngineShutdownListener listener : shutdownListeners)
+			listener.onEngineShutdown();
 		for (ObjectPair<?, EngineDevice> device : devices)
 		{
 			EngineDevice ed = device.getValue(); 
@@ -800,17 +810,17 @@ public final class Engine
 			consoleManager.addEntries(object, debugMode);
 		
 		// check if engine window.
-		if (EngineWindow.class.isAssignableFrom(clazz))
+		if (EngineWindowBroadcaster.class.isAssignableFrom(clazz))
 		{
-			EngineWindow obj = (EngineWindow)object;
+			EngineWindowBroadcaster obj = (EngineWindowBroadcaster)object;
 			obj.addWindowEventReceiver(windowEventReceiver);
 			logger.debugf("%s was passed a window event receiver.", clazz.getSimpleName());
 		}
 				
 		// check if engine input.
-		if (EngineInput.class.isAssignableFrom(clazz))
+		if (EngineInputBroadcaster.class.isAssignableFrom(clazz))
 		{
-			EngineInput obj = (EngineInput)object;
+			EngineInputBroadcaster obj = (EngineInputBroadcaster)object;
 			obj.addInputReceiver(inputEventReceiver);
 			logger.debugf("%s was passed an input event receiver.", clazz.getSimpleName());
 		}
@@ -831,10 +841,10 @@ public final class Engine
 		}
 	
 		// check if engine listener.
-		if (EngineListener.class.isAssignableFrom(clazz))
+		if (EngineWindowListener.class.isAssignableFrom(clazz))
 		{
-			EngineListener obj = (EngineListener)object;
-			lists.listeners.add(new OrderingNode<EngineListener>(ordering, obj));
+			EngineWindowListener obj = (EngineWindowListener)object;
+			lists.windowListeners.add(new OrderingNode<EngineWindowListener>(ordering, obj));
 		}
 	
 		// check if message listener.
@@ -851,18 +861,25 @@ public final class Engine
 			lists.inputListeners.add(new OrderingNode<EngineInputListener>(ordering, obj));
 		}
 		
-		// check if engine starter.
-		if (EngineStarter.class.isAssignableFrom(clazz))
+		// check if input listener.
+		if (EngineShutdownListener.class.isAssignableFrom(clazz))
 		{
-			EngineStarter obj = (EngineStarter)object;
-			lists.starters.add(new OrderingNode<EngineStarter>(ordering, obj));
+			EngineShutdownListener obj = (EngineShutdownListener)object;
+			lists.shutdownListeners.add(new OrderingNode<EngineShutdownListener>(ordering, obj));
+		}
+		
+		// check if engine starter.
+		if (EngineStartupListener.class.isAssignableFrom(clazz))
+		{
+			EngineStartupListener obj = (EngineStartupListener)object;
+			lists.startupListeners.add(new OrderingNode<EngineStartupListener>(ordering, obj));
 		}
 	
 		// check if update listener.
-		if (EngineUpdatable.class.isAssignableFrom(clazz))
+		if (EngineUpdateListener.class.isAssignableFrom(clazz))
 		{
-			EngineUpdatable obj = (EngineUpdatable)object;
-			lists.updatables.add(new OrderingNode<EngineUpdatable>(ordering, obj));
+			EngineUpdateListener obj = (EngineUpdateListener)object;
+			lists.updateListeners.add(new OrderingNode<EngineUpdateListener>(ordering, obj));
 		}
 	
 		return object;
@@ -1047,30 +1064,33 @@ public final class Engine
 	private static class OrderingLists
 	{
 		private List<OrderingNode<EngineDevice>> devices;
-		private List<OrderingNode<EngineListener>> listeners;
+		private List<OrderingNode<EngineWindowListener>> windowListeners;
 		private List<OrderingNode<EngineInputListener>> inputListeners;
 		private List<OrderingNode<EngineMessageListener>> messageListeners;
-		private List<OrderingNode<EngineStarter>> starters;
-		private List<OrderingNode<EngineUpdatable>> updatables;
+		private List<OrderingNode<EngineStartupListener>> startupListeners;
+		private List<OrderingNode<EngineShutdownListener>> shutdownListeners;
+		private List<OrderingNode<EngineUpdateListener>> updateListeners;
 		
 		private OrderingLists()
 		{
 			devices = new List<Engine.OrderingNode<EngineDevice>>();
-			listeners = new List<Engine.OrderingNode<EngineListener>>();
+			windowListeners = new List<Engine.OrderingNode<EngineWindowListener>>();
 			inputListeners = new List<Engine.OrderingNode<EngineInputListener>>();
 			messageListeners = new List<Engine.OrderingNode<EngineMessageListener>>();
-			starters = new List<Engine.OrderingNode<EngineStarter>>();
-			updatables = new List<Engine.OrderingNode<EngineUpdatable>>();
+			startupListeners = new List<Engine.OrderingNode<EngineStartupListener>>();
+			shutdownListeners = new List<Engine.OrderingNode<EngineShutdownListener>>();
+			updateListeners = new List<Engine.OrderingNode<EngineUpdateListener>>();
 		}
 		
 		private void sort()
 		{
 			devices.sort();
-			listeners.sort();
+			windowListeners.sort();
 			inputListeners.sort();
 			messageListeners.sort();
-			starters.sort();
-			updatables.sort();
+			startupListeners.sort();
+			shutdownListeners.sort();
+			updateListeners.sort();
 		}
 		
 	}

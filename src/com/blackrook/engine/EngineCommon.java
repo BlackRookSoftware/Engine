@@ -8,7 +8,7 @@ import com.blackrook.engine.annotation.component.CCMD;
 import com.blackrook.engine.annotation.component.CVAR;
 
 /**
- * 
+ * The common engine variables and commands.
  * @author Matthew Tropiano
  */
 public final class EngineCommon
@@ -62,8 +62,6 @@ public final class EngineCommon
 		}
 		
 		console.printfln("count %d", i);
-
-		
 	}
 	
 	@CCMD(description = "Lists all console commands.")

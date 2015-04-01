@@ -10,7 +10,7 @@ import com.blackrook.engine.struct.UpdateHandler;
  * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
-public interface EngineUpdatable extends UpdateHandler
+public interface EngineUpdateListener extends UpdateHandler
 {
 	
 }

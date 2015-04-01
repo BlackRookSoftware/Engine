@@ -3,10 +3,10 @@ package com.blackrook.engine.test;
 import com.blackrook.commons.logging.Logger;
 import com.blackrook.engine.annotation.EngineComponent;
 import com.blackrook.engine.annotation.EngineComponentConstructor;
-import com.blackrook.engine.roles.EngineStarter;
+import com.blackrook.engine.roles.EngineStartupListener;
 
 @EngineComponent
-public class TestMain implements EngineStarter
+public class TestMain implements EngineStartupListener
 {
 	private Logger logger;
 
@@ -18,7 +18,7 @@ public class TestMain implements EngineStarter
 	
 	
 	@Override
-	public void start()
+	public void onEngineStartup()
 	{
 		logger.info("Main invoked!");
 	}

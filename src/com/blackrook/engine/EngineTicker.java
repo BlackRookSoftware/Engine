@@ -14,7 +14,7 @@ import com.blackrook.commons.ResettableIterator;
 import com.blackrook.commons.Ticker;
 import com.blackrook.commons.linkedlist.Queue;
 import com.blackrook.commons.logging.Logger;
-import com.blackrook.engine.roles.EngineUpdatable;
+import com.blackrook.engine.roles.EngineUpdateListener;
 
 /**
  * An update thread class that updates all updatable objects on a set interval.
@@ -28,9 +28,9 @@ public class EngineTicker
 	private Ticker updateTicker;
 	
 	/** Queue of updatables. */
-	private Queue<EngineUpdatable> updatables;
+	private Queue<EngineUpdateListener> updatables;
 	/** Queue iterator. */
-	private ResettableIterator<EngineUpdatable> updatableIterator;
+	private ResettableIterator<EngineUpdateListener> updatableIterator;
 
 	/**
 	 * Creates a new engine ticker.
@@ -40,7 +40,7 @@ public class EngineTicker
 	public EngineTicker(Engine engine, EngineConfig config)
 	{
 		logger = engine.getLogger("Ticker");
-		updatables = new Queue<EngineUpdatable>();
+		updatables = new Queue<EngineUpdateListener>();
 		updateTicker = new UpdateTicker(config.getUpdatesPerSecond());
 		updatableIterator = updatables.iterator();
 	}
@@ -79,7 +79,7 @@ public class EngineTicker
 	}
 	
 	/** Adds an updatable. */
-	public void add(EngineUpdatable updatable)
+	public void add(EngineUpdateListener updatable)
 	{
 		updatables.add(updatable);
 	}

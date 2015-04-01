@@ -4,7 +4,8 @@ import com.blackrook.input.InputComponent;
 import com.blackrook.input.annotation.ComponentBinding;
 
 /**
- * Keyboard interface.
+ * Keyboard mapping.
+ * @author Matthew Tropiano
  */
 public class Keyboard
 {
