@@ -74,6 +74,8 @@ public final class Engine
 	/** Common window event receiver. */
 	private EngineWindowEventReceiver windowEventReceiver; 
 
+	/** Engine singleton-in-construction set. */
+	private Hash<Class<?>> singletonsConstructing;
 	/** Engine singleton map. */
 	private HashMap<Class<?>, Object> singletons;
 	/** Engine pooled object map. */
@@ -108,6 +110,7 @@ public final class Engine
 	{
 		this.config = config;
 		
+		singletonsConstructing = new Hash<Class<?>>();
 		singletons = new HashMap<Class<?>, Object>();
 		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
@@ -788,12 +791,14 @@ public final class Engine
 		}
 		else
 		{
+			singletonsConstructing.put(clazz);
+			
 			Class<?>[] types = constructor.getParameterTypes();
 			Object[] params = new Object[types.length]; 
 			for (int i = 0; i < types.length; i++)
 			{
-				if (types[i].equals(clazz))
-					throw new EngineSetupException("Circular dependency detected: class "+types[i].getSimpleName()+" is the same as this one: "+clazz.getSimpleName());
+				if (singletonsConstructing.contains(types[i]))
+					throw new EngineSetupException("Circular dependency detected in class "+clazz.getSimpleName()+": "+types[i].getSimpleName()+" has not finished constructing.");
 				else if (Logger.class.isAssignableFrom(types[i]))
 					params[i] = getLogger(clazz);
 				else
@@ -801,6 +806,8 @@ public final class Engine
 			}
 			
 			object = Reflect.construct(constructor, params);
+			
+			singletonsConstructing.remove(clazz);
 		}
 	
 		if (!clazz.isAnnotationPresent(EngineComponent.class))
