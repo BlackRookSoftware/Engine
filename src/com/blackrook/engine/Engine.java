@@ -729,6 +729,7 @@ public final class Engine
 				logger.errorf("Failed destroying device %s.", ed.getDeviceName());
 		}
 		
+		logger.infof("Shutting down JVM. Bye!");
 		System.exit(status);
 	}
 
