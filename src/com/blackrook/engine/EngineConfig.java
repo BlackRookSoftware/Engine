@@ -31,6 +31,14 @@ public interface EngineConfig
 	public String[] getPackageRoot();
 
 	/**
+	 * Returns the list of singleton/pool classes that should be instantiated on startup.
+	 * Their dependencies are also loaded.
+	 * All names do not need full qualification.
+	 * If null, all classes are loaded.  
+	 */
+	public String[] getStartupComponentClasses();
+
+	/**
 	 * Returns the directory path for storing global configuration.
 	 * NOTE: This is OUTSIDE of the file system path.  
 	 */

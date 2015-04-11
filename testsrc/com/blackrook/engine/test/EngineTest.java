@@ -21,6 +21,12 @@ public final class EngineTest
 			}
 
 			@Override
+			public String[] getStartupComponentClasses()
+			{
+				return null;
+			}
+			
+			@Override
 			public String getResourceDefinitionFile()
 			{
 				return "resources.def";
