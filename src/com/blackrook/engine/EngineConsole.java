@@ -356,6 +356,7 @@ public class EngineConsole extends JFrame
 
 		} catch (Exception ex) {
 			println("EXCEPTION: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+			println(Common.getExceptionString(ex));
 		}
 		
 		if (out != null)
