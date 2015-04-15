@@ -115,7 +115,7 @@ public class EnginePool<P extends EnginePoolable>
 		this.pool = new EnginePoolable[startAmount];
 		
 		for (int i = 0; i < startAmount; i++)
-			this.pool[i] = engine.createComponent(poolClass, constructor);
+			this.pool[i] = engine.createComponent(poolClass, constructor, false);
 	}
 	
 	/**
@@ -178,7 +178,7 @@ public class EnginePool<P extends EnginePoolable>
 		EnginePoolable[] newpool = new EnginePoolable[newlen];
 		System.arraycopy(pool, 0, newpool, 0, pool.length);
 		for (int i = pool.length; i < newlen; i++)
-			newpool[i] = engine.createComponent(poolClass, constructor);
+			newpool[i] = engine.createComponent(poolClass, constructor, false);
 		
 		this.pool = newpool;
 	}

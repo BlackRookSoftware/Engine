@@ -85,6 +85,8 @@ public final class Engine
 	/** Engine resources. */
 	private HashMap<Class<?>, EngineResourceList<?>> resources;
 	
+	/** Ordering lists for startup. */
+	private OrderingLists lists;
 	/** Engine shutdown listener. */
 	private Queue<EngineShutdownListener> shutdownListeners;
 	/** Engine window listener. */
@@ -175,7 +177,9 @@ public final class Engine
 		fileSystem = new EngineFileSystem(this, config);
 
 		// load resource definitions.
+		logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
 		ArcheTextRoot resourceDefinitionRoot = loadResourceDefinitions(config.getResourceDefinitionFile());
+		logger.info("Done.");
 		
 		inputEventReceiver = new EngineInputEventReceiver()
 		{
@@ -250,7 +254,7 @@ public final class Engine
 		};
 		
 		Queue<EngineStartupListener> starterComponents = new Queue<EngineStartupListener>();
-		OrderingLists lists = new OrderingLists();
+		lists = new OrderingLists();
 		Hash<String> componentStartupClass = new Hash<>();
 		if (!Common.isEmpty(config.getStartupComponentClasses()))
 			for (String name : config.getStartupComponentClasses())
@@ -298,7 +302,7 @@ public final class Engine
 					}
 					else
 					{
-						createOrGetComponent(componentClass, lists, false, debugMode);
+						createOrGetComponent(componentClass, debugMode);
 						logger.infof("Created component. %s", componentClass.getSimpleName());
 					}
 				}
@@ -734,18 +738,6 @@ public final class Engine
 	}
 
 	/**
-	 * Creates a new component for a class and using one of its constructors, 
-	 * skipping console annotation processing and debug mode processing.
-	 * @param clazz the class to instantiate.
-	 * @param constructor the constructor to call for instantiation.
-	 * @return the new class instance.
-	 */
-	<T> T createComponent(Class<T> clazz, Constructor<T> constructor)
-	{
-		return createComponent(clazz, constructor, null, true, false);
-	}
-
-	/**
 	 * Returns the names of all devices. 
 	 */
 	String[] getDeviceNames()
@@ -789,7 +781,7 @@ public final class Engine
 	 * @param debugMode if true, processes CVARs and CCMDs only available in debug mode.
 	 * @return the new class instance.
 	 */
-	private <T> T createComponent(Class<T> clazz, Constructor<T> constructor, OrderingLists lists, boolean skipConsole, boolean debugMode)
+	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean debugMode)
 	{
 		T object = null;
 		
@@ -810,7 +802,7 @@ public final class Engine
 				else if (Logger.class.isAssignableFrom(types[i]))
 					params[i] = getLogger(clazz);
 				else
-					params[i] = createOrGetComponent(types[i], lists, skipConsole, debugMode);
+					params[i] = createOrGetComponent(types[i], debugMode);
 			}
 			
 			object = Reflect.construct(constructor, params);
@@ -821,8 +813,10 @@ public final class Engine
 		if (!clazz.isAnnotationPresent(EngineComponent.class))
 			return object;
 		
-		if (!skipConsole)
-			consoleManager.addEntries(object, debugMode);
+		if (EnginePoolable.class.isAssignableFrom(clazz))
+			return object;
+		
+		consoleManager.addEntries(object, debugMode);
 		
 		// check if engine window.
 		if (EngineWindowBroadcaster.class.isAssignableFrom(clazz))
@@ -840,9 +834,6 @@ public final class Engine
 			logger.debugf("%s was passed an input event receiver.", clazz.getSimpleName());
 		}
 		
-		if (lists == null)
-			return object;
-	
 		/* The listeners. */
 		
 		Ordering anno = clazz.getAnnotation(Ordering.class);
@@ -928,12 +919,12 @@ public final class Engine
 	 * @param clazz the class to create/retrieve.
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> T createOrGetComponent(Class<T> clazz, OrderingLists lists, boolean skipConsole, boolean debug)
+	private <T> T createOrGetComponent(Class<T> clazz, boolean debug)
 	{
 		if (singletons.containsKey(clazz))
 			return (T)singletons.get(clazz);
 		
-		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), lists, skipConsole, debug);
+		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), debug);
 		singletons.put(clazz, instance);
 		return instance;
 	}
