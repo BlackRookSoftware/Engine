@@ -8,14 +8,14 @@ import com.blackrook.engine.roles.EngineUpdateListener;
  * The state manager class for maintaining exclusive, updatable states.
  * @author Matthew Tropiano
  */
-public class StateManager implements EngineUpdateListener, EngineInputListener, Sizable
+public class StateManager<S extends State> implements EngineUpdateListener, EngineInputListener, Sizable
 {
 	/** Current game state. */
 	private State[] states;
 	/** Size. */
 	private int size;
 
-	StateManager()
+	public StateManager()
 	{
 		states = new State[4];
 		size = 0;
@@ -25,29 +25,29 @@ public class StateManager implements EngineUpdateListener, EngineInputListener, 
 	 * Changes the current state by emptying the state 
 	 * stack and pushing new ones onto the stack by name.
 	 * Calls {@link State#exit()} on each state popped and {@link State#enter()} on each state pushed. 
-	 * @param states the states to push in the specified order.
+	 * @param changeStates the states to push in the specified order.
 	 */
-	public synchronized void change(State ... states)
+	public synchronized void change(@SuppressWarnings("unchecked") final S ... changeStates)
 	{
 		while (!isEmpty()) 
 			pop();
-		push(states);
+		push(changeStates);
 	}
 
 	/**
 	 * Pushes new states onto the stack.
 	 * Calls {@link State#enter()} on each state pushed. 
-	 * @param states the states to push in the specified order.
+	 * @param pushStates the states to push in the specified order.
 	 * onto the stack, false if at least one was not.
 	 */
-	public synchronized void push(State ... states)
+	public synchronized void push(@SuppressWarnings("unchecked") final S ... pushStates)
 	{
-		for (State s : states)
+		for (State s : pushStates)
 		{
 			if (size() == states.length)
 			{
 				State[] newarray = new State[states.length * 2];
-				System.arraycopy(states, 0, newarray, 0, states.length);
+				System.arraycopy(states, 0, newarray, 0, pushStates.length);
 				states = newarray;
 			}
 			s.enter();
