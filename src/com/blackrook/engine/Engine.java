@@ -288,22 +288,26 @@ public final class Engine
 			}
 			else if (componentClass.isAnnotationPresent(EngineComponent.class))
 			{
-				if (componentStartupClass.isEmpty() || componentStartupClass.contains(componentClass.getName()) || componentStartupClass.contains(componentClass.getSimpleName()))
+				EngineComponent ecomp = componentClass.getAnnotation(EngineComponent.class);
+				if (config.getDebugMode() || (!config.getDebugMode() && !ecomp.debug()))
 				{
-					if (componentClass.isAnnotationPresent(Pooled.class))
+					if (componentStartupClass.isEmpty() || componentStartupClass.contains(componentClass.getName()) || componentStartupClass.contains(componentClass.getSimpleName()))
 					{
-						if (!EnginePoolable.class.isAssignableFrom(componentClass))
-							throw new EngineSetupException("Found EnginePooledComponent annotation on a class that does not implement EnginePoolable.");
-						
-						Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
-						Pooled anno = componentClass.getAnnotation(Pooled.class);
-						pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
-						logger.infof("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
-					}
-					else
-					{
-						createOrGetComponent(componentClass, debugMode);
-						logger.infof("Created component. %s", componentClass.getSimpleName());
+						if (componentClass.isAnnotationPresent(Pooled.class))
+						{
+							if (!EnginePoolable.class.isAssignableFrom(componentClass))
+								throw new EngineSetupException("Found EnginePooledComponent annotation on a class that does not implement EnginePoolable.");
+							
+							Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
+							Pooled anno = componentClass.getAnnotation(Pooled.class);
+							pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
+							logger.infof("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
+						}
+						else
+						{
+							createOrGetComponent(componentClass, debugMode);
+							logger.infof("Created component. %s", componentClass.getSimpleName());
+						}
 					}
 				}
 			}

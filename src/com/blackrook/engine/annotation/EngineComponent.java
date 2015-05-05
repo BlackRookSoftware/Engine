@@ -20,5 +20,6 @@ import com.blackrook.engine.annotation.component.Ordering;
 @Target(ElementType.TYPE)
 public @interface EngineComponent
 {
-	
+	/** If true, only instantiated on debug mode. */
+	boolean debug() default false;
 }
