@@ -1,7 +1,6 @@
 package com.blackrook.engine;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -52,7 +51,6 @@ import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.fs.FSFile;
-import com.blackrook.fs.FSFileFilter;
 
 /**
  * The main engine, created as the centerpoint of the communication between components
@@ -67,8 +65,6 @@ public final class Engine
 	private LoggingFactory loggingFactory;
 	/** Engine config. */
 	private EngineConfig config;
-	/** Engine filesystem. */
-	private EngineFileSystem fileSystem;
 	/** Common window event receiver. */
 	private EngineInputEventReceiver inputEventReceiver; 
 	/** Common window event receiver. */
@@ -102,6 +98,8 @@ public final class Engine
 	private EngineConsole console;
 	/** Engine console manager. */
 	private EngineConsoleManager consoleManager;
+	/** File system. */
+	private EngineFileSystem fileSystem;
 	
 	/**
 	 * Creates the engine and all of the other stuff.
@@ -122,8 +120,11 @@ public final class Engine
 		messageListeners = new Queue<EngineMessageListener>();
 		inputListeners = new Queue<EngineInputListener>();
 
-		// set up logging.
 		loggingFactory = new LoggingFactory();
+		logger = loggingFactory.getLogger(Engine.class, false);
+
+		fileSystem = new EngineFileSystem(loggingFactory.getLogger(EngineFileSystem.class, false), this, config);
+		
 		loggingFactory.setLoggingLevel(config.getLogLevel() != null ? config.getLogLevel() : LogLevel.DEBUG);
 		loggingFactory.addDriver(new ConsoleLogger());
 
@@ -131,19 +132,20 @@ public final class Engine
 		singletons.put(Engine.class, this);
 		singletons.put(EngineConfig.class, config); // uses base class.
 		singletons.put(config.getClass(), config); // uses runtime class.
-
-		logger = getLogger(Engine.class);
+		singletons.put(EngineFileSystem.class, fileSystem);
 
 		// create console manager.
 		consoleManager = new EngineConsoleManager();
 		consoleManager.addEntries(EngineConsoleManager.class, debugMode);
+		
+		singletons.put(EngineConsoleManager.class, consoleManager);
 
 		// create console.
 		console = new EngineConsole(this, config, consoleManager);
 		consoleManager.addEntries(console, debugMode);
 		consoleManager.addEntries(new EngineCommon(this, console, consoleManager),  debugMode);
 		
-		updateTicker = new EngineTicker(this, config);
+		updateTicker = new EngineTicker(loggingFactory.getLogger(EngineTicker.class, false), this, config);
 		
 		PrintStream ps;
 		try {
@@ -173,8 +175,6 @@ public final class Engine
 				console.printfln("[%s] <%s> %s: %s", DATE_FORMAT.format(time), source, level, message);
 			}
 		});
-
-		fileSystem = new EngineFileSystem(this, config);
 
 		// load resource definitions.
 		logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
@@ -261,30 +261,18 @@ public final class Engine
 				componentStartupClass.put(name);
 		
 		logger.debug("Scanning classes...");
+		
+		List<Class<EngineResource>> resourceClasses = new List<Class<EngineResource>>();
+		List<Class<EnginePoolable>> pooledClasses = new List<Class<EnginePoolable>>();
+		List<Class<?>> componentClasses = new List<Class<?>>();
+		
 		for (Class<?> componentClass : getComponentClasses(config))
 		{
 			if (componentClass.isAnnotationPresent(Resource.class))
 			{
 				if (!EngineResource.class.isAssignableFrom(componentClass))
-					throw new EngineSetupException("Found EngineResourceComponent annotation on a class that does not implement EngineResource.");
-				
-				Class<EngineResource> resourceClass = (Class<EngineResource>)componentClass;
-				Resource anno = componentClass.getAnnotation(Resource.class);
-				String className = resourceClass.getSimpleName();
-				className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
-				String structName = Common.isEmpty(anno.value()) ? className : anno.value();
-
-				EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(resourceClass); 
-				resources.put(resourceClass, resourceList);
-				
-				int added = 0;
-				for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
-				{
-					resourceList.add(object.newObject(resourceClass));
-					added++;
-				}
-				
-				logger.infof("Created resource list. %s (count %d)", resourceClass.getSimpleName(), added);
+					throw new EngineSetupException("Found @Resource annotation on a class that does not implement EngineResource.");
+				resourceClasses.add((Class<EngineResource>)componentClass);
 			}
 			else if (componentClass.isAnnotationPresent(EngineComponent.class))
 			{
@@ -296,21 +284,50 @@ public final class Engine
 						if (componentClass.isAnnotationPresent(Pooled.class))
 						{
 							if (!EnginePoolable.class.isAssignableFrom(componentClass))
-								throw new EngineSetupException("Found EnginePooledComponent annotation on a class that does not implement EnginePoolable.");
-							
-							Class<EnginePoolable> poolClass = (Class<EnginePoolable>)componentClass;
-							Pooled anno = componentClass.getAnnotation(Pooled.class);
-							pools.put(poolClass, new EnginePool<EnginePoolable>(this, poolClass, getAnnotatedConstructor(poolClass), anno.policy(), anno.value(), anno.expansion()));
-							logger.infof("Created pool. %s (count %d)", poolClass.getSimpleName(), anno.value());
+								throw new EngineSetupException("Found @Pooled annotation on a class that does not implement EnginePoolable.");
+							else
+								pooledClasses.add((Class<EnginePoolable>)componentClass);
 						}
 						else
-						{
-							createOrGetComponent(componentClass, debugMode);
-							logger.infof("Created component. %s", componentClass.getSimpleName());
-						}
+							componentClasses.add(componentClass);
 					}
 				}
 			}
+		}
+		
+		// create resources first.
+		for (Class<EngineResource> clazz : resourceClasses)
+		{
+			Resource anno = clazz.getAnnotation(Resource.class);
+			String className = clazz.getSimpleName();
+			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
+			String structName = Common.isEmpty(anno.value()) ? className : anno.value();
+
+			EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(clazz); 
+			resources.put(clazz, resourceList);
+			
+			int added = 0;
+			for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
+			{
+				resourceList.add(object.newObject(clazz));
+				added++;
+			}
+			
+			logger.infof("Created resource list. %s (count %d)", clazz.getSimpleName(), added);
+		}
+		
+		// create pools next.
+		for (Class<EnginePoolable> clazz : pooledClasses)
+		{
+			Pooled anno = clazz.getAnnotation(Pooled.class);
+			pools.put(clazz, new EnginePool<EnginePoolable>(this, clazz, getAnnotatedConstructor(clazz), anno.policy(), anno.value(), anno.expansion()));
+			logger.infof("Created pool. %s (count %d)", clazz.getSimpleName(), anno.value());
+		}
+		
+		// create components.
+		for (Class<?> clazz : componentClasses)
+		{
+			createOrGetComponent(clazz, debugMode);
 		}
 		
 		/* Sort and add role singletons. */
@@ -370,13 +387,13 @@ public final class Engine
 			logger.infof("Loading global settings...");
 			settings = new Properties();
 			try {
-				inStream = openGlobalSettingFile(config.getGlobalVariablesFile());
+				inStream = fileSystem.openGlobalSettingFile(config.getGlobalVariablesFile());
 				settings = new Properties();
 				settings.load(inStream);
 			} catch (FileNotFoundException e) {
-				logger.infof("Could not open global settings from file \"%s\". Doesn't exist.", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+				logger.infof("Could not open global settings from file \"%s\". Doesn't exist.", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
 			} catch (IOException e) {
-				logger.errorf(e, "Could not read global settings from file \"%s\".", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+				logger.errorf(e, "Could not read global settings from file \"%s\".", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
 			} finally {
 				Common.close(inStream);
 			}
@@ -392,13 +409,13 @@ public final class Engine
 			logger.infof("Loading user settings...");
 			settings = new Properties();
 			try {
-				inStream = openUserSettingFile(config.getUserVariablesFile());
+				inStream = fileSystem.openUserSettingFile(config.getUserVariablesFile());
 				settings = new Properties();
 				settings.load(inStream);
 			} catch (FileNotFoundException e) {
-				logger.infof("Could not open user settings from file \"%s\". Doesn't exist.", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+				logger.infof("Could not open user settings from file \"%s\". Doesn't exist.", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
 			} catch (IOException e) {
-				logger.errorf(e, "Could not read user settings from file \"%s\".", getOutPath(config.getUserSettingsPath(), config.getUserVariablesFile()));
+				logger.errorf(e, "Could not read user settings from file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
 			} finally {
 				Common.close(inStream);
 			}
@@ -448,18 +465,6 @@ public final class Engine
 	}
 
 	/**
-	 * Gets the engine-spawned singleton class assigned to the provided class.
-	 * @throws NoSuchComponentException if the provided class is not a valid component.
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> T getComponent(Class<T> clazz)
-	{
-		if (!singletons.containsKey(clazz))
-			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid singleton component.");
-		return (T)singletons.get(clazz);
-	}
-	
-	/**
 	 * Gets the pool assigned to the provided class.
 	 * @throws NoSuchComponentException if the provided class is not a valid pooled component.
 	 */
@@ -487,26 +492,6 @@ public final class Engine
 	}
 	
 	/**
-	 * Returns a logger instance for a particular component.
-	 * @param name the component name to log things for.
-	 * @return a logger to use.
-	 */
-	public Logger getLogger(String name)
-	{
-		return loggingFactory.getLogger(name);
-	}
-	
-	/**
-	 * Returns a logger instance for a particular component.
-	 * @param clz the component name to log things for.
-	 * @return a logger to use.
-	 */
-	public Logger getLogger(Class<?> clz)
-	{
-		return loggingFactory.getLogger(clz, false);
-	}
-	
-	/**
 	 * Broadcasts a message to all message listeners.
 	 * @param message the message to broadcast to all who would listen.
 	 */
@@ -524,148 +509,6 @@ public final class Engine
 	public boolean restartDevice(String name)
 	{
 		return destroyDevice(name) && createDevice(name);
-	}
-
-	/**
-	 * Retrieves a file from the system. Searches down the stack.
-	 * @param path	the file path.
-	 * @return		A reference to the file as an FSFile object, null if not found.
-	 */
-	public FSFile getFile(String path) throws IOException
-	{
-		return fileSystem.getFile(path);
-	}
-
-	/**
-	 * Retrieves all of the instances of a file from the system. Searches down the stack.
-	 * @param path	the file path.
-	 * @return A reference to the files as an FSFile array object. 
-	 * 	An empty array implies that no files were found.
-	 */
-	public FSFile[] getAllFileInstances(String path) throws IOException
-	{
-		return fileSystem.getAllFileInstances(path);
-	}
-
-	/**
-	 * Retrieves all of the recent instances of a file from the system. Searches down the stack.
-	 * @return A reference to the files as an FSFile array object.
-	 */
-	public FSFile[] getAllFiles() throws IOException
-	{
-		return fileSystem.getAllFiles();
-	}
-	
-	/**
-	 * Retrieves all of the recent instances of the files within this system that pass the filter test as FSFile objects.
-	 * @param filter the file filter to use.
-	 * @return A reference to the files as an FSFile array object.
-	 */
-	public FSFile[] getAllFiles(FSFileFilter filter) throws IOException
-	{
-		return fileSystem.getAllFiles(filter);
-	}
-	
-	/**
-	 * Retrieves all of the recent instances of the files within this system.
-	 * @param path the file path. Must be a directory.
-	 * @return A reference to the files as an FSFile array object.
-	 */
-	public FSFile[] getAllFilesInDir(String path) throws IOException
-	{
-		return fileSystem.getAllFilesInDir(path);
-	}
-	
-	/**
-	 * Retrieves all of the recent instances of the files within this system that pass the filter test as FSFile objects.
-	 * @param path the file path. Must be a directory.
-	 * @param filter the file filter to use.
-	 * @return A reference to the files as an FSFile array object.
-	 */
-	public FSFile[] getAllFilesInDir(String path, FSFileFilter filter) throws IOException
-	{
-		return fileSystem.getAllFilesInDir(path, filter);
-	}
-	
-	/**
-	 * Creates a file in the filesystem stack system using the name and path provided.
-	 * @return	an acceptable OutputStream for filling the file with data, or null if no stream can be made.
-	 */
-	public OutputStream createFilesystemFile(String path) throws IOException
-	{
-		return fileSystem.createFile(path);
-	}
-
-	/**
-	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
-	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
-	 * @param path the path to use.
-	 * @return an open OutputStream for writing to the file.
-	 * @see EngineConfig#getGlobalSettingsPath()
-	 */
-	public OutputStream createGlobalSettingFile(String path) throws IOException
-	{
-		String fullPath = getOutPath(config.getGlobalSettingsPath(), path);
-		if (fullPath == null)
-			return null;
-		logger.infof("Creating global setting path \"%s\"...", fullPath);
-		if (!Common.createPathForFile(fullPath))
-			return null;
-		OutputStream out = new FileOutputStream(fullPath);
-		return out;
-	}
-
-	/**
-	 * Creates a new file off of the user settings path provided by {@link EngineConfig}.
-	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
-	 * @param path the path to use.
-	 * @return an open OutputStream for writing to the file.
-	 * @see EngineConfig#getUserSettingsPath()
-	 */
-	public OutputStream createUserSettingFile(String path) throws IOException
-	{
-		String fullPath = getOutPath(config.getUserSettingsPath(), path);
-		if (fullPath == null)
-			return null;
-		logger.infof("Creating user setting path \"%s\"...", fullPath);
-		if (!Common.createPathForFile(fullPath))
-			return null;
-		OutputStream out = new FileOutputStream(fullPath);
-		return out;
-	}
-
-	/**
-	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
-	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
-	 * @param path the path to use.
-	 * @return an open InputStream for reading from the file.
-	 * @see EngineConfig#getGlobalSettingsPath()
-	 */
-	public InputStream openGlobalSettingFile(String path) throws IOException
-	{
-		String fullPath = getOutPath(config.getGlobalSettingsPath(), path);
-		if (fullPath == null)
-			return null;
-		logger.infof("Opening global setting path \"%s\"...", fullPath);
-		InputStream out = new FileInputStream(fullPath);
-		return out;
-	}
-
-	/**
-	 * Creates a new file off of the user settings path provided by {@link EngineConfig}.
-	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
-	 * @param path the path to use.
-	 * @return an open InputStream for reading from the file.
-	 * @see EngineConfig#getUserSettingsPath()
-	 */
-	public InputStream openUserSettingFile(String path) throws IOException
-	{
-		String fullPath = getOutPath(config.getUserSettingsPath(), path);
-		if (fullPath == null)
-			return null;
-		logger.infof("Opening user setting path \"%s\"...", fullPath);
-		InputStream out = new FileInputStream(fullPath);
-		return out;
 	}
 
 	/**
@@ -699,10 +542,10 @@ public final class Engine
 			for (String var : consoleManager.getVariableNames(true, false))
 				settings.setProperty(var, consoleManager.getVariable(var, String.class));
 			try {
-				outStream = createUserSettingFile(config.getUserVariablesFile());
+				outStream = fileSystem.createUserSettingFile(config.getUserVariablesFile());
 				settings.store(outStream, "User settings for " + applicationString);
 			} catch (IOException e) {
-				logger.errorf(e, "Could not write user settings to file \"%s\".", getOutPath(config.getUserSettingsPath(), config.getUserVariablesFile()));
+				logger.errorf(e, "Could not write user settings to file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
 			} finally {
 				Common.close(outStream);
 			}
@@ -715,10 +558,10 @@ public final class Engine
 			for (String var : consoleManager.getVariableNames(true, true))
 				settings.setProperty(var, consoleManager.getVariable(var, String.class));
 			try {
-				outStream = createGlobalSettingFile(config.getGlobalVariablesFile());
+				outStream = fileSystem.createGlobalSettingFile(config.getGlobalVariablesFile());
 				settings.store(outStream, "Global settings for " + applicationString);
 			} catch (IOException e) {
-				logger.errorf(e, "Could not write global settings to file \"%s\".", getOutPath(config.getGlobalSettingsPath(), config.getGlobalVariablesFile()));
+				logger.errorf(e, "Could not write global settings to file \"%s\".", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
 			} finally {
 				Common.close(outStream);
 			}
@@ -804,7 +647,7 @@ public final class Engine
 				if (singletonsConstructing.contains(types[i]))
 					throw new EngineSetupException("Circular dependency detected in class "+clazz.getSimpleName()+": "+types[i].getSimpleName()+" has not finished constructing.");
 				else if (Logger.class.isAssignableFrom(types[i]))
-					params[i] = getLogger(clazz);
+					params[i] = loggingFactory.getLogger(clazz);
 				else
 					params[i] = createOrGetComponent(types[i], debugMode);
 			}
@@ -930,6 +773,7 @@ public final class Engine
 		
 		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), debug);
 		singletons.put(clazz, instance);
+		logger.infof("Created component. %s", clazz.getSimpleName());
 		return instance;
 	}
 
@@ -1058,18 +902,6 @@ public final class Engine
 		return out;
 	}
 
-	// assembles an out path.
-	private String getOutPath(String basePath, String filePath)
-	{
-		if (filePath == null)
-			return null;
-		if (basePath == null)
-			basePath = Common.WORK_DIR;
-		basePath = basePath.endsWith(File.separator) || basePath.endsWith("/") ? basePath : basePath + File.separator; 
-		return basePath + filePath;
-	}
-	
-	
 	/** Node for ordering lists of components. */
 	private static class OrderingLists
 	{

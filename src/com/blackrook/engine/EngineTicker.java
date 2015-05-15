@@ -37,9 +37,9 @@ public class EngineTicker
 	 * @param engine the Engine2D instance.
 	 * @param config the configuration class to use.
 	 */
-	public EngineTicker(Engine engine, EngineConfig config)
+	public EngineTicker(Logger logger, Engine engine, EngineConfig config)
 	{
-		logger = engine.getLogger("Ticker");
+		this.logger = logger;
 		updatables = new Queue<EngineUpdateListener>();
 		updateTicker = new UpdateTicker(config.getUpdatesPerSecond());
 		updatableIterator = updatables.iterator();

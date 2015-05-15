@@ -2,7 +2,11 @@ package com.blackrook.engine;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.zip.ZipException;
 
 import com.blackrook.commons.Common;
@@ -19,22 +23,25 @@ import com.blackrook.fs.archive.ZipArchive;
  */
 public class EngineFileSystem extends FileSystem
 {
-	/** Sound system logger. */
-	protected Logger logger;
-	
+	/** File system logger. */
+	private Logger logger;
+	/** Config ref. */
+	private EngineConfig config;
+
 	/** File filter. */
-	protected FileFilter packFilter;
+	private FileFilter packFilter;
 	
 	/**
 	 * Creates a new file system.
 	 * @param engine the Engine2D instance.
 	 * @param config the configuration class to use.
 	 */
-	EngineFileSystem(Engine engine, EngineConfig config)
+	EngineFileSystem(Logger logger, Engine engine, EngineConfig config)
 	{
 		super();
 		
-		logger = engine.getLogger("FileSystem");
+		this.config = config;
+		this.logger = logger;
 		
 		final String EXT = config.getFileSystemArchiveExtension();
 		packFilter = null;
@@ -87,6 +94,105 @@ public class EngineFileSystem extends FileSystem
 	{
 		super.pushArchive(fsfa);
 		logger.info("Pushed " + fsfa.getPath());
+	}
+
+	/**
+	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open OutputStream for writing to the file.
+	 * @see EngineConfig#getGlobalSettingsPath()
+	 */
+	public OutputStream createGlobalSettingFile(String path) throws IOException
+	{
+		String fullPath = getOutPath(config.getGlobalSettingsPath(), path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Creating global setting path \"%s\"...", fullPath);
+		if (!Common.createPathForFile(fullPath))
+			return null;
+		OutputStream out = new FileOutputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Creates a new file off of the user settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open OutputStream for writing to the file.
+	 * @see EngineConfig#getUserSettingsPath()
+	 */
+	public OutputStream createUserSettingFile(String path) throws IOException
+	{
+		String fullPath = getOutPath(config.getUserSettingsPath(), path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Creating user setting path \"%s\"...", fullPath);
+		if (!Common.createPathForFile(fullPath))
+			return null;
+		OutputStream out = new FileOutputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open InputStream for reading from the file.
+	 * @see EngineConfig#getGlobalSettingsPath()
+	 */
+	public InputStream openGlobalSettingFile(String path) throws IOException
+	{
+		String fullPath = getGlobalSettingFilePath(path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Opening global setting path \"%s\"...", fullPath);
+		InputStream out = new FileInputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Creates a new file off of the user settings path provided by {@link EngineConfig}.
+	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
+	 * @param path the path to use.
+	 * @return an open InputStream for reading from the file.
+	 * @see EngineConfig#getUserSettingsPath()
+	 */
+	public InputStream openUserSettingFile(String path) throws IOException
+	{
+		String fullPath = getUserSettingFilePath(path);
+		if (fullPath == null)
+			return null;
+		logger.infof("Opening user setting path \"%s\"...", fullPath);
+		InputStream out = new FileInputStream(fullPath);
+		return out;
+	}
+
+	/**
+	 * Returns the path to a file in the global setting path. 
+	 */
+	public String getGlobalSettingFilePath(String path)
+	{
+		return getOutPath(config.getGlobalSettingsPath(), path);
+	}
+	
+	/**
+	 * Returns the path to a file in the user setting path. 
+	 */
+	public String getUserSettingFilePath(String path)
+	{
+		return getOutPath(config.getUserSettingsPath(), path);
+	}
+	
+	// assembles an out path.
+	private String getOutPath(String basePath, String filePath)
+	{
+		if (filePath == null)
+			return null;
+		if (basePath == null)
+			basePath = Common.WORK_DIR;
+		basePath = basePath.endsWith(File.separator) || basePath.endsWith("/") ? basePath : basePath + File.separator; 
+		return basePath + filePath;
 	}
 
 }
