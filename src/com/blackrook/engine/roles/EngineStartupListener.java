@@ -1,7 +1,7 @@
 package com.blackrook.engine.roles;
 
 import com.blackrook.engine.Engine;
-import com.blackrook.engine.annotation.component.Ordering;
+import com.blackrook.engine.annotation.element.Ordering;
 
 
 /**

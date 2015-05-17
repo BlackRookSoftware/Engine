@@ -5,20 +5,20 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.blackrook.engine.annotation.component.CCMD;
-import com.blackrook.engine.annotation.component.CVAR;
-import com.blackrook.engine.annotation.component.Ordering;
+import com.blackrook.engine.annotation.element.CCMD;
+import com.blackrook.engine.annotation.element.CVAR;
+import com.blackrook.engine.annotation.element.Ordering;
 
 /**
  * Annotation for classes that should be instantiated as singletons for the Engine.
- * These classes can be annotated with {@link CCMD}, {@link CVAR}, and {@link EngineComponentConstructor} annotations.
+ * These classes can be annotated with {@link CCMD}, {@link CVAR}, and {@link ElementConstructor} annotations.
  * Depending on other component roles, some can be ordered in order to influence listener invocation order.
  * @author Matthew Tropiano
  * @see Ordering
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface EngineComponent
+public @interface Element
 {
 	/** If true, only instantiated on debug mode. */
 	boolean debug() default false;

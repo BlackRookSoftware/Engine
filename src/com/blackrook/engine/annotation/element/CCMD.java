@@ -1,13 +1,15 @@
-package com.blackrook.engine.annotation.component;
+package com.blackrook.engine.annotation.element;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.blackrook.engine.annotation.Element;
+
 /**
  * Annotation for console command entry points.
- * Console commands can be attached to any public method that is on an EngineComponent.
+ * Console commands can be attached to any public method that is on an {@link Element}.
  * @author Matthew Tropiano
  */
 @Retention(RetentionPolicy.RUNTIME)

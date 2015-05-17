@@ -1,14 +1,14 @@
 package com.blackrook.engine.state;
 
 import com.blackrook.commons.Sizable;
-import com.blackrook.engine.roles.EngineInputListener;
-import com.blackrook.engine.roles.EngineUpdateListener;
+import com.blackrook.engine.struct.InputHandler;
+import com.blackrook.engine.struct.UpdateHandler;
 
 /**
  * The state manager class for maintaining exclusive, updatable states.
  * @author Matthew Tropiano
  */
-public class StateManager<S extends State> implements EngineUpdateListener, EngineInputListener, Sizable
+public class StateManager<S extends State> implements UpdateHandler, InputHandler, Sizable
 {
 	/** Current game state. */
 	private State[] states;

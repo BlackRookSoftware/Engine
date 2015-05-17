@@ -1,12 +1,12 @@
 package com.blackrook.engine.test;
 
-import com.blackrook.engine.annotation.EngineComponent;
-import com.blackrook.engine.annotation.EngineComponentConstructor;
+import com.blackrook.engine.annotation.Element;
+import com.blackrook.engine.annotation.ElementConstructor;
 
-@EngineComponent
+@Element
 public class TestComponentTwo
 {
-	@EngineComponentConstructor
+	@ElementConstructor
 	public TestComponentTwo()
 	{
 	}

@@ -1,6 +1,6 @@
 package com.blackrook.engine.roles;
 
-import com.blackrook.engine.annotation.component.Ordering;
+import com.blackrook.engine.annotation.element.Ordering;
 import com.blackrook.engine.struct.InputHandler;
 
 /**

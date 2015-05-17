@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
@@ -31,16 +30,13 @@ import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.commons.logging.driver.ConsoleLogger;
 import com.blackrook.commons.logging.driver.PrintStreamLogger;
-import com.blackrook.engine.annotation.EngineComponent;
-import com.blackrook.engine.annotation.EngineComponentConstructor;
-import com.blackrook.engine.annotation.component.Ordering;
-import com.blackrook.engine.annotation.component.Pooled;
+import com.blackrook.engine.annotation.Element;
+import com.blackrook.engine.annotation.element.Ordering;
 import com.blackrook.engine.annotation.resource.Resource;
 import com.blackrook.engine.broadcaster.EngineInputBroadcaster;
 import com.blackrook.engine.broadcaster.EngineWindowBroadcaster;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
-import com.blackrook.engine.resource.EnginePoolable;
 import com.blackrook.engine.resource.EngineResource;
 import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInputListener;
@@ -74,8 +70,6 @@ public final class Engine
 	private Hash<Class<?>> singletonsConstructing;
 	/** Engine singleton map. */
 	private HashMap<Class<?>, Object> singletons;
-	/** Engine pooled object map. */
-	private HashMap<Class<?>, EnginePool<EnginePoolable>> pools;
 	/** Engine devices. */
 	private HashMap<String, EngineDevice> devices;
 	/** Engine resources. */
@@ -112,7 +106,6 @@ public final class Engine
 		
 		singletonsConstructing = new Hash<Class<?>>();
 		singletons = new HashMap<Class<?>, Object>();
-		pools = new HashMap<Class<?>, EnginePool<EnginePoolable>>();
 		devices = new HashMap<String, EngineDevice>();
 		resources = new HashMap<Class<?>, EngineResourceList<?>>();
 		windowListeners = new Queue<EngineWindowListener>();
@@ -263,10 +256,9 @@ public final class Engine
 		logger.debug("Scanning classes...");
 		
 		List<Class<EngineResource>> resourceClasses = new List<Class<EngineResource>>();
-		List<Class<EnginePoolable>> pooledClasses = new List<Class<EnginePoolable>>();
 		List<Class<?>> componentClasses = new List<Class<?>>();
 		
-		for (Class<?> componentClass : getComponentClasses(config))
+		for (Class<?> componentClass : EngineUtils.getSingletonClasses(config))
 		{
 			if (componentClass.isAnnotationPresent(Resource.class))
 			{
@@ -274,22 +266,14 @@ public final class Engine
 					throw new EngineSetupException("Found @Resource annotation on a class that does not implement EngineResource.");
 				resourceClasses.add((Class<EngineResource>)componentClass);
 			}
-			else if (componentClass.isAnnotationPresent(EngineComponent.class))
+			else if (componentClass.isAnnotationPresent(Element.class))
 			{
-				EngineComponent ecomp = componentClass.getAnnotation(EngineComponent.class);
+				Element ecomp = componentClass.getAnnotation(Element.class);
 				if (config.getDebugMode() || (!config.getDebugMode() && !ecomp.debug()))
 				{
 					if (componentStartupClass.isEmpty() || componentStartupClass.contains(componentClass.getName()) || componentStartupClass.contains(componentClass.getSimpleName()))
 					{
-						if (componentClass.isAnnotationPresent(Pooled.class))
-						{
-							if (!EnginePoolable.class.isAssignableFrom(componentClass))
-								throw new EngineSetupException("Found @Pooled annotation on a class that does not implement EnginePoolable.");
-							else
-								pooledClasses.add((Class<EnginePoolable>)componentClass);
-						}
-						else
-							componentClasses.add(componentClass);
+						componentClasses.add(componentClass);
 					}
 				}
 			}
@@ -316,18 +300,10 @@ public final class Engine
 			logger.infof("Created resource list. %s (count %d)", clazz.getSimpleName(), added);
 		}
 		
-		// create pools next.
-		for (Class<EnginePoolable> clazz : pooledClasses)
-		{
-			Pooled anno = clazz.getAnnotation(Pooled.class);
-			pools.put(clazz, new EnginePool<EnginePoolable>(this, clazz, getAnnotatedConstructor(clazz), anno.policy(), anno.value(), anno.expansion()));
-			logger.infof("Created pool. %s (count %d)", clazz.getSimpleName(), anno.value());
-		}
-		
 		// create components.
 		for (Class<?> clazz : componentClasses)
 		{
-			createOrGetComponent(clazz, debugMode);
+			createOrGetElement(clazz, debugMode);
 		}
 		
 		/* Sort and add role singletons. */
@@ -465,19 +441,6 @@ public final class Engine
 	}
 
 	/**
-	 * Gets the pool assigned to the provided class.
-	 * @throws NoSuchComponentException if the provided class is not a valid pooled component.
-	 */
-	@SuppressWarnings("unchecked")
-	public <T extends EnginePoolable> EnginePool<T> getPool(Class<T> clazz)
-	{
-		EnginePool<T> pool = (EnginePool<T>)pools.get(clazz);
-		if (pool == null)
-			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid pooled component.");
-		return pool;
-	}
-	
-	/**
 	 * Returns the resource list that stores a set of resources.
 	 * @param clazz the resource class to retrieve the list of.
 	 * @throws NoSuchComponentException if the provided class is not a valid resource component.
@@ -598,29 +561,6 @@ public final class Engine
 	}
 	
 	/**
-	 * Creates an engine device. 
-	 * @param name the name of the device.
-	 * @return true if successful, false if not.
-	 */
-	private boolean createDevice(String name)
-	{
-		EngineDevice device = devices.get(name);
-		if (device != null)
-		{
-			if (device.isActive())
-			{
-				return false;
-			}
-			else
-			{
-				logger.infof("Created device %s.", device.getDeviceName());
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	/**
 	 * Creates a new component for a class and using one of its constructors.
 	 * @param clazz the class to instantiate.
 	 * @param constructor the constructor to call for instantiation.
@@ -628,7 +568,7 @@ public final class Engine
 	 * @param debugMode if true, processes CVARs and CCMDs only available in debug mode.
 	 * @return the new class instance.
 	 */
-	<T> T createComponent(Class<T> clazz, Constructor<T> constructor, boolean debugMode)
+	<T> T createElement(Class<T> clazz, Constructor<T> constructor, boolean debugMode)
 	{
 		T object = null;
 		
@@ -649,7 +589,7 @@ public final class Engine
 				else if (Logger.class.isAssignableFrom(types[i]))
 					params[i] = loggingFactory.getLogger(clazz);
 				else
-					params[i] = createOrGetComponent(types[i], debugMode);
+					params[i] = createOrGetElement(types[i], debugMode);
 			}
 			
 			object = Reflect.construct(constructor, params);
@@ -657,10 +597,7 @@ public final class Engine
 			singletonsConstructing.remove(clazz);
 		}
 	
-		if (!clazz.isAnnotationPresent(EngineComponent.class))
-			return object;
-		
-		if (EnginePoolable.class.isAssignableFrom(clazz))
+		if (!clazz.isAnnotationPresent(Element.class))
 			return object;
 		
 		consoleManager.addEntries(object, debugMode);
@@ -739,6 +676,45 @@ public final class Engine
 	}
 
 	/**
+	 * Creates or gets an engine singleton component by class.
+	 * @param clazz the class to create/retrieve.
+	 */
+	@SuppressWarnings("unchecked")
+	private <T> T createOrGetElement(Class<T> clazz, boolean debug)
+	{
+		if (singletons.containsKey(clazz))
+			return (T)singletons.get(clazz);
+		
+		T instance = createElement(clazz, EngineUtils.getAnnotatedConstructor(clazz), debug);
+		singletons.put(clazz, instance);
+		logger.infof("Created element. %s", clazz.getSimpleName());
+		return instance;
+	}
+
+	/**
+	 * Creates an engine device. 
+	 * @param name the name of the device.
+	 * @return true if successful, false if not.
+	 */
+	private boolean createDevice(String name)
+	{
+		EngineDevice device = devices.get(name);
+		if (device != null)
+		{
+			if (device.isActive())
+			{
+				return false;
+			}
+			else
+			{
+				logger.infof("Created device %s.", device.getDeviceName());
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * Creates an engine device. 
 	 * @param name the name of the device.
 	 * @return true if successful, false if not.
@@ -761,92 +737,6 @@ public final class Engine
 		return false;
 	}
 	
-	/**
-	 * Creates or gets an engine singleton component by class.
-	 * @param clazz the class to create/retrieve.
-	 */
-	@SuppressWarnings("unchecked")
-	private <T> T createOrGetComponent(Class<T> clazz, boolean debug)
-	{
-		if (singletons.containsKey(clazz))
-			return (T)singletons.get(clazz);
-		
-		T instance = createComponent(clazz, getAnnotatedConstructor(clazz), debug);
-		singletons.put(clazz, instance);
-		logger.infof("Created component. %s", clazz.getSimpleName());
-		return instance;
-	}
-
-	/**
-	 * Returns the specific constructor to use for this class.
-	 */
-	@SuppressWarnings("unchecked")
-	private <T> Constructor<T> getAnnotatedConstructor(Class<T> clazz)
-	{
-		Constructor<T> out = null;
-		boolean hasDefaultConstructor = false;
-		for (Constructor<T> cons : (Constructor<T>[])clazz.getConstructors())
-		{
-			if (cons.isAnnotationPresent(EngineComponentConstructor.class))
-			{
-				if (out != null)
-					throw new EngineSetupException("Found more than one constructor annotated with @ComponentConstructor in class "+clazz.getName());
-				else
-					out = cons;
-			}
-			else if (cons.getParameterTypes().length == 0 && (cons.getModifiers() & Modifier.PUBLIC) != 0)
-			{
-				hasDefaultConstructor = true;
-			}	
-		}
-
-		if (out == null && !hasDefaultConstructor)
-		{
-			throw new EngineSetupException("Class "+clazz.getName()+" has no viable constructors.");
-		}
-		
-		return out;
-	}
-
-	/**
-	 * Adds engine singletons to the engine singleton manager.
-	 * @param config the configuration to use for engine setup.
-	 */
-	private Iterable<Class<?>> getComponentClasses(EngineConfig config)
-	{
-		List<Class<?>> outList = new List<Class<?>>();
-		
-		// Scan for singletons to instantiate.
-		Hash<String> packageMap = new Hash<String>();
-
-		for (String root : config.getPackageRoot())
-			for (String className : Reflect.getClasses(root))
-				packageMap.put(className);
-		
-		for (String className : packageMap)
-		{
-			Class<?> clz = null;
-			try {
-				clz = Class.forName(className);
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException("This should not have happened.", e);
-			}
-			
-			if (isValidComponent(clz))
-				outList.add(clz);
-		}
-		
-		return outList;
-	}
-	
-	private boolean isValidComponent(Class<?> clazz)
-	{
-		return
-			clazz.isAnnotationPresent(EngineComponent.class)
-			|| clazz.isAnnotationPresent(Resource.class)
-			;
-	}
-
 	private ArcheTextRoot loadResourceDefinitions(String resourceDefinitionFile)
 	{
 		FSFile[] resourceFiles;

@@ -1,6 +1,6 @@
 package com.blackrook.engine.roles;
 
-import com.blackrook.engine.annotation.component.Ordering;
+import com.blackrook.engine.annotation.element.Ordering;
 
 /**
  * This is a component that has a method invoked on it when the engine is shutting down.

@@ -1,8 +1,8 @@
 package com.blackrook.engine.test;
 
-import com.blackrook.engine.annotation.EngineComponent;
+import com.blackrook.engine.annotation.Element;
 
-@EngineComponent
+@Element
 public class TestFailingComponent
 {
 	public TestFailingComponent()

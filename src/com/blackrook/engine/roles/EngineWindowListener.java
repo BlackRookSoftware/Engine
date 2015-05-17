@@ -1,6 +1,6 @@
 package com.blackrook.engine.roles;
 
-import com.blackrook.engine.annotation.component.Ordering;
+import com.blackrook.engine.annotation.element.Ordering;
 
 /**
  * Describes a component that is automatically added to a listener group that
