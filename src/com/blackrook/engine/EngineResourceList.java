@@ -12,7 +12,7 @@ import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.hash.HashMap;
 import com.blackrook.commons.hash.HashedQueueMap;
-import com.blackrook.commons.index.SpatialGrid1D;
+import com.blackrook.commons.index.SpatialIndex1D;
 import com.blackrook.commons.index.SpatialIndex1DModel;
 import com.blackrook.commons.linkedlist.Queue;
 import com.blackrook.commons.list.List;
@@ -712,7 +712,7 @@ public class EngineResourceList<R extends EngineResource>
 	}
 	
 	/* Built-in interval map. */
-	private class IntervalMap extends SpatialGrid1D<IntervalRange>
+	private class IntervalMap extends SpatialIndex1D<IntervalRange>
 	{
 		public IntervalMap(int resolution)
 		{
