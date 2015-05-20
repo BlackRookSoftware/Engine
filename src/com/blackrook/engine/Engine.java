@@ -1,5 +1,6 @@
 package com.blackrook.engine;
 
+import java.awt.Toolkit;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -7,11 +8,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
+
+import javax.swing.JOptionPane;
 
 import com.blackrook.archetext.ArcheTextIncluder;
 import com.blackrook.archetext.ArcheTextObject;
@@ -29,7 +34,6 @@ import com.blackrook.commons.logging.LoggingDriver;
 import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.commons.logging.driver.ConsoleLogger;
-import com.blackrook.commons.logging.driver.PrintStreamLogger;
 import com.blackrook.engine.annotation.Element;
 import com.blackrook.engine.annotation.element.Ordering;
 import com.blackrook.engine.annotation.resource.Resource;
@@ -46,6 +50,7 @@ import com.blackrook.engine.roles.EngineStartupListener;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.struct.EngineMessage;
+import com.blackrook.engine.swing.ConsoleWindow;
 import com.blackrook.fs.FSFile;
 
 /**
@@ -88,10 +93,8 @@ public final class Engine
 	/** Engine update ticker. */
 	private EngineTicker updateTicker;
 	
-	/** Engine console. */
-	private EngineConsole console;
 	/** Engine console manager. */
-	private EngineConsoleManager consoleManager;
+	private EngineConsole console;
 	/** File system. */
 	private EngineFileSystem fileSystem;
 	
@@ -116,59 +119,59 @@ public final class Engine
 		loggingFactory = new LoggingFactory();
 		logger = loggingFactory.getLogger(Engine.class, false);
 
-		fileSystem = new EngineFileSystem(loggingFactory.getLogger(EngineFileSystem.class, false), this, config);
-		
 		loggingFactory.setLoggingLevel(config.getLogLevel() != null ? config.getLogLevel() : LogLevel.DEBUG);
 		loggingFactory.addDriver(new ConsoleLogger());
 
 		boolean debugMode = config.getDebugMode();
+		
 		singletons.put(Engine.class, this);
 		singletons.put(EngineConfig.class, config); // uses base class.
 		singletons.put(config.getClass(), config); // uses runtime class.
-		singletons.put(EngineFileSystem.class, fileSystem);
-
-		// create console manager.
-		consoleManager = new EngineConsoleManager();
-		consoleManager.addEntries(EngineConsoleManager.class, debugMode);
-		
-		singletons.put(EngineConsoleManager.class, consoleManager);
 
 		// create console.
-		console = new EngineConsole(this, config, consoleManager);
-		consoleManager.addEntries(console, debugMode);
-		consoleManager.addEntries(new EngineCommon(this, console, consoleManager),  debugMode);
-		
-		updateTicker = new EngineTicker(loggingFactory.getLogger(EngineTicker.class, false), this, config);
-		
-		PrintStream ps;
+		console = new EngineConsole(this, config);
+		console.addEntries(console, debugMode);
+		singletons.put(EngineConsole.class, console);
+
+		loggingFactory.addDriver(new LogDriver()
+		{
+			@Override
+			public void output(String line)
+			{
+				console.getConsoleWindow().println(line);
+			}
+		});
+
+		final PrintStream ps;
 		try {
 			FileOutputStream fos = new FileOutputStream(new File(config.getLogFile()));
 			if (fos != null)
 			{
 				ps = new PrintStream(fos, true);
-				PrintStreamLogger pslogger = new PrintStreamLogger(ps);
-				loggingFactory.addDriver(pslogger);
+				loggingFactory.addDriver(new LogDriver()
+				{
+					@Override
+					public void output(String line)
+					{
+						ps.println(line);
+					}
+				});
 			}
 			else
 			{
-				console.println("ERROR: Could not open log file "+config.getLogFile());
+				logger.error("ERROR: Could not open log file "+config.getLogFile());
 			}
 		} catch (IOException e) {
-			console.println("ERROR: Could not open log file "+config.getLogFile());
+			logger.error("ERROR: Could not open log file "+config.getLogFile());
 		}
 		
+		// create console manager.
+		fileSystem = new EngineFileSystem(loggingFactory.getLogger(EngineFileSystem.class, false), this, config);
+		singletons.put(EngineFileSystem.class, fileSystem);
 		
-		loggingFactory.addDriver(new LoggingDriver()
-		{
-			final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
-			
-			@Override
-			public void log(Date time, LogLevel level, String source, String message, Throwable throwable)
-			{
-				console.printfln("[%s] <%s> %s: %s", DATE_FORMAT.format(time), source, level, message);
-			}
-		});
-
+		updateTicker = new EngineTicker(loggingFactory.getLogger(EngineTicker.class, false), this, config);
+		singletons.put(EngineTicker.class, updateTicker);
+				
 		// load resource definitions.
 		logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
 		ArcheTextRoot resourceDefinitionRoot = loadResourceDefinitions(config.getResourceDefinitionFile());
@@ -373,10 +376,10 @@ public final class Engine
 			} finally {
 				Common.close(inStream);
 			}
-			for (String var : consoleManager.getVariableNames(true, true))
+			for (String var : console.getVariableNames(true, true))
 			{
 				if ((settingValue = settings.getProperty(var)) != null)
-					consoleManager.setVariable(var, settingValue);
+					console.setVariable(var, settingValue);
 			}
 		}
 
@@ -395,10 +398,10 @@ public final class Engine
 			} finally {
 				Common.close(inStream);
 			}
-			for (String var : consoleManager.getVariableNames(true, false))
+			for (String var : console.getVariableNames(true, false))
 			{
 				if ((settingValue = settings.getProperty(var)) != null)
-					consoleManager.setVariable(var, settingValue);
+					console.setVariable(var, settingValue);
 			}
 		}
 
@@ -434,10 +437,8 @@ public final class Engine
 		updateTicker.start();
 		logger.info("Started update ticker.");
 		
-		// starts the AWT thread here.
-		console.pack();
 		if (debugMode)
-			console.setVisible(true);
+			openConsole();
 	}
 
 	/**
@@ -475,11 +476,43 @@ public final class Engine
 	}
 
 	/**
-	 * Toggle console visibility.
+	 * Opens the console.
 	 */
-	public void toggleConsole()
+	public void openConsole()
 	{
-		console.setVisible(console.isVisible());
+		ConsoleWindow window = console.getConsoleWindow();
+		if (!window.isVisible())
+		{
+			window.pack();
+			window.setVisible(true);
+		}
+	}
+	
+	/**
+	 * Initiates engine shutdown.
+	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
+	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 */
+	public void handleException(Throwable t)
+	{
+		logger.severe(t, "EXCEPTION THROWN!");
+
+		logger.infof("Stopping ticker...");
+		updateTicker.stop();
+
+		// destroy devices
+		for (ObjectPair<?, EngineDevice> device : devices)
+		{
+			EngineDevice ed = device.getValue(); 
+			logger.infof("Destroying device %s.", ed.getDeviceName());
+			if (ed.destroy())
+				logger.infof("Finished destroying device %s.", ed.getDeviceName());
+			else
+				logger.errorf("Failed destroying device %s.", ed.getDeviceName());
+		}
+		
+		Toolkit.getDefaultToolkit().beep();
+		JOptionPane.showMessageDialog(null, t.getClass() + t.getLocalizedMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
 	}
 
 	/**
@@ -502,8 +535,8 @@ public final class Engine
 		{
 			logger.infof("Saving user settings...");
 			settings = new Properties();
-			for (String var : consoleManager.getVariableNames(true, false))
-				settings.setProperty(var, consoleManager.getVariable(var, String.class));
+			for (String var : console.getVariableNames(true, false))
+				settings.setProperty(var, console.getVariable(var, String.class));
 			try {
 				outStream = fileSystem.createUserSettingFile(config.getUserVariablesFile());
 				settings.store(outStream, "User settings for " + applicationString);
@@ -518,8 +551,8 @@ public final class Engine
 		{
 			logger.infof("Saving global settings...");
 			settings = new Properties();
-			for (String var : consoleManager.getVariableNames(true, true))
-				settings.setProperty(var, consoleManager.getVariable(var, String.class));
+			for (String var : console.getVariableNames(true, true))
+				settings.setProperty(var, console.getVariable(var, String.class));
 			try {
 				outStream = fileSystem.createGlobalSettingFile(config.getGlobalVariablesFile());
 				settings.store(outStream, "Global settings for " + applicationString);
@@ -600,7 +633,7 @@ public final class Engine
 		if (!clazz.isAnnotationPresent(Element.class))
 			return object;
 		
-		consoleManager.addEntries(object, debugMode);
+		console.addEntries(object, debugMode);
 		
 		// check if engine window.
 		if (EngineWindowBroadcaster.class.isAssignableFrom(clazz))
@@ -792,6 +825,36 @@ public final class Engine
 		return out;
 	}
 
+	/**
+	 * Common logging driver.
+	 */
+	private static abstract class LogDriver implements LoggingDriver
+	{
+		final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
+		
+
+		@Override
+		public void log(Date time, LogLevel level, String source, String message, Throwable throwable)
+		{
+			output(String.format("[%s] <%s> %s: %s", DATE_FORMAT.format(time), source, level, message));
+			if (throwable != null)
+			{
+				StringWriter sw = new StringWriter();
+				PrintWriter pw = new PrintWriter(sw);
+				throwable.printStackTrace(pw);
+				pw.flush();
+				pw.close();
+				Common.close(sw);
+				output(sw.toString());
+			}
+		}
+		
+		/** 
+		 * Outputs text to something. 
+		 */
+		protected abstract void output(String line);
+	}
+	
 	/** Node for ordering lists of components. */
 	private static class OrderingLists
 	{

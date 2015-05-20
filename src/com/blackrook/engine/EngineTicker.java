@@ -24,6 +24,8 @@ public class EngineTicker
 {
 	/** Ticker logger. */
 	private Logger logger;
+	/** Engine reference. */
+	private Engine engine;
 	/** Update ticker. */
 	private Ticker updateTicker;
 	
@@ -37,9 +39,10 @@ public class EngineTicker
 	 * @param engine the Engine2D instance.
 	 * @param config the configuration class to use.
 	 */
-	public EngineTicker(Logger logger, Engine engine, EngineConfig config)
+	EngineTicker(Logger logger, Engine engine, EngineConfig config)
 	{
 		this.logger = logger;
+		this.engine = engine;
 		updatables = new Queue<EngineUpdateListener>();
 		updateTicker = new UpdateTicker(config.getUpdatesPerSecond());
 		updatableIterator = updatables.iterator();
@@ -88,13 +91,14 @@ public class EngineTicker
 	private void update(long tick, long currentNanos)
 	{
 		updatableIterator.reset();
-		while (updatableIterator.hasNext())
-		{
-			try {
+		try {
+			while (updatableIterator.hasNext())
+			{
 				updatableIterator.next().update(tick, currentNanos);
-			} catch (Throwable t) {
-				logger.error(t, "An exception occurred!");
 			}
+		} catch (Throwable t) {
+			logger.error(t, "An exception occurred!");
+			engine.handleException(t);
 		}
 	}
 

@@ -26,6 +26,26 @@ public interface EngineConfig
 	public Image getApplicationIcon();
 
 	/**
+	 * Returns the e-mail address used for support.
+	 */
+	public String getApplicationSupportEmail();
+
+	/**
+	 * Returns the e-mail address used for general contact.
+	 */
+	public String getApplicationContactEmail();
+
+	/**
+	 * Returns the URL for the application homepage.
+	 */
+	public String getApplicationHomepage();
+
+	/**
+	 * Returns the e-mail address used for general contact.
+	 */
+	public String getApplicationSupportPage();
+
+	/**
 	 * Returns the package root name for scanning stuff in the engine application. 
 	 */
 	public String[] getPackageRoot();

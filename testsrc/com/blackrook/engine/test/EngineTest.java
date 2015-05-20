@@ -115,6 +115,30 @@ public final class EngineTest
 			{
 				return null;
 			}
+
+			@Override
+			public String getApplicationSupportEmail()
+			{
+				return "support@support.com";
+			}
+
+			@Override
+			public String getApplicationContactEmail()
+			{
+				return "butt@support.com";
+			}
+
+			@Override
+			public String getApplicationHomepage()
+			{
+				return "http://butt.com";
+			}
+
+			@Override
+			public String getApplicationSupportPage()
+			{
+				return "http://butt.com/support";
+			}
 		});
 		
 		IntegerRange[] out = new IntegerRange[5];

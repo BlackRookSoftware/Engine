@@ -1,247 +1,357 @@
 package com.blackrook.engine;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GraphicsEnvironment;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowFocusListener;
-
-import javax.swing.BorderFactory;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.border.BevelBorder;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import com.blackrook.commons.Common;
 import com.blackrook.commons.CommonTokenizer;
+import com.blackrook.commons.ObjectPair;
+import com.blackrook.commons.Reflect;
+import com.blackrook.commons.TypeProfile;
+import com.blackrook.commons.TypeProfile.MethodSignature;
+import com.blackrook.commons.hash.CaseInsensitiveHashMap;
 import com.blackrook.commons.list.List;
-import com.blackrook.engine.EngineConsoleManager.CCMDMapping;
+import com.blackrook.commons.trie.CaseInsensitiveTrie;
+import com.blackrook.engine.annotation.element.CCMD;
+import com.blackrook.engine.annotation.element.CVAR;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
+import com.blackrook.engine.exception.ConsoleSetupException;
+import com.blackrook.engine.exception.ConsoleVariableException;
+import com.blackrook.engine.swing.ConsoleWindow;
 
 /**
- * The console itself.
+ * The manager that can call and get/set elements available to the console.
  * @author Matthew Tropiano
  */
-public class EngineConsole extends JFrame
+public class EngineConsole
 {
-	private static final long serialVersionUID = 3854911727580406755L;
-	
-	/** Text area for scrollable window. */
-	private JTextArea textArea;
-	/** The scroll bars for the window. */
-	private JScrollPane scrollPane;
-	/** The entry field. */
-	private JTextField entryField;
+	/** Engine reference. */
+	private Engine engine;
+	/** A Trie that holds all auto-completable commands. */
+	private CaseInsensitiveTrie commandTrie;
 
-	/** Desktop toolkit. */
-	private Toolkit toolkit;	
-	/** Console manager. */
-	private EngineConsoleManager consoleManager;
-	/** Command history. */
-	private List<String> commandHistory;
+	/** Mapping of commands to invocation targets. */
+	private CaseInsensitiveHashMap<CCMDMapping> commandMap;
+	/** Longest command length. */
+	private int commandLongestLength;
+	/** Mapping of variables to variable fields/methods. */
+	private CaseInsensitiveHashMap<CVARMapping> variableMap;
+	/** Longest variable length. */
+	private int variableLongestLength;
 
-	/** Command history index. */
-	private int commandIndex;
+	/** Console window. */
+	private ConsoleWindow consoleWindow;
 	
 	/**
-	 * Creates the console.
-	 * @param engine the engine instance.
-	 * @param config the configuration.
+	 * Default constructor.
 	 */
-	EngineConsole(Engine engine, EngineConfig config, EngineConsoleManager manager)
+	EngineConsole(Engine engine, EngineConfig config)
 	{
-		super();
-		
-		String windowTitle = config.getApplicationName() + (config.getApplicationVersion() == null ? "" : " v"+config.getApplicationVersion()) + " Console";
-		setTitle(windowTitle);
-		setIconImage(config.getApplicationIcon());
-		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-		setVisible(false);
-		
-		toolkit = Toolkit.getDefaultToolkit();
-		commandHistory = new List<String>(50);
-
-		consoleManager = manager;
-		
-		scrollPane = createScrollPane(textArea = createTextArea());
-		entryField = createEntryField();
-		
-		Container contentPane = getContentPane();
-		contentPane.setLayout(new BorderLayout());
-		
-		JPanel base = new JPanel();
-		base.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-		base.setLayout(new BorderLayout());
-		
-		base.add(scrollPane, BorderLayout.CENTER);
-		base.add(entryField, BorderLayout.SOUTH);
-		
-		contentPane.add(base, BorderLayout.CENTER);
-		
-		Rectangle maxwin = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-		
-		contentPane.setPreferredSize(new Dimension(maxwin.width/2, maxwin.height/2));
-		
-		addWindowFocusListener(new WindowFocusListener()
-		{
-			@Override
-			public void windowLostFocus(WindowEvent arg0)
-			{
-				// Nothing.
-			}
-			
-			@Override
-			public void windowGainedFocus(WindowEvent arg0)
-			{
-				entryField.requestFocus();
-			}
-		});
-		
+		this.engine = engine;
+		commandTrie = new CaseInsensitiveTrie();
+		commandMap = new CaseInsensitiveHashMap<CCMDMapping>();
+		commandLongestLength = 0;
+		variableMap = new CaseInsensitiveHashMap<CVARMapping>();
+		variableLongestLength = 0;
+		consoleWindow = new ConsoleWindow(engine, config, this);
 	}
 	
-	// Creates the text area.
-	private JTextArea createTextArea()
+	/**
+	 * Adds the entries for commands and variables to the console manager.
+	 */
+	public void addEntries(Object instance, boolean debug)
 	{
-		JTextArea out = new JTextArea();
-		out.setEditable(false);
-		out.setDisabledTextColor(Color.BLACK);
-		out.setLineWrap(true);
-		out.setFont(new Font("Courier", Font.PLAIN, 12));
-		return out;
-	}
-	
-	// Creates the scroll pane.
-	private JScrollPane createScrollPane(JTextArea textarea)
-	{
-		JScrollPane out = new JScrollPane(textArea, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		out.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
-		return out;
-	}
-
-	// creates the entry field.
-	private JTextField createEntryField()
-	{
-		final JTextField field = new JTextField();
+		Class<?> type = instance.getClass();
+		TypeProfile<?> profile = TypeProfile.getTypeProfile(type);
 		
-		field.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
-		field.setFocusTraversalKeysEnabled(false);
-
-		// focus.
-		field.addFocusListener(new FocusAdapter()
+		// add commands.
+		for (Method method : type.getMethods())
 		{
-			@Override
-			public void focusGained(FocusEvent arg0)
+			CCMD anno = null;
+			if ((anno = method.getAnnotation(CCMD.class)) == null)
+				continue;
+			
+			if (anno.debug() && !debug)
+				continue;
+			
+			String cmdname = (Common.isEmpty(anno.value()) ? method.getName().toLowerCase() : anno.value()).toLowerCase();
+
+			if (commandMap.containsKey(cmdname))
 			{
-				field.selectAll();
-			}
-		});
-		
-		// key listening.
-		field.addKeyListener(new KeyAdapter()
-		{
-			@Override
-			public void keyPressed(KeyEvent event)
-			{
-				// autocomplete.
-				if (event.getKeyCode() == KeyEvent.VK_TAB)
-				{
-					int cpos = field.getCaretPosition();
-					String selected = field.getSelectedText();
-					String prefix = (!Common.isEmpty(selected) ? selected : field.getText().substring(0, Math.max(cpos, 0))).trim();
-					if (!Common.isEmpty(prefix))
-					{
-						String[] cmds = consoleManager.getCommandNamesForPrefix(prefix);
-						if (Common.isEmpty(cmds))
-						{
-							println("NOTICE: No possible completions for input.");
-							toolkit.beep();
-						}
-						else if (cmds.length == 1)
-						{
-							field.setText(cmds[0]);
-						}
-						else
-						{
-							println("Possible completions:");
-							for (String cmd : cmds)
-								print(cmd + " ");
-							println();
-						}
-					}
-					
-					event.consume();
-				}
-
-				// send command.
-				else if (event.getKeyCode() == KeyEvent.VK_ENTER)
-				{
-					String command = field.getText();
-					field.setText("");
-					parseCommand(command);
-					commandHistory.add(command);
-					commandIndex = -1;
-				}
-
-				// history back.
-				else if (event.getKeyCode() == KeyEvent.VK_UP)
-				{
-					if (commandIndex < 0)
-					{
-						commandIndex = commandHistory.size();
-						if (commandIndex > 0)
-						{
-							field.setText(commandHistory.getByIndex(commandIndex - 1));
-							commandIndex--;
-						}
-					}
-					else
-					{
-						field.setText(commandHistory.getByIndex(commandIndex));
-					}
-				}
-
-				// history forward.
-				else if (event.getKeyCode() == KeyEvent.VK_DOWN)
-				{
-					if (commandIndex >= 0)
-					{
-						commandIndex = commandHistory.size();
-						if (commandIndex > 0)
-						{
-							field.setText(commandHistory.getByIndex(commandIndex - 1));
-							commandIndex--;
-						}
-					}
-				}
-				
+				CCMDMapping declaring = commandMap.get(cmdname);
+				throw new ConsoleSetupException("Command \""+cmdname+"\" already declared by "+declaring.method.toGenericString());
 			}
 			
-			public void keyTyped(KeyEvent event) 
+			commandMap.put(cmdname, new CCMDMapping(instance, method, anno.description(), anno.usage()));
+			commandTrie.put(cmdname);
+			commandLongestLength = Math.max(commandLongestLength, cmdname.length());
+		}
+
+		// add variables.
+		for (Field field : profile.getAnnotatedPublicFields(CVAR.class))
+		{
+			CVAR anno = field.getAnnotation(CVAR.class);
+			String varname = Common.isEmpty(anno.value()) ? field.getName() : anno.value();
+
+			if (variableMap.containsKey(varname))
 			{
-				commandIndex = -1;
+				CVARMapping declaring = variableMap.get(varname);
+				if (declaring.field != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by field "+declaring.field.toGenericString());
+				else if (declaring.getter != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by getter "+declaring.getter.toGenericString());
+				else if (declaring.setter != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared in setter "+declaring.getter.toGenericString());
 			}
 			
-		});
+			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), anno.global(), field));
+			variableLongestLength = Math.max(variableLongestLength, varname.length());
+		}
 		
-		return field;
+		for (ObjectPair<String, MethodSignature> pair : profile.getGetterMethods())
+		{
+			String getterName = pair.getKey();
+			MethodSignature signature = pair.getValue();
+			Method method = signature.getMethod();
+
+			CVAR anno = method.getAnnotation(CVAR.class);
+			if (anno == null)
+				continue;
+			
+			String varname = (Common.isEmpty(anno.value()) ? getterName : anno.value()).toLowerCase();
+
+			if (variableMap.containsKey(varname))
+			{
+				CVARMapping declaring = variableMap.get(varname);
+				if (declaring.field != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by field "+declaring.field.toGenericString());
+				else if (declaring.getter != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by getter "+declaring.getter.toGenericString());
+			}
+			
+			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), anno.global(), method));
+			variableLongestLength = Math.max(variableLongestLength, varname.length());
+		}
+		
+		for (ObjectPair<String, MethodSignature> pair : profile.getSetterMethods())
+		{
+			String setterName = pair.getKey();
+			MethodSignature signature = pair.getValue();
+			Method method = signature.getMethod();
+
+			CVAR anno = method.getAnnotation(CVAR.class);
+			if (anno == null)
+				continue;
+
+			String varname = (Common.isEmpty(anno.value()) ? setterName : anno.value()).toLowerCase();
+			
+			if (variableMap.containsKey(varname))
+			{
+				CVARMapping declaring = variableMap.get(varname);
+				if (declaring.field != null)
+					throw new ConsoleSetupException("Variable \""+varname+"\" already declared by field "+declaring.field.toGenericString());
+				else if (declaring.setter != null)
+					throw new ConsoleSetupException("Variable setter for \""+varname+"\" already declared by setter "+declaring.setter.toGenericString());
+			}
+			
+			CVARMapping mapping = variableMap.get(varname);
+			mapping.setter = method;
+		}
+		
+		// scan for incomplete CVAR support. 
+		for (ObjectPair<String, CVARMapping> pair : variableMap)
+		{
+			CVARMapping mapping = pair.getValue();
+			if (mapping.field == null)
+			{
+				if (mapping.getter == null)
+					throw new ConsoleSetupException("Variable \""+pair.getKey()+"\" has no getter, hence, no read method! Cannot have a write-only variable!"); 
+			}
+		}
+	}
+	 
+	/**
+	 * Checks if a variable exists by name.
+	 * @param name the name of the variable.
+	 * @return true if it exists, false if not.
+	 */
+	public boolean containsVariable(String name)
+	{
+		return variableMap.containsKey(name);
 	}
 
 	/**
-	 * Sends a command.
+	 * Returns all variable names in an array.
 	 */
-	void parseCommand(String commandString)
+	public String[] getVariableNames()
 	{
+		String[] out = new String[variableMap.size()];
+		Iterator<String> it = variableMap.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+
+	/**
+	 * Returns all variable names in an array according to some.
+	 */
+	public String[] getVariableNames(boolean archived, boolean global)
+	{
+		List<String> outList = new List<>();
+		Iterator<ObjectPair<String, CVARMapping>> it = variableMap.iterator();
+		while (it.hasNext())
+		{
+			ObjectPair<String, CVARMapping> pair = it.next();
+			String name = pair.getKey();
+			CVARMapping mapping = pair.getValue();
+			if (mapping.archived == archived && mapping.global == global)
+				outList.add(name);
+		}
+		String[] out = new String[outList.size()];
+		outList.toArray(out);
+		return out;
+	}
+
+	/**
+	 * Gets a variable definition.
+	 * @param name the name of the variable.
+	 */
+	public CVARMapping getVariableDefinition(String name)
+	{
+		return variableMap.get(name);
+	}
+
+	/**
+	 * Gets the value of a variable by name.
+	 * @param name the name of the variable.
+	 */
+	public Object getVariable(String name)
+	{
+		synchronized (variableMap)
+		{
+			return variableMap.containsKey(name) ? variableMap.get(name).get() : null;
+		}
+	}
+	
+	/**
+	 * Gets the value of a variable by name, converted to a value type.
+	 * @param name the name of the variable.
+	 * @param type the target type.
+	 */
+	public <T> T getVariable(String name, Class<T> type)
+	{
+		return variableMap.containsKey(name) ? Reflect.createForType(variableMap.get(name).get(), type) : null; 
+	}
+
+	/**
+	 * Sets the value of a variable.
+	 * @param name the name of the variable.
+	 * @param value the value to set.
+	 * @throws ConsoleVariableException if the variable doesn't exist or the variable is read-only.
+	 * @throws ClassCastException if the incoming value cannot be converted.
+	 */
+	public void setVariable(String name, Object value)
+	{
+		synchronized (variableMap)
+		{
+			if (!variableMap.containsKey(name))
+				throw new ConsoleVariableException("Variable \""+name+"\" doesn't exist.");
+			else
+				variableMap.get(name).set(value); 
+		}
+	}
+	
+	/**
+	 * Checks if a command exists.
+	 * @param name the name of the command.
+	 * @return true if it exists, false if not.
+	 */
+	public boolean containsCommand(String name)
+	{
+		return commandMap.containsKey(name);
+	}
+	
+	/**
+	 * Returns all command names in an array.
+	 */
+	public String[] getCommandNames()
+	{
+		String[] out = new String[commandMap.size()];
+		Iterator<String> it = commandMap.keyIterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+	
+	/**
+	 * Returns all command names that start with a string.
+	 */
+	public String[] getCommandNamesForPrefix(String prefix)
+	{
+		List<String> outList = new List<String>();
+		int amt = commandTrie.getAfter(prefix, outList);
+		String[] out = new String[amt];
+		Iterator<String> it = outList.iterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+	
+	/**
+	 * Gets a variable definition.
+	 * @param name the name of the variable.
+	 */
+	public CCMDMapping getCommandDefinition(String name)
+	{
+		return commandMap.get(name);
+	}
+	
+	/**
+	 * @return the consoleWindow
+	 */
+	public ConsoleWindow getConsoleWindow()
+	{
+		return consoleWindow;
+	}
+
+	/**
+	 * Calls a command.
+	 * @param name the name of the command.
+	 * @param args the command arguments.
+	 * @return the command return value.
+	 */
+	public Object callCommand(String name, Object ... args)
+	{
+		if (!commandMap.containsKey(name))
+			throw new ConsoleCommandInvocationException("Command \""+name+"\" doesn't exist.");
+		else
+			return commandMap.get(name).call(args);
+	}
+	
+	/** Returns the length of the command with the longest name. */
+	public int getCommandLongestLength()
+	{
+		return commandLongestLength;
+	}
+
+	/** Returns the length of the variable with the longest name. */
+	public int getVariableLongestLength()
+	{
+		return variableLongestLength;
+	}
+
+	/**
+	 * Parses a command. Can execute multiple commands at once.
+	 * @param commandString the typed command to parse/process.
+	 */
+	public void parseCommand(String commandString)
+	{
+		commandString = commandString.trim();
 		char[] cmdchars = commandString.toCharArray();
 		StringBuilder sb = new StringBuilder();
 		
@@ -265,7 +375,7 @@ public class EngineConsole extends JFrame
 					}
 					else if (c == ';')
 					{
-						sendCommand(sb.toString());
+						processCommand(sb.toString());
 						sb.delete(0, sb.length());
 					}
 					else
@@ -289,7 +399,7 @@ public class EngineConsole extends JFrame
 						sb.append(c);					
 				}
 				break;
-
+	
 				case STATE_INQUOTE_ESCAPE:
 				{
 					sb.append(c);
@@ -300,14 +410,17 @@ public class EngineConsole extends JFrame
 			}
 			
 		}
-
+	
 		if (sb.length() > 0)
-			sendCommand(sb.toString());
+			processCommand(sb.toString());
 		
 	}
-	
-	// Send command.
-	private void sendCommand(String commandString)
+
+	/**
+	 * Processes a single command.
+	 * @param commandString
+	 */
+	public void processCommand(String commandString)
 	{
 		if (Common.isEmpty(commandString))
 			return;
@@ -324,25 +437,25 @@ public class EngineConsole extends JFrame
 		Object out = null;
 		try {
 			
-			if (consoleManager.containsCommand(cmd))
-				out = consoleManager.callCommand(cmd, (Object[])args);
-			else if (consoleManager.containsVariable(cmd))
+			if (containsCommand(cmd))
+				out = callCommand(cmd, (Object[])args);
+			else if (containsVariable(cmd))
 			{
 				if (args.length == 0)
-					println(cmd + " is " + getVariableRepresentation(consoleManager.getVariable(cmd)));
+					consoleWindow.println(cmd + " is " + getVariableRepresentation(getVariable(cmd)));
 				else
 				{
-					consoleManager.setVariable(cmd, args[0]);
-					println(cmd + " set to " + getVariableRepresentation(consoleManager.getVariable(cmd)));
+					setVariable(cmd, args[0]);
+					consoleWindow.println(cmd + " set to " + getVariableRepresentation(getVariable(cmd)));
 				}
 			}
 			else
-				println("ERROR: " + cmd + " is not a command, alias, or variable.");
+				consoleWindow.println("ERROR: " + cmd + " is not a command, alias, or variable.");
 		
 		} catch (ConsoleCommandInvocationException ex) {
-
-			println("ERROR: " + ex.getMessage());
-			CCMDMapping mapping = consoleManager.getCommandDefinition(cmd);
+	
+			consoleWindow.println("ERROR: " + ex.getMessage());
+			CCMDMapping mapping = getCommandDefinition(cmd);
 			String[] usage = mapping.getUsage();
 			
 			StringBuilder sb = new StringBuilder();
@@ -352,38 +465,26 @@ public class EngineConsole extends JFrame
 				if (i < usage.length - 1)
 					sb.append(' ');
 			}
-			println("Usage: " + cmd + " " + sb.toString());
-
+			consoleWindow.println("Usage: " + cmd + " " + sb.toString());
+	
 		} catch (Exception ex) {
-			println("EXCEPTION: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
-			println(Common.getExceptionString(ex));
+			consoleWindow.println("EXCEPTION: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+			consoleWindow.println(Common.getExceptionString(ex));
 		}
 		
 		if (out != null)
-			println(String.valueOf(out));
+			consoleWindow.println(String.valueOf(out));
 	}
-	
-	
-	private String getVariableRepresentation(Object obj)
-	{
-		if (obj == null)
-			return "[null]";
-		else if (obj instanceof CharSequence)
-			return '"' + String.valueOf(obj) + '"';
-		else
-			return String.valueOf(obj);
-	}
-	
+
 	/**
 	 * Prints a message to the console.
 	 * @param object the message to print (see {@link String#valueOf(Object)}).
 	 */
 	public void print(Object object)
 	{
-		textArea.append(String.valueOf(object));
-		textArea.setCaretPosition(textArea.getText().length());
+		consoleWindow.print(object);
 	}
-	
+
 	/**
 	 * Prints a formatted message to the console.
 	 * @param formatting the format text (see {@link String#format(String, Object...)}).
@@ -391,28 +492,26 @@ public class EngineConsole extends JFrame
 	 */
 	public void printf(String formatting, Object ... args)
 	{
-		textArea.append(String.format(formatting, args));
-		textArea.setCaretPosition(textArea.getText().length());
+		consoleWindow.printf(formatting, args);
 	}
-	
+
 	/**
 	 * Prints a message to the console with a newline appended to it.
 	 * @param object the message to print (see {@link String#valueOf(Object)}).
 	 */
 	public void println(Object object)
 	{
-		print(String.valueOf(object) + '\n');
+		consoleWindow.println(object);
 	}
-	
+
 	/**
 	 * Prints a newline.
 	 */
 	public void println()
 	{
-		print('\n');
+		consoleWindow.println();
 	}
-	
-	
+
 	/**
 	 * Prints a formatted message to the console with a newline appended to it.
 	 * @param formatting the format text (see {@link String#format(String, Object...)}).
@@ -420,7 +519,310 @@ public class EngineConsole extends JFrame
 	 */
 	public void printfln(String formatting, Object ... args)
 	{
-		printf(formatting + '\n', args);
+		consoleWindow.printfln(formatting, args);
 	}
 
+	// returns variable representation.
+	private String getVariableRepresentation(Object obj)
+	{
+		if (obj == null)
+			return "null";
+		else if (obj instanceof CharSequence)
+			return '"' + String.valueOf(obj) + '"';
+		else if (obj instanceof Character)
+			return '\'' + String.valueOf(obj) + '\'';
+		else if (obj instanceof Boolean || obj instanceof Number)
+			return String.valueOf(obj);
+		else
+			return '{' + String.valueOf(obj) + '}';
+	}
+
+	@CCMD(description = "Tells the engine to shut down.")
+	public void quit(int status)
+	{
+		engine.shutDown(status);
+	}
+
+	@CCMD(description = "Echos a line to the console out.")
+	public void echo(String text)
+	{
+		println(text);
+	}
+
+	@CCMD(description = "Dumps all console variables to console.")
+	public void cvarList(String text)
+	{
+		String[] variables = getVariableNames();
+		
+		Arrays.sort(variables);
+		int maxlen = getVariableLongestLength();
+		int i = 0;
+		for (String var : variables)
+		{
+			CVARMapping mapping = getVariableDefinition(var);
+			printfln(
+				"%s%s%s %-"+maxlen+"s %s",  
+				mapping.isArchived() ? "A" : "-", 
+				mapping.isGlobal() ? "G" : "-", 
+				mapping.isReadOnly() ? "R" : "-", 
+				var, 
+				mapping.getDescription()
+			);
+			i++;
+		}
+		
+		printfln("count %d", i);
+	}
+
+	@CCMD(description = "Lists all console commands.")
+	public void cmdList(String prefix)
+	{
+		String[] commands = null;
+		if (Common.isEmpty(prefix))
+			commands = getCommandNames();
+		else
+			commands = getCommandNamesForPrefix(prefix);
+		
+		Arrays.sort(commands);
+		int maxlen = getCommandLongestLength();
+	
+		int i = 0;
+		for (String cmd : commands)
+		{
+			printfln("%-"+maxlen+"s %s", cmd, getCommandDefinition(cmd).getDescription());
+			i++;
+		}
+		
+		printfln("count %d", i);
+	}
+
+	@CVAR(value = "java_version", description = "JVM version.")
+	public String getJavaVersion()
+	{
+		return System.getProperty("java.version");
+	}
+
+	@CVAR(value = "java_vendor", description = "JVM vendor.")
+	public String getJavaVendor()
+	{
+		return System.getProperty("java.vendor");
+	}
+
+	@CVAR(value = "java_vm_name", description = "JVM name.")
+	public String getJavaVMName()
+	{
+		return System.getProperty("java.vm.name");
+	}
+
+	@CVAR(value = "java_classpath", description = "JVM current classpath.")
+	public String getJavaClasspath()
+	{
+		return System.getProperty("java.class.path");
+	}
+
+	@CVAR(value = "java_libpath", description = "JVM native library path.")
+	public String getJavaLibraryPath()
+	{
+		return System.getProperty("java.library.path");
+	}
+
+	@CVAR(value = "os_name", description = "OS name.")
+	public String getOSName()
+	{
+		return System.getProperty("os.name");
+	}
+
+	@CVAR(value = "os_version", description = "OS version name.")
+	public String getOSVersion()
+	{
+		return System.getProperty("os.version");
+	}
+
+	@CVAR(value = "os_arch", description = "OS architecture type.")
+	public String getOSArchitecture()
+	{
+		return System.getProperty("os.arch");
+	}
+
+	@CVAR(value = "workdir", description = "Working directory path.")
+	public String getWorkingDirectory()
+	{
+		return Common.WORK_DIR;
+	}
+
+	@CVAR(value = "appdata", description = "Application data directory path.")
+	public String getApplicationDataDirectory()
+	{
+		return Common.APP_DIR;
+	}
+
+	@CVAR(value = "homedir", description = "Home directory path.")
+	public String getHomeDirectory()
+	{
+		return Common.HOME_DIR;
+	}
+
+	/**
+	 * Mapping for console commands to methods. 
+	 */
+	public static class CCMDMapping
+	{
+		/** Instance target to use for invocation. */
+		Object instance;
+		/** Method to call. */
+		Method method;
+		/** Command description. */
+		String description;
+		/** Usage descriptor. */
+		String[] usage;
+
+		/** Parameter types. */
+		Class<?> types[];
+		
+		CCMDMapping(Object instance, Method method, String descripton, String[] usage)
+		{
+			this.instance = instance;
+			this.method = method;
+			this.description = descripton;
+			this.usage = usage;
+			types = method.getParameterTypes();
+		}
+		
+		/**
+		 * Gets the description of this command.
+		 */
+		public String getDescription()
+		{
+			return description;
+		}
+
+		/**
+		 * Gets the usage blurb of this command.
+		 */
+		public String[] getUsage()
+		{
+			return usage;
+		}
+
+		Object call(Object ... args)
+		{
+			Object[] params = new Object[types.length];
+			int i = 0;
+			for (; i < Math.min(args.length, params.length); i++)
+				params[i] = Reflect.createForType(args[i], types[i]);
+			for (; i < params.length; i++)
+				params[i] = Reflect.createForType(null, types[i]);
+			return Reflect.invokeBlind(method, instance, params);
+		}
+		
+	}
+	
+	/**
+	 * Mapping for console variables to methods. 
+	 */
+	public static class CVARMapping
+	{
+		/** Instance target to use for invocation. */
+		Object instance;
+		/** Command description. */
+		String description;
+		/** Archived? */
+		boolean archived;
+		/** Global? */
+		boolean global;
+		
+		/** Field to change. */
+		Field field;
+		/** Getter method to call. */
+		Method getter;
+		/** Setter method to call. */
+		Method setter;
+		
+		/** Type to set. */
+		Class<?> type;
+		
+		CVARMapping(Object instance, String descripton, boolean archived, boolean global, Field field)
+		{
+			this.instance = instance;
+			this.description = descripton;
+			this.archived = archived;
+			this.global = global;
+			this.field = field;
+			type = field.getType();
+		}
+		
+		CVARMapping(Object instance, String descripton, boolean archived, boolean global, Method getter)
+		{
+			this.instance = instance;
+			this.description = descripton;
+			this.archived = archived;
+			this.global = global;
+			this.getter = getter;
+			this.setter = null;
+			type = getter.getReturnType();
+		}
+
+		CVARMapping(Object instance, String descripton, boolean archived, boolean global, Method getter, Method setter)
+		{
+			this.instance = instance;
+			this.description = descripton;
+			this.archived = archived;
+			this.global = global;
+			this.getter = getter;
+			this.setter = setter;
+			type = getter.getReturnType();
+		}
+
+		/**
+		 * Gets the description of this command.
+		 */
+		public String getDescription()
+		{
+			return description;
+		}
+
+		/**
+		 * Gets if this variable is to be archived.
+		 */
+		public boolean isArchived()
+		{
+			return archived;
+		}
+
+		/**
+		 * Gets if this variable is to stored/read from global.
+		 */
+		public boolean isGlobal()
+		{
+			return global;
+		}
+		
+		/**
+		 * Gets if this variable is to be archived.
+		 */
+		public boolean isReadOnly()
+		{
+			return field == null && setter == null && getter != null;
+		}
+
+		Object get()
+		{
+			if (field != null)
+				return Reflect.getFieldValue(field, instance);
+			else
+				return Reflect.invokeBlind(getter, instance);
+		}
+
+		void set(Object value)
+		{
+			if (field != null)
+				Reflect.setField(instance, field, Reflect.createForType(value, type));
+			else if (setter != null)
+				Reflect.invokeBlind(setter, instance, Reflect.createForType(value, type));
+			else
+				throw new ConsoleVariableException("This variable is read-only.");
+		}
+		
+	}
+	
 }
