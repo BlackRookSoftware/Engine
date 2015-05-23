@@ -1,7 +1,7 @@
 package com.blackrook.engine.state;
 
-import com.blackrook.engine.struct.InputHandler;
-import com.blackrook.engine.struct.UpdateHandler;
+import com.blackrook.engine.roles.InputHandler;
+import com.blackrook.engine.roles.UpdateHandler;
 
 /**
  * Defines an engine state that can be pushed or popped from the {@link StateManager}.

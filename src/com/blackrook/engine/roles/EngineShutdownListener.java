@@ -20,5 +20,14 @@ public interface EngineShutdownListener
 	 */
 	public void onEngineShutdown();
 
+	/**
+	 * Called by Engine when it is shutting down unexpectedly. This is for saving state and
+	 * variables and configuration, if necessary, and is called before the
+	 * graphics and sound engines get called to shut down the engine, in 
+	 * case their state is important.
+	 * <p><b>It would not be wise to call this from another method in this class.</b>
+	 * @param t the {@link Throwable} that caused the shutdown.
+	 */
+	public void onUnexpectedEngineShutDown(Throwable t);
 
 }

@@ -1,5 +1,6 @@
 package com.blackrook.engine;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -20,6 +21,7 @@ import com.blackrook.engine.exception.ConsoleCommandInvocationException;
 import com.blackrook.engine.exception.ConsoleSetupException;
 import com.blackrook.engine.exception.ConsoleVariableException;
 import com.blackrook.engine.swing.ConsoleWindow;
+import com.blackrook.lang.json.JSONWriter;
 
 /**
  * The manager that can call and get/set elements available to the console.
@@ -534,7 +536,16 @@ public class EngineConsole
 		else if (obj instanceof Boolean || obj instanceof Number)
 			return String.valueOf(obj);
 		else
-			return '{' + String.valueOf(obj) + '}';
+		{
+			String json = "[JSON CONVERT ERROR]";
+			try {
+				json = JSONWriter.writeJSONString(obj);
+			} catch (IOException e) {
+				// Shouldn't be thrown, but eh...
+			}
+			return json;
+		}
+			
 	}
 
 	@CCMD(description = "Tells the engine to shut down.")

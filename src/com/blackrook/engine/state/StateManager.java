@@ -1,8 +1,8 @@
 package com.blackrook.engine.state;
 
 import com.blackrook.commons.Sizable;
-import com.blackrook.engine.struct.InputHandler;
-import com.blackrook.engine.struct.UpdateHandler;
+import com.blackrook.engine.roles.InputHandler;
+import com.blackrook.engine.roles.UpdateHandler;
 
 /**
  * The state manager class for maintaining exclusive, updatable states.

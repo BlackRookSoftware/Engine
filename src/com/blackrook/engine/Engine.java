@@ -50,6 +50,7 @@ import com.blackrook.engine.roles.EngineStartupListener;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.struct.EngineMessage;
+import com.blackrook.engine.struct.OrderedProperties;
 import com.blackrook.engine.swing.ConsoleWindow;
 import com.blackrook.fs.FSFile;
 
@@ -164,6 +165,9 @@ public final class Engine
 		} catch (IOException e) {
 			logger.error("ERROR: Could not open log file "+config.getLogFile());
 		}
+		
+		logger.info("Init application \"" + config.getApplicationName() + "\"");
+		logger.info("Version " + config.getApplicationVersion());
 		
 		// create console manager.
 		fileSystem = new EngineFileSystem(loggingFactory.getLogger(EngineFileSystem.class, false), this, config);
@@ -355,56 +359,8 @@ public final class Engine
 			logger.debugf("%s added to update listeners.", obj.object.getClass().getSimpleName());
 		}
 		
-		/* Load settings. */
-
-		Properties settings = null;
-		InputStream inStream = null;
-		Object settingValue = null;
-
-		if (config.getGlobalVariablesFile() != null)
-		{
-			logger.infof("Loading global settings...");
-			settings = new Properties();
-			try {
-				inStream = fileSystem.openGlobalSettingFile(config.getGlobalVariablesFile());
-				settings = new Properties();
-				settings.load(inStream);
-			} catch (FileNotFoundException e) {
-				logger.infof("Could not open global settings from file \"%s\". Doesn't exist.", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
-			} catch (IOException e) {
-				logger.errorf(e, "Could not read global settings from file \"%s\".", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
-			} finally {
-				Common.close(inStream);
-			}
-			for (String var : console.getVariableNames(true, true))
-			{
-				if ((settingValue = settings.getProperty(var)) != null)
-					console.setVariable(var, settingValue);
-			}
-		}
-
-		if (config.getUserVariablesFile() != null)
-		{
-			logger.infof("Loading user settings...");
-			settings = new Properties();
-			try {
-				inStream = fileSystem.openUserSettingFile(config.getUserVariablesFile());
-				settings = new Properties();
-				settings.load(inStream);
-			} catch (FileNotFoundException e) {
-				logger.infof("Could not open user settings from file \"%s\". Doesn't exist.", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
-			} catch (IOException e) {
-				logger.errorf(e, "Could not read user settings from file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
-			} finally {
-				Common.close(inStream);
-			}
-			for (String var : console.getVariableNames(true, false))
-			{
-				if ((settingValue = settings.getProperty(var)) != null)
-					console.setVariable(var, settingValue);
-			}
-		}
-
+		loadGlobalVariables();
+		loadUserVariables();
 		
 		/* Invoke and call. */
 
@@ -488,18 +444,14 @@ public final class Engine
 		}
 	}
 	
-	/**
-	 * Initiates engine shutdown.
-	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
-	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
-	 */
-	public void handleException(Throwable t)
+	private void stopTicker()
 	{
-		logger.severe(t, "EXCEPTION THROWN!");
-
 		logger.infof("Stopping ticker...");
 		updateTicker.stop();
+	}
 
+	private void destroyAllDevices()
+	{
 		// destroy devices
 		for (ObjectPair<?, EngineDevice> device : devices)
 		{
@@ -510,47 +462,76 @@ public final class Engine
 			else
 				logger.errorf("Failed destroying device %s.", ed.getDeviceName());
 		}
-		
-		Toolkit.getDefaultToolkit().beep();
-		JOptionPane.showMessageDialog(null, t.getClass() + t.getLocalizedMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
 	}
 
-	/**
-	 * Initiates engine shutdown.
-	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
-	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
-	 */
-	public void shutDown(int status)
+	private void loadGlobalVariables()
 	{
-		logger.infof("Shutdown initiated.");
-
-		logger.infof("Stopping ticker...");
-		updateTicker.stop();
-		
-		String applicationString = config.getApplicationName() + " v" + config.getApplicationVersion();
 		Properties settings = null;
-		OutputStream outStream = null;
+		InputStream inStream = null;
+		Object settingValue = null;
+
+		if (config.getGlobalVariablesFile() != null)
+		{
+			logger.infof("Loading global settings...");
+			settings = new Properties();
+			try {
+				inStream = fileSystem.openGlobalSettingFile(config.getGlobalVariablesFile());
+				settings = new Properties();
+				settings.load(inStream);
+			} catch (FileNotFoundException e) {
+				logger.infof("Could not open global settings from file \"%s\". Doesn't exist.", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
+			} catch (IOException e) {
+				logger.errorf(e, "Could not read global settings from file \"%s\".", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
+			} finally {
+				Common.close(inStream);
+			}
+			for (String var : console.getVariableNames(true, true))
+			{
+				if ((settingValue = settings.getProperty(var)) != null)
+					console.setVariable(var, settingValue);
+			}
+		}
+	}
+	
+	private void loadUserVariables()
+	{
+		Properties settings = null;
+		InputStream inStream = null;
+		Object settingValue = null;
 
 		if (config.getUserVariablesFile() != null)
 		{
-			logger.infof("Saving user settings...");
+			logger.infof("Loading user settings...");
 			settings = new Properties();
-			for (String var : console.getVariableNames(true, false))
-				settings.setProperty(var, console.getVariable(var, String.class));
 			try {
-				outStream = fileSystem.createUserSettingFile(config.getUserVariablesFile());
-				settings.store(outStream, "User settings for " + applicationString);
+				inStream = fileSystem.openUserSettingFile(config.getUserVariablesFile());
+				settings = new Properties();
+				settings.load(inStream);
+			} catch (FileNotFoundException e) {
+				logger.infof("Could not open user settings from file \"%s\". Doesn't exist.", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
 			} catch (IOException e) {
-				logger.errorf(e, "Could not write user settings to file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
+				logger.errorf(e, "Could not read user settings from file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
 			} finally {
-				Common.close(outStream);
+				Common.close(inStream);
+			}
+			for (String var : console.getVariableNames(true, false))
+			{
+				if ((settingValue = settings.getProperty(var)) != null)
+					console.setVariable(var, settingValue);
 			}
 		}
-		
+
+	}
+	
+	private void saveGlobalVariables()
+	{
+		String applicationString = config.getApplicationName() + " v" + config.getApplicationVersion();
+		OrderedProperties settings = null;
+		OutputStream outStream = null;
 		if (config.getGlobalVariablesFile() != null)
 		{
 			logger.infof("Saving global settings...");
-			settings = new Properties();
+			settings = new OrderedProperties();
 			for (String var : console.getVariableNames(true, true))
 				settings.setProperty(var, console.getVariable(var, String.class));
 			try {
@@ -562,19 +543,86 @@ public final class Engine
 				Common.close(outStream);
 			}
 		}
+	}
+	
+	private void saveUserVariables()
+	{
+		String applicationString = config.getApplicationName() + " v" + config.getApplicationVersion();
+		OrderedProperties settings = null;
+		OutputStream outStream = null;
+
+		if (config.getUserVariablesFile() != null)
+		{
+			logger.infof("Saving user settings...");
+			settings = new OrderedProperties();
+			for (String var : console.getVariableNames(true, false))
+				settings.setProperty(var, String.valueOf(console.getVariable(var)));
+			try {
+				outStream = fileSystem.createUserSettingFile(config.getUserVariablesFile());
+				settings.store(outStream, "User settings for " + applicationString);
+			} catch (IOException e) {
+				logger.errorf(e, "Could not write user settings to file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
+			} finally {
+				Common.close(outStream);
+			}
+		}
+	}
+
+	/**
+	 * Handles an uncaught, fatal exception and initiates engine shutdown.
+	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
+	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 */
+	public void handleException(Throwable t)
+	{
+		logger.severe(t, "EXCEPTION THROWN!");
+
+		stopTicker();
 		
 		logger.infof("Notifying listeners...");
 		for (EngineShutdownListener listener : shutdownListeners)
 			listener.onEngineShutdown();
-		for (ObjectPair<?, EngineDevice> device : devices)
-		{
-			EngineDevice ed = device.getValue(); 
-			logger.infof("Destroying device %s.", ed.getDeviceName());
-			if (ed.destroy())
-				logger.infof("Finished destroying device %s.", ed.getDeviceName());
-			else
-				logger.errorf("Failed destroying device %s.", ed.getDeviceName());
-		}
+
+		destroyAllDevices();
+		
+		Toolkit.getDefaultToolkit().beep();
+		JOptionPane.showMessageDialog(null, t.getClass() + t.getLocalizedMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
+
+		logger.infof("Shutting down JVM.");
+		System.exit(-1);
+	}
+
+	/**
+	 * Initiates engine shutdown.
+	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
+	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 * <p>Convenience method for <code>shutDown(0);</code>
+	 * @see #shutDown(int)
+	 */
+	public void shutDown()
+	{
+		shutDown(0);
+	}
+	
+	/**
+	 * Initiates engine shutdown.
+	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
+	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 * @param status the status code to return upon program completion (aka "errorlevel" on some OSes).
+	 */
+	public void shutDown(int status)
+	{
+		logger.infof("Shutdown initiated.");
+
+		stopTicker();
+		saveUserVariables();
+		saveGlobalVariables();
+
+		logger.infof("Notifying listeners...");
+		for (EngineShutdownListener listener : shutdownListeners)
+			listener.onEngineShutdown();
+
+		destroyAllDevices();
 		
 		logger.infof("Shutting down JVM. Bye!");
 		System.exit(status);

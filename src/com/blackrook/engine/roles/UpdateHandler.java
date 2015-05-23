@@ -1,4 +1,4 @@
-package com.blackrook.engine.struct;
+package com.blackrook.engine.roles;
 
 /**
  * Update handler methods.

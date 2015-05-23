@@ -1,7 +1,6 @@
 package com.blackrook.engine.roles;
 
 import com.blackrook.engine.annotation.element.Ordering;
-import com.blackrook.engine.struct.InputHandler;
 
 /**
  * This interface describes an object that should receive input events.

@@ -1,7 +1,6 @@
 package com.blackrook.engine.roles;
 
 import com.blackrook.engine.annotation.element.Ordering;
-import com.blackrook.engine.struct.UpdateHandler;
 
 /**
  * Defines an engine component that is added to the main engine ticker.
