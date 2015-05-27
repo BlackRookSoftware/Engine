@@ -1,6 +1,5 @@
 package com.blackrook.engine;
 
-import java.awt.Toolkit;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -15,8 +14,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
-
-import javax.swing.JOptionPane;
 
 import com.blackrook.archetext.ArcheTextIncluder;
 import com.blackrook.archetext.ArcheTextObject;
@@ -570,23 +567,20 @@ public final class Engine
 
 	/**
 	 * Handles an uncaught, fatal exception and initiates engine shutdown.
-	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
-	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 * <p>The ticker is stopped, all devices have {@link EngineDevice#destroy()} called on them, 
+	 * all listeners have {@link EngineShutdownListener#onUnexpectedEngineShutDown(Throwable)} called on them, and tells the JVM to exit.
 	 */
 	public void handleException(Throwable t)
 	{
-		logger.severe(t, "EXCEPTION THROWN!");
+		logger.severe(t, "Uncaught exception thrown: " + t.getClass().getName() +": " + t.getLocalizedMessage());
 
 		stopTicker();
 		
-		logger.infof("Notifying listeners...");
-		for (EngineShutdownListener listener : shutdownListeners)
-			listener.onEngineShutdown();
-
 		destroyAllDevices();
 		
-		Toolkit.getDefaultToolkit().beep();
-		JOptionPane.showMessageDialog(null, t.getClass() + t.getLocalizedMessage(), "Alert", JOptionPane.ERROR_MESSAGE);
+		logger.infof("Notifying listeners...");
+		for (EngineShutdownListener listener : shutdownListeners)
+			listener.onUnexpectedEngineShutDown(t);
 
 		logger.infof("Shutting down JVM.");
 		System.exit(-1);
