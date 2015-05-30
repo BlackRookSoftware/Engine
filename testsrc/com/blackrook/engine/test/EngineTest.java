@@ -12,7 +12,7 @@ public final class EngineTest
 {
 	public static void main(String[] args)
 	{
-		Engine engine = new Engine(new EngineConfig()
+		Engine engine = Engine.createEngine(new EngineConfig()
 		{
 			@Override
 			public String[] getPackageRoot()

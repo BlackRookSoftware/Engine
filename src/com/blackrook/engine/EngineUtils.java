@@ -1,8 +1,14 @@
 package com.blackrook.engine;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 
+import com.blackrook.archetext.ArcheTextIncluder;
+import com.blackrook.archetext.ArcheTextReader;
+import com.blackrook.archetext.ArcheTextRoot;
+import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.list.List;
@@ -10,6 +16,7 @@ import com.blackrook.engine.annotation.Element;
 import com.blackrook.engine.annotation.ElementConstructor;
 import com.blackrook.engine.annotation.resource.Resource;
 import com.blackrook.engine.exception.EngineSetupException;
+import com.blackrook.fs.FSFile;
 
 /**
  * Engine utility class.
@@ -87,6 +94,61 @@ public final class EngineUtils
 			clazz.isAnnotationPresent(Element.class)
 			|| clazz.isAnnotationPresent(Resource.class)
 			;
+	}
+
+	static ArcheTextRoot loadResourceDefinitions(final EngineFileSystem fileSystem, String resourceDefinitionFile)
+	{
+		FSFile[] resourceFiles;
+		try {
+			resourceFiles = fileSystem.getAllFileInstances(resourceDefinitionFile);
+		} catch (IOException ex) {
+			throw new EngineSetupException("Could not open resource file path instances: "+ ex.getLocalizedMessage());
+		}
+		
+		ArcheTextRoot out = new ArcheTextRoot();
+		ArcheTextIncluder includer = new ArcheTextIncluder()
+		{
+			@Override
+			public InputStream getIncludeResource(String streamName, String path) throws IOException
+			{
+				// convert backslash to slash.
+				path = path.replace("\\", "/");
+				
+				String parentPath = null;
+				int slashidx = streamName.lastIndexOf("/");
+				if (slashidx >= 0)
+					parentPath = streamName.substring(0, slashidx) + "/";
+				else
+					parentPath = "";
+	
+				FSFile nextfile = fileSystem.getFile(parentPath + path);
+				if (nextfile != null)
+					return nextfile.getInputStream();
+				else
+				{
+					nextfile = fileSystem.getFile(path);
+					if (nextfile != null)
+						return nextfile.getInputStream();
+					return null;
+				}
+			}
+		};
+		
+		
+		for (int i = resourceFiles.length - 1; i >= 0; i--)
+		{
+			InputStream in = null;
+			try {
+				in = resourceFiles[i].getInputStream();
+				ArcheTextReader.apply(resourceFiles[i].getPath(), in, includer, out);
+			} catch (IOException e) {
+				throw new EngineSetupException(e);
+			} finally {
+				Common.close(in);
+			}
+		}
+		
+		return out;
 	}
 
 }
