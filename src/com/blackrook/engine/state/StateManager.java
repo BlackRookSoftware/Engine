@@ -27,7 +27,8 @@ public class StateManager<S extends State> implements UpdateHandler, InputHandle
 	 * Calls {@link State#exit()} on each state popped and {@link State#enter()} on each state pushed. 
 	 * @param changeStates the states to push in the specified order.
 	 */
-	public synchronized void change(@SuppressWarnings("unchecked") final S ... changeStates)
+	@SuppressWarnings("unchecked")
+	public synchronized void change(final S ... changeStates)
 	{
 		while (!isEmpty()) 
 			pop();
@@ -40,7 +41,8 @@ public class StateManager<S extends State> implements UpdateHandler, InputHandle
 	 * @param pushStates the states to push in the specified order.
 	 * onto the stack, false if at least one was not.
 	 */
-	public synchronized void push(@SuppressWarnings("unchecked") final S ... pushStates)
+	@SuppressWarnings("unchecked")
+	public synchronized void push(final S ... pushStates)
 	{
 		for (State s : pushStates)
 		{

@@ -20,21 +20,25 @@
 	<property name="common.lang.lib" value="${dev.base}/CommonLang/bin" />
 	<property name="fs.lib" value="${dev.base}/FileSystem/bin"/>
 	<property name="archetext.lib" value="${dev.base}/ArcheText/bin"/>
+	<property name="input.lib" value="${dev.base}/Input/bin"/>
 
 	<!-- Project Info -->
 	<property name="project.archive" value="blackrook-engine" />
 	<property name="project.javadoc.title" value="Black Rook Engine" />
-	<property name="project.classpath" value="${common.lib}${S}${common.io.lib}${S}${common.lang.lib}${S}${fs.lib}${S}${archetext.lib}" />
+	<property name="project.classpath" value="${common.lib}${S}${common.io.lib}${S}${common.lang.lib}${S}${fs.lib}${S}${archetext.lib}${S}${input.lib}" />
 	<property name="project.javadoc.packages" value="
 		com.blackrook.engine,
 		com.blackrook.engine.annotation,
-		com.blackrook.engine.annotation.component,
+		com.blackrook.engine.annotation.element,
 		com.blackrook.engine.annotation.resource,
+		com.blackrook.engine.broadcaster,
 		com.blackrook.engine.exception,
+		com.blackrook.engine.input,
 		com.blackrook.engine.resource,
 		com.blackrook.engine.roles,
 		com.blackrook.engine.state,
-		com.blackrook.engine.struct
+		com.blackrook.engine.struct,
+		com.blackrook.engine.swing
 	"
 	/>
 	
@@ -62,7 +66,8 @@
             <link href="http://blackrooksoftware.com/docs/commonio/"/>
             <link href="http://blackrooksoftware.com/docs/commonlang/"/>
             <link href="http://blackrooksoftware.com/docs/filesystem/"/>
-            <link href="http://blackrooksoftware.com/docs/engine/"/>
+            <link href="http://blackrooksoftware.com/docs/input/"/>
+            <link href="http://blackrooksoftware.com/docs/archetext/"/>
             <link href="http://download.oracle.com/javase/7/docs/api/"/>
         </javadoc>
     </target>	
