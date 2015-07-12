@@ -7,6 +7,8 @@ package com.blackrook.engine.resource;
  */
 public interface EngineResource
 {
+	public final String[] EMPTY_STRING_ARRAY = new String[0];
+	
 	/**
 	 * The identity of this resource.
 	 * This name describes this resource's uniqueness - if another
