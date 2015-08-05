@@ -3,6 +3,7 @@ package com.blackrook.engine;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Iterator;
 
 import com.blackrook.commons.Common;
 import com.blackrook.commons.ObjectPair;
@@ -28,7 +29,7 @@ import com.blackrook.engine.resource.EngineResource;
 /**
  * Mapping of name-to-resource and id-to-resource.
  */
-public class EngineResourceList<R extends EngineResource>
+public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 {
 	private static final String CACHE_KEY = Common.getPackagePathForClass(EngineResourceList.class) + "/Cache";
 	
@@ -546,6 +547,12 @@ public class EngineResourceList<R extends EngineResource>
 		return count;
 	}
 	
+	@Override
+	public Iterator<R> iterator()
+	{
+		return idMap.valueIterator();
+	}
+
 	// Find closest index.
 	private static int closestIndex(SortedMap<Index, ?> map, Index index, boolean lower)
 	{
