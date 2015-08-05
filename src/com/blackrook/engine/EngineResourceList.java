@@ -48,7 +48,9 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 		add(Double.class);
 		add(Double.TYPE);
 	}};
-
+	
+	/** This class. */
+	private Class<R> listClass;
 	
 	/** Name-to-id mapping. */
 	private HashMap<String, R> idMap;
@@ -74,6 +76,7 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 	 */
 	EngineResourceList(Class<R> clazz)
 	{
+		this.listClass = clazz;
 		idMap = new HashMap<String, R>();
 		tagHash = new HashedQueueMap<String, R>();
 		indexMap = new HashMap<String, SortedMap<Index,Queue<R>>>();
@@ -182,7 +185,11 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 	 */
 	public synchronized void add(R resource)
 	{
-		idMap.put(resource.getId(), resource);
+		String id = resource.getId();
+		if (id == null)
+			throw new EngineSetupException("Attempted to add resource of class \""+listClass.getSimpleName()+"\". No id!");
+		
+		idMap.put(id, resource);
 		for (String s : resource.getTags())
 			tagHash.enqueue(s, resource);
 

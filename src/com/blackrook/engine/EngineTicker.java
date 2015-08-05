@@ -97,7 +97,7 @@ public class EngineTicker
 				updatableIterator.next().update(tick, currentNanos);
 			}
 		} catch (Throwable t) {
-			logger.error(t, "An exception occurred!");
+			logger.severe("An exception occurred!");
 			engine.handleException(t);
 		}
 	}
