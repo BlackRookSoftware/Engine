@@ -269,7 +269,11 @@ public final class Engine
 			int added = 0;
 			for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
 			{
-				resourceList.add(object.newObject(clazz));
+				try {
+					resourceList.add(object.newObject(clazz));
+				} catch (ClassCastException ex) {
+					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+object.getName()+"]: Could not create resource object.", ex);
+				}
 				added++;
 			}
 			
