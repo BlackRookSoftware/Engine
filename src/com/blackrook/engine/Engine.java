@@ -335,22 +335,15 @@ public final class Engine
 		final PrintStream ps;
 		try {
 			FileOutputStream fos = new FileOutputStream(new File(config.getLogFile()));
-			if (fos != null)
+			ps = new PrintStream(fos, true);
+			loggingFactory.addDriver(new LogDriver()
 			{
-				ps = new PrintStream(fos, true);
-				loggingFactory.addDriver(new LogDriver()
+				@Override
+				public void output(String line)
 				{
-					@Override
-					public void output(String line)
-					{
-						ps.println(line);
-					}
-				});
-			}
-			else
-			{
-				logger.error("ERROR: Could not open log file "+config.getLogFile());
-			}
+					ps.println(line);
+				}
+			});
 		} catch (IOException e) {
 			logger.error("ERROR: Could not open log file "+config.getLogFile());
 		}
