@@ -431,10 +431,14 @@ public final class Engine
 		{
 			EngineDevice ed = device.getValue(); 
 			logger.infof("Starting device %s.", ed.getDeviceName());
-			if (ed.create())
-				logger.infof("Finished starting device %s.", ed.getDeviceName());
-			else
-				logger.errorf("Failed starting device %s.", ed.getDeviceName());
+			try {
+				if (ed.create())
+					logger.infof("Finished starting device %s.", ed.getDeviceName());
+				else
+					logger.errorf("Failed starting device %s.", ed.getDeviceName());
+			} catch (Exception e) {
+				handleException(e);
+			}
 		}
 	}
 
