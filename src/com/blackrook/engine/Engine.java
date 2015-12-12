@@ -437,7 +437,7 @@ public final class Engine
 				else
 					logger.errorf("Failed starting device %s.", ed.getDeviceName());
 			} catch (Exception e) {
-				handleException(e);
+				handleException(new EngineSetupException("Device \""+ed.getDeviceName()+"\" could not be started.", e));
 			}
 		}
 	}
