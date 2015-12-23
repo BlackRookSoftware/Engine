@@ -29,7 +29,7 @@ public interface EngineInputEventReceiver
 	 * @param code the input code.
 	 * @param set true if active, false if inactive. 
 	 */
-	public void fireInputFlag(int code, boolean set);
+	public void fireInputFlag(String code, boolean set);
 
 	/**
 	 * Should be called to fire an input value change event to the engine.
@@ -38,7 +38,7 @@ public interface EngineInputEventReceiver
 	 * @param code the input code. 
 	 * @param value the value of the input.
 	 */
-	public void fireInputValue(int code, double value);
+	public void fireInputValue(String code, double value);
 
 
 }

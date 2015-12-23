@@ -98,7 +98,7 @@ public class StateManager<S extends State> implements UpdateHandler, InputHandle
 	}
 
 	@Override
-	public synchronized boolean onInputSet(int code, boolean set)
+	public synchronized boolean onInputSet(String code, boolean set)
 	{
 		for (int i = size - 1; i >= 0; i--)
 			if (states[i].onInputSet(code, set))
@@ -107,7 +107,7 @@ public class StateManager<S extends State> implements UpdateHandler, InputHandle
 	}
 
 	@Override
-	public synchronized boolean onInputValue(int code, double value)
+	public synchronized boolean onInputValue(String code, double value)
 	{
 		for (int i = size - 1; i >= 0; i--)
 			if (states[i].onInputValue(code, value))

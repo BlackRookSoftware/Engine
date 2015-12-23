@@ -114,7 +114,7 @@ public final class Engine
 		inputEventReceiver = new EngineInputEventReceiver()
 		{
 			@Override
-			public void fireInputFlag(int code, boolean set)
+			public void fireInputFlag(String code, boolean set)
 			{
 				for (EngineInputListener listener : inputListeners)
 					if (listener.onInputSet(code, set))
@@ -122,7 +122,7 @@ public final class Engine
 			}
 
 			@Override
-			public void fireInputValue(int code, double value)
+			public void fireInputValue(String code, double value)
 			{
 				for (EngineInputListener listener : inputListeners)
 					if (listener.onInputValue(code, value))

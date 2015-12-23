@@ -15,7 +15,7 @@ public interface InputHandler
 	 * @param set true if active, false if inactive. 
 	 * @return true if this method handled the call, false otherwise. 
 	 */
-	public boolean onInputSet(int code, boolean set);
+	public boolean onInputSet(String code, boolean set);
 
 	/**
 	 * Handles an input value change.
@@ -25,6 +25,6 @@ public interface InputHandler
 	 * @param value the value of the input.
 	 * @return true if this method handled the call, false otherwise. 
 	 */
-	public boolean onInputValue(int code, double value);
+	public boolean onInputValue(String code, double value);
 
 }
