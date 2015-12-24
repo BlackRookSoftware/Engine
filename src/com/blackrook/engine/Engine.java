@@ -41,6 +41,7 @@ import com.blackrook.engine.roles.EngineShutdownListener;
 import com.blackrook.engine.roles.EngineWindowListener;
 import com.blackrook.engine.roles.EngineStartupListener;
 import com.blackrook.engine.roles.EngineMessageListener;
+import com.blackrook.engine.roles.EngineSettingsListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.engine.struct.OrderedProperties;
@@ -73,7 +74,9 @@ public final class Engine
 	/** Engine resources. */
 	private HashMap<Class<?>, EngineResourceList<?>> resources;
 	
-	/** Engine shutdown listener. */
+	/** Engine settings listener. */
+	private Queue<EngineSettingsListener> settingsListeners;
+	/** Engine startup listener. */
 	private Queue<EngineStartupListener> startupListeners;
 	/** Engine shutdown listener. */
 	private Queue<EngineShutdownListener> shutdownListeners;
@@ -102,6 +105,7 @@ public final class Engine
 		devices = new HashMap<String, EngineDevice>();
 		resources = new HashMap<Class<?>, EngineResourceList<?>>();
 		windowListeners = new Queue<EngineWindowListener>();
+		settingsListeners = new Queue<EngineSettingsListener>();
 		startupListeners = new Queue<EngineStartupListener>(); 
 		shutdownListeners = new Queue<EngineShutdownListener>();
 		messageListeners = new Queue<EngineMessageListener>();
@@ -399,6 +403,12 @@ public final class Engine
 			logger.debugf("%s added to message listeners.", obj.object.getClass().getSimpleName());
 		}
 		
+		for (OrderingNode<EngineSettingsListener> obj : lists.settingsListeners)
+		{
+			settingsListeners.enqueue(obj.object);
+			logger.debugf("%s added to settings listeners.", obj.object.getClass().getSimpleName());
+		}
+	
 		for (OrderingNode<EngineStartupListener> obj : lists.startupListeners)
 		{
 			startupListeners.enqueue(obj.object);
@@ -459,7 +469,6 @@ public final class Engine
 	{
 		Properties settings = null;
 		InputStream inStream = null;
-		Object settingValue = null;
 	
 		if (config.getGlobalVariablesFile() != null)
 		{
@@ -476,11 +485,9 @@ public final class Engine
 			} finally {
 				Common.close(inStream);
 			}
-			for (String var : console.getVariableNames(true, true))
-			{
-				if ((settingValue = settings.getProperty(var)) != null)
-					console.setVariable(var, settingValue);
-			}
+			for (EngineSettingsListener listener : settingsListeners)
+				listener.onLoadGlobalSettings(settings);
+			console.loadGlobalVariables(settings);
 		}
 	}
 
@@ -488,7 +495,6 @@ public final class Engine
 	{
 		Properties settings = null;
 		InputStream inStream = null;
-		Object settingValue = null;
 	
 		if (config.getUserVariablesFile() != null)
 		{
@@ -505,11 +511,9 @@ public final class Engine
 			} finally {
 				Common.close(inStream);
 			}
-			for (String var : console.getVariableNames(true, false))
-			{
-				if ((settingValue = settings.getProperty(var)) != null)
-					console.setVariable(var, settingValue);
-			}
+			for (EngineSettingsListener listener : settingsListeners)
+				listener.onLoadUserSettings(settings);
+			console.loadUserVariables(settings);
 		}
 	
 	}
@@ -523,8 +527,9 @@ public final class Engine
 		{
 			logger.infof("Saving global settings...");
 			settings = new OrderedProperties();
-			for (String var : console.getVariableNames(true, true))
-				settings.setProperty(var, console.getVariable(var, String.class));
+			for (EngineSettingsListener listener : settingsListeners)
+				listener.onSaveGlobalSettings(settings);
+			console.saveGlobalVariables(settings);
 			try {
 				outStream = fileSystem.createGlobalSettingFile(config.getGlobalVariablesFile());
 				settings.store(outStream, "Global settings for " + applicationString);
@@ -546,8 +551,9 @@ public final class Engine
 		{
 			logger.infof("Saving user settings...");
 			settings = new OrderedProperties();
-			for (String var : console.getVariableNames(true, false))
-				settings.setProperty(var, String.valueOf(console.getVariable(var)));
+			for (EngineSettingsListener listener : settingsListeners)
+				listener.onSaveUserSettings(settings);
+			console.saveUserVariables(settings);
 			try {
 				outStream = fileSystem.createUserSettingFile(config.getUserVariablesFile());
 				settings.store(outStream, "User settings for " + applicationString);
@@ -706,6 +712,36 @@ public final class Engine
 	}
 	
 	/**
+	 * Saves user and global settings to persistent storage.
+	 * Calls the following: 
+	 * {@link EngineSettingsListener#onSaveUserSettings(Properties)}, 
+	 * {@link EngineSettingsListener#onSaveGlobalSettings(Properties)},
+	 * {@link EngineConsole#saveUserVariables(Properties)},
+	 * {@link EngineConsole#saveGlobalVariables(Properties)}
+	 */
+	public void saveSettings()
+	{
+		EngineFileSystem fileSystem = getElement(EngineFileSystem.class);
+		saveUserVariables(fileSystem);
+		saveGlobalVariables(fileSystem);
+	}
+	
+	/**
+	 * Loads user and global settings from persistent storage and sets element properties.
+	 * Calls the following: 
+	 * {@link EngineSettingsListener#onLoadUserSettings(Properties)}, 
+	 * {@link EngineSettingsListener#onLoadGlobalSettings(Properties)},
+	 * {@link EngineConsole#loadUserVariables(Properties)},
+	 * {@link EngineConsole#loadGlobalVariables(Properties)}
+	 */
+	public void loadSettings()
+	{
+		EngineFileSystem fileSystem = getElement(EngineFileSystem.class);
+		loadUserVariables(fileSystem);
+		loadGlobalVariables(fileSystem);
+	}
+	
+	/**
 	 * Restarts an engine device. 
 	 * @param name the name of the device.
 	 * @return true if successful, false if not.
@@ -769,13 +805,11 @@ public final class Engine
 	 */
 	public void shutDown(int status)
 	{
-		EngineFileSystem fileSystem = getElement(EngineFileSystem.class);
-				
 		logger.infof("Shutdown initiated.");
 	
 		stopTicker();
-		saveUserVariables(fileSystem);
-		saveGlobalVariables(fileSystem);
+
+		saveSettings();
 	
 		logger.infof("Notifying listeners...");
 		for (EngineShutdownListener listener : shutdownListeners)
@@ -844,6 +878,7 @@ public final class Engine
 		private List<OrderingNode<EngineWindowListener>> windowListeners;
 		private List<OrderingNode<EngineInputListener>> inputListeners;
 		private List<OrderingNode<EngineMessageListener>> messageListeners;
+		private List<OrderingNode<EngineSettingsListener>> settingsListeners;
 		private List<OrderingNode<EngineStartupListener>> startupListeners;
 		private List<OrderingNode<EngineShutdownListener>> shutdownListeners;
 		private List<OrderingNode<EngineUpdateListener>> updateListeners;
@@ -856,6 +891,7 @@ public final class Engine
 			windowListeners = new List<Engine.OrderingNode<EngineWindowListener>>();
 			inputListeners = new List<Engine.OrderingNode<EngineInputListener>>();
 			messageListeners = new List<Engine.OrderingNode<EngineMessageListener>>();
+			settingsListeners = new List<Engine.OrderingNode<EngineSettingsListener>>();
 			startupListeners = new List<Engine.OrderingNode<EngineStartupListener>>();
 			shutdownListeners = new List<Engine.OrderingNode<EngineShutdownListener>>();
 			updateListeners = new List<Engine.OrderingNode<EngineUpdateListener>>();
@@ -869,6 +905,7 @@ public final class Engine
 			windowListeners.sort();
 			inputListeners.sort();
 			messageListeners.sort();
+			settingsListeners.sort();
 			startupListeners.sort();
 			shutdownListeners.sort();
 			updateListeners.sort();
@@ -935,6 +972,13 @@ public final class Engine
 			{
 				EngineStartupListener obj = (EngineStartupListener)object;
 				startupListeners.add(new OrderingNode<EngineStartupListener>(ordering, obj));
+			}
+		
+			// check if settings listener.
+			if (EngineSettingsListener.class.isAssignableFrom(clazz))
+			{
+				EngineSettingsListener obj = (EngineSettingsListener)object;
+				settingsListeners.add(new OrderingNode<EngineSettingsListener>(ordering, obj));
 			}
 		
 			// check if update listener.

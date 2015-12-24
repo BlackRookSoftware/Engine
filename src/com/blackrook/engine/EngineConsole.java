@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Properties;
 
 import com.blackrook.commons.Common;
 import com.blackrook.commons.CommonTokenizer;
@@ -198,9 +199,69 @@ public class EngineConsole
 	}
 
 	/**
-	 * Returns all variable names in an array according to some.
+	 * Sets all variables and their values using the entries on a {@link Properties} object. 
+	 * @param settings the properties object to set variable values on.
+	 * @see #setVariable(String, Object)
+	 * @see CVAR
 	 */
-	public String[] getVariableNames(boolean archived, boolean global)
+	public void loadUserVariables(Properties settings)
+	{
+		Object settingValue = null;
+		for (String var : getVariableNames(true, false))
+		{
+			if ((settingValue = settings.getProperty(var)) != null)
+				setVariable(var, settingValue);
+		}
+	}
+	
+	/**
+	 * Sets all variables and their values using the entries on a {@link Properties} object. 
+	 * @param settings the properties object to set variable values on.
+	 * @see #setVariable(String, Object)
+	 * @see CVAR
+	 */
+	public void loadGlobalVariables(Properties settings)
+	{
+		Object settingValue = null;
+		for (String var : getVariableNames(true, true))
+		{
+			if ((settingValue = settings.getProperty(var)) != null)
+				setVariable(var, settingValue);
+		}
+	}
+	
+	/**
+	 * Puts all user variables and their values into a {@link Properties} object. 
+	 * This is called when variables need to be saved to storage. 
+	 * @param settings the properties object to set variable values on.
+	 * @see #getVariable(String)
+	 * @see CVAR
+	 */
+	public void saveUserVariables(Properties settings)
+	{
+		for (String var : getVariableNames(true, false))
+			settings.setProperty(var, getVariable(var, String.class));
+	}
+	
+	/**
+	 * Puts all global variables and their values into a {@link Properties} object.
+	 * This is called when variables need to be saved to storage. 
+	 * @param settings the properties object to set variable values on.
+	 * @see #getVariable(String)
+	 * @see CVAR
+	 */
+	public void saveGlobalVariables(Properties settings)
+	{
+		for (String var : getVariableNames(true, true))
+			settings.setProperty(var, getVariable(var, String.class));
+	}
+	
+	/**
+	 * Returns all variable names in an array according to some criteria.
+	 * @param archived if true, get variables that will be saved/persisted to storage.
+	 * @param archived if true, get global variables. false, user variables.
+	 */
+	private String[] getVariableNames(boolean archived, boolean global)
 	{
 		List<String> outList = new List<>();
 		Iterator<ObjectPair<String, CVARMapping>> it = variableMap.iterator();
