@@ -8,6 +8,7 @@ import java.lang.reflect.Modifier;
 import com.blackrook.archetext.ArcheTextIncluder;
 import com.blackrook.archetext.ArcheTextReader;
 import com.blackrook.archetext.ArcheTextRoot;
+import com.blackrook.archetext.exception.ArcheTextParseException;
 import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
@@ -141,6 +142,8 @@ public final class EngineUtils
 			try {
 				in = resourceFiles[i].getInputStream();
 				ArcheTextReader.apply(resourceFiles[i].getPath(), in, includer, out);
+			} catch (ArcheTextParseException e) {
+				throw new EngineSetupException(e.getLocalizedMessage());
 			} catch (IOException e) {
 				throw new EngineSetupException(e);
 			} finally {
