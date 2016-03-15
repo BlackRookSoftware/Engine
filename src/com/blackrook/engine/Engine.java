@@ -27,20 +27,20 @@ import com.blackrook.commons.logging.Logger;
 import com.blackrook.commons.logging.LoggingDriver;
 import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
-import com.blackrook.engine.annotation.Element;
+import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.element.Ordering;
-import com.blackrook.engine.annotation.resource.Resource;
+import com.blackrook.engine.annotation.resource.ResourceName;
 import com.blackrook.engine.broadcaster.EngineInputBroadcaster;
 import com.blackrook.engine.broadcaster.EngineWindowBroadcaster;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
-import com.blackrook.engine.resource.EngineResource;
 import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineShutdownListener;
 import com.blackrook.engine.roles.EngineWindowListener;
 import com.blackrook.engine.roles.EngineStartupListener;
 import com.blackrook.engine.roles.EngineMessageListener;
+import com.blackrook.engine.roles.EngineResource;
 import com.blackrook.engine.roles.EngineSettingsListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.struct.EngineMessage;
@@ -240,15 +240,13 @@ public final class Engine
 		
 		for (Class<?> componentClass : EngineUtils.getSingletonClasses(config))
 		{
-			if (componentClass.isAnnotationPresent(Resource.class))
+			if (EngineResource.class.isAssignableFrom(componentClass))
 			{
-				if (!EngineResource.class.isAssignableFrom(componentClass))
-					throw new EngineSetupException("Found @Resource annotation on a class that does not implement EngineResource.");
 				resourceClasses.add((Class<EngineResource>)componentClass);
 			}
-			else if (componentClass.isAnnotationPresent(Element.class))
+			else if (componentClass.isAnnotationPresent(EngineElement.class))
 			{
-				Element ecomp = componentClass.getAnnotation(Element.class);
+				EngineElement ecomp = componentClass.getAnnotation(EngineElement.class);
 				if (config.getDebugMode() || (!config.getDebugMode() && !ecomp.debug()))
 				{
 					if (componentStartupClass.isEmpty() || componentStartupClass.contains(componentClass.getName()) || componentStartupClass.contains(componentClass.getSimpleName()))
@@ -262,10 +260,10 @@ public final class Engine
 		// create resources first.
 		for (Class<EngineResource> clazz : resourceClasses)
 		{
-			Resource anno = clazz.getAnnotation(Resource.class);
+			ResourceName anno = clazz.getAnnotation(ResourceName.class);
 			String className = clazz.getSimpleName();
 			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
-			String structName = Common.isEmpty(anno.value()) ? className : anno.value();
+			String structName = (anno == null || Common.isEmpty(anno.value())) ? className : anno.value();
 
 			EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(clazz); 
 			out.resources.put(clazz, resourceList);
@@ -615,7 +613,7 @@ public final class Engine
 			singletonsConstructing.remove(clazz);
 		}
 	
-		if (!clazz.isAnnotationPresent(Element.class))
+		if (!clazz.isAnnotationPresent(EngineElement.class))
 			return object;
 		
 		console.addEntries(object, debugMode);

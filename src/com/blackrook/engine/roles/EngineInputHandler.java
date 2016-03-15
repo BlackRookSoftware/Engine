@@ -4,7 +4,7 @@ package com.blackrook.engine.roles;
  * Input handler methods.
  * @author Matthew Tropiano
  */
-public interface InputHandler
+public interface EngineInputHandler
 {
 	/**
 	 * Handles a boolean input code setting.

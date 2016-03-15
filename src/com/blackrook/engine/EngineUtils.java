@@ -13,10 +13,10 @@ import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.list.List;
-import com.blackrook.engine.annotation.Element;
-import com.blackrook.engine.annotation.ElementConstructor;
-import com.blackrook.engine.annotation.resource.Resource;
+import com.blackrook.engine.annotation.EngineElement;
+import com.blackrook.engine.annotation.EngineElementConstructor;
 import com.blackrook.engine.exception.EngineSetupException;
+import com.blackrook.engine.roles.EngineResource;
 import com.blackrook.fs.FSFile;
 
 /**
@@ -37,7 +37,7 @@ public final class EngineUtils
 		boolean hasDefaultConstructor = false;
 		for (Constructor<T> cons : (Constructor<T>[])clazz.getConstructors())
 		{
-			if (cons.isAnnotationPresent(ElementConstructor.class))
+			if (cons.isAnnotationPresent(EngineElementConstructor.class))
 			{
 				if (out != null)
 					throw new EngineSetupException("Found more than one constructor annotated with @ElementConstructor in class "+clazz.getName());
@@ -92,8 +92,8 @@ public final class EngineUtils
 	static boolean isValidSingleton(Class<?> clazz)
 	{
 		return
-			clazz.isAnnotationPresent(Element.class)
-			|| clazz.isAnnotationPresent(Resource.class)
+			clazz.isAnnotationPresent(EngineElement.class)
+			|| EngineResource.class.isAssignableFrom(clazz)
 			;
 	}
 

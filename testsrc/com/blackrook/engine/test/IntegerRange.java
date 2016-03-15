@@ -3,10 +3,8 @@ package com.blackrook.engine.test;
 import com.blackrook.archetext.annotation.ATName;
 import com.blackrook.engine.annotation.resource.Interval;
 import com.blackrook.engine.annotation.resource.IntervalBound;
-import com.blackrook.engine.annotation.resource.Resource;
-import com.blackrook.engine.resource.EngineResource;
+import com.blackrook.engine.roles.EngineResource;
 
-@Resource
 public class IntegerRange implements EngineResource
 {
 	private String id;
@@ -42,5 +40,4 @@ public class IntegerRange implements EngineResource
 		return new String[0];
 	}
 
-	
 }

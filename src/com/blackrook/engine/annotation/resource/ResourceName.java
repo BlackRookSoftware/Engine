@@ -6,15 +6,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation for classes that are engine resources imported via Archetext.
- * By default, if no value is specified, the structure name is the class name, lower camel case ("IntervalType" -&gt; "intervalType").
- * These classes must implement {@link Resource}.
  * @author Matthew Tropiano
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface Resource
+public @interface ResourceName
 {
-	/** The struct type associated with the class. */
+	/** Ordering bias. */
 	String value() default "";
 }

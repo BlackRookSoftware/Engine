@@ -2,18 +2,18 @@ package com.blackrook.engine.test;
 
 import java.util.Arrays;
 
-import com.blackrook.engine.annotation.Element;
-import com.blackrook.engine.annotation.ElementConstructor;
+import com.blackrook.engine.annotation.EngineElement;
+import com.blackrook.engine.annotation.EngineElementConstructor;
 import com.blackrook.engine.annotation.element.CCMD;
 import com.blackrook.engine.annotation.element.CVAR;
 
-@Element
+@EngineElement
 public class TestComponent
 {
 	@CVAR
 	public int buttvar;
 	
-	@ElementConstructor
+	@EngineElementConstructor
 	public TestComponent(TestComponentTwo comp)
 	{
 		buttvar = 5;

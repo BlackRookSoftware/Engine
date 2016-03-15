@@ -5,9 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.blackrook.engine.annotation.EngineElement;
+
 /**
  * Annotation for variables accessible to the engine.
- * Variables can be attached to any public getter/setter method or field.
+ * Variables can be attached to any public getter/setter method or field on {@link EngineElement}s.
  * <p>
  * Should be paired up in getters/setters. If only on a getter, it is
  * a read-only variable. It cannot only be on a setter.

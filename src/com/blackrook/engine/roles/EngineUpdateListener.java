@@ -9,7 +9,7 @@ import com.blackrook.engine.annotation.element.Ordering;
  * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
-public interface EngineUpdateListener extends UpdateHandler
+public interface EngineUpdateListener extends EngineUpdateHandler
 {
 	
 }
