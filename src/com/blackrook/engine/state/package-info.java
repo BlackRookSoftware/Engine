@@ -6,6 +6,6 @@
  * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  ******************************************************************************/
 /**
- * Contains the main parts of the engine.
+ * Contains the state and state manager stack stuff.
  */
-package com.blackrook.engine;
+package com.blackrook.engine.state;

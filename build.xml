@@ -52,7 +52,7 @@
         	sourcepath="${src.dir}" 
         	packagenames="${project.javadoc.packages}"
         	destdir="${docs.dir}" 
-    		source="1.7" 
+    		source="1.8" 
         	splitindex="true" 
         	use="true" 
         	version="true" 
@@ -68,7 +68,7 @@
             <link href="http://blackrooksoftware.com/docs/filesystem/"/>
             <link href="http://blackrooksoftware.com/docs/input/"/>
             <link href="http://blackrooksoftware.com/docs/archetext/"/>
-            <link href="http://download.oracle.com/javase/7/docs/api/"/>
+            <link href="http://download.oracle.com/javase/8/docs/api/"/>
         </javadoc>
     </target>	
 

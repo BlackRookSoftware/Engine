@@ -1,12 +1,9 @@
 /*******************************************************************************
- * Copyright (c) 2009-2014 Black Rook Software
+ * Copyright (c) 2016 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
- *  
- * Contributors:
- *     Matt Tropiano - initial API and implementation
  ******************************************************************************/
 package com.blackrook.engine.struct;
 
@@ -40,6 +37,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 	/**
 	 * Gets a stat as a double.
 	 * @param type the requested type.
+	 * @return the double value.
 	 */
 	public double getDouble(int type)
 	{
@@ -49,6 +47,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 	/**
 	 * Gets a stat as a float.
 	 * @param type the requested type.
+	 * @return the float value.
 	 */
 	public float getFloat(int type)
 	{
@@ -58,6 +57,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 	/**
 	 * Gets a stat as a long integer.
 	 * @param type the requested type.
+	 * @return the long value.
 	 */
 	public long getLong(int type)
 	{
@@ -67,6 +67,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 	/**
 	 * Gets a stat as a integer.
 	 * @param type the requested type.
+	 * @return the integer value.
 	 */
 	public int getInteger(int type)
 	{
@@ -76,10 +77,61 @@ public final class EStatTable extends HashMap<Integer, Double>
 	/**
 	 * Gets a stat as a boolean (nonzero is true).
 	 * @param type the requested type.
+	 * @return the boolean value.
 	 */
 	public boolean getBoolean(int type)
 	{
 		return getDouble(type) != 0.0;
+	}
+
+	/**
+	 * Gets a stat as a double.
+	 * @param type the requested type (uses ordinal).
+	 * @return the double value.
+	 */
+	public double getDouble(Enum<?> type)
+	{
+		return get(type.ordinal());
+	}
+
+	/**
+	 * Gets a stat as a float.
+	 * @param type the requested type (uses ordinal).
+	 * @return the float value.
+	 */
+	public float getFloat(Enum<?> type)
+	{
+		return (float)getDouble(type.ordinal());
+	}
+
+	/**
+	 * Gets a stat as a long integer.
+	 * @param type the requested type (uses ordinal).
+	 * @return the long value.
+	 */
+	public long getLong(Enum<?> type)
+	{
+		return (long)getDouble(type.ordinal());
+	}
+
+	/**
+	 * Gets a stat as a integer.
+	 * @param type the requested type (uses ordinal).
+	 * @return the integer value.
+	 */
+	public int getInteger(Enum<?> type)
+	{
+		return (int)getDouble(type.ordinal());
+	}
+
+	/**
+	 * Gets a stat as a boolean (nonzero is true).
+	 * @param type the requested type (uses ordinal).
+	 * @return the boolean value.
+	 */
+	public boolean getBoolean(Enum<?> type)
+	{
+		return getDouble(type.ordinal()) != 0.0;
 	}
 
 	/**
@@ -184,6 +236,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 	
 	/**
 	 * Adds a table to this.
+	 * @param table the table to add to this one.
 	 */
 	public void add(EStatTable table)
 	{
@@ -225,6 +278,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 	/**
 	 * Write state.
 	 * @param out the output stream.
+	 * @throws IOException if a write error occurred.
 	 */
 	public void writeState(OutputStream out) throws IOException
 	{

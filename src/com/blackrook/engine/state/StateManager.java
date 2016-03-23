@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 Black Rook Software
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ ******************************************************************************/
 package com.blackrook.engine.state;
 
 import com.blackrook.commons.Sizable;
@@ -60,6 +67,7 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 	/**
 	 * Pops a bunch of game states off of the state stack as returns it.
 	 * Calls {@link State#exit()} on the state popped.
+	 * @return the state popped.
 	 */
 	public synchronized State pop()
 	{

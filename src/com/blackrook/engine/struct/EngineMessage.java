@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 Black Rook Software
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ ******************************************************************************/
 package com.blackrook.engine.struct;
 
 import java.util.Arrays;
@@ -26,6 +33,7 @@ public class EngineMessage
 	 * Creates a new Engine message.
 	 * @param type the message type name.
 	 * @param arguments the arguments to pass along with the message.
+	 * @return a new engine message.
 	 */
 	public static EngineMessage create(String type, Object ... arguments)
 	{
@@ -34,6 +42,7 @@ public class EngineMessage
 	
 	/**
 	 * Gets the message type.
+	 * @return the type.
 	 */
 	public String getType() 
 	{
@@ -42,6 +51,7 @@ public class EngineMessage
 
 	/**
 	 * Gets the message arguments.
+	 * @return the array of arguments.
 	 */
 	public Object[] getArguments()
 	{
@@ -53,6 +63,7 @@ public class EngineMessage
 	 * Will attempt to cast/covert an argument if not an integer.
 	 * Returns null if index is outside range or value is null.
 	 * @param index the argument index.
+	 * @return the argument value as a boolean.
 	 */
 	public boolean getBooleanArgument(int index)
 	{
@@ -76,6 +87,7 @@ public class EngineMessage
 	 * Will attempt to cast/covert an argument if not an integer.
 	 * Returns null if index is outside range or value is null.
 	 * @param index the argument index.
+	 * @return the argument value as a integer.
 	 */
 	public Integer getIntegerArgument(int index)
 	{
@@ -101,6 +113,7 @@ public class EngineMessage
 	 * Will attempt to cast/covert an argument if not an integer.
 	 * Returns null if index is outside range or value is null.
 	 * @param index the argument index.
+	 * @return the argument value as a long.
 	 */
 	public Long getLongIntegerArgument(int index)
 	{
@@ -126,6 +139,8 @@ public class EngineMessage
 	 * Will attempt to cast/covert an argument if not an integer.
 	 * Returns def if index is outside range or value is null.
 	 * @param index the argument index.
+	 * @param def the default value to return if value is not present.
+	 * @return the argument value as a integer, or def if the value is null or not present.
 	 */
 	public int getIntArgument(int index, int def)
 	{
@@ -138,6 +153,8 @@ public class EngineMessage
 	 * Will attempt to cast/covert an argument if not a long.
 	 * Returns def if index is outside range or value is null.
 	 * @param index the argument index.
+	 * @param def the default value to return if value is not present.
+	 * @return the argument value as a long, or def if the value is null or not present.
 	 */
 	public long getLongArgument(int index, int def)
 	{
@@ -150,6 +167,7 @@ public class EngineMessage
 	 * Will attempt to cast/covert an argument if not a String.
 	 * Returns null if index is outside range or value is null.
 	 * @param index the argument index.
+	 * @return the argument value as a String.
 	 */
 	public String getStringArgument(int index)
 	{
@@ -166,6 +184,8 @@ public class EngineMessage
 	 * Will attempt to cast/covert an argument if not a String.
 	 * Returns def if index is outside range or value is null.
 	 * @param index the argument index.
+	 * @param def the default value to return if value is not present.
+	 * @return the argument value as a String, or def if the value is null or not present.
 	 */
 	public String getStringArgument(int index, String def)
 	{

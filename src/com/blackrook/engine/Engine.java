@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 Black Rook Software
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ ******************************************************************************/
 package com.blackrook.engine;
 
 import java.io.File;
@@ -204,6 +211,7 @@ public final class Engine
 	/**
 	 * Creates the Engine and prepares all of its singletons and starts stuff up and returns the instance.
 	 * @param config the engine configuration to use.
+	 * @return the new Engine instance.
 	 */
 	@SuppressWarnings("unchecked")
 	public static Engine createEngine(EngineConfig config)
@@ -687,7 +695,9 @@ public final class Engine
 
 	/**
 	 * Returns the resource list that stores a set of resources.
+	 * @param <T> the type contained by the list.
 	 * @param clazz the resource class to retrieve the list of.
+	 * @return the corresponding list of resources.
 	 * @throws NoSuchComponentException if the provided class is not a valid resource component.
 	 */
 	@SuppressWarnings("unchecked")
@@ -766,6 +776,7 @@ public final class Engine
 	 * Handles an uncaught, fatal exception and initiates engine shutdown.
 	 * <p>The ticker is stopped, all devices have {@link EngineDevice#destroy()} called on them, 
 	 * all listeners have {@link EngineShutdownListener#onUnexpectedEngineShutDown(Throwable)} called on them, and tells the JVM to exit.
+	 * @param t the throwable that caused this to be called.
 	 */
 	public void handleException(Throwable t)
 	{
@@ -843,7 +854,8 @@ public final class Engine
 		}
 		
 		/** 
-		 * Outputs text to something. 
+		 * Outputs text to something.
+		 * @param line the line to output. 
 		 */
 		protected abstract void output(String line);
 	}

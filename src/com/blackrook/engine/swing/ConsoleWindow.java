@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 Black Rook Software
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ ******************************************************************************/
 package com.blackrook.engine.swing;
 
 import java.awt.BorderLayout;
@@ -58,8 +65,9 @@ public class ConsoleWindow extends JFrame
 	 * Creates the console.
 	 * @param engine the engine instance.
 	 * @param config the configuration.
+	 * @param console the engine console.
 	 */
-	public ConsoleWindow(Engine engine, EngineConfig config, EngineConsole manager)
+	public ConsoleWindow(Engine engine, EngineConfig config, EngineConsole console)
 	{
 		super();
 		
@@ -72,7 +80,7 @@ public class ConsoleWindow extends JFrame
 		toolkit = Toolkit.getDefaultToolkit();
 		commandHistory = new List<String>(50);
 
-		consoleManager = manager;
+		consoleManager = console;
 		
 		scrollPane = createScrollPane(textArea = createTextArea());
 		entryField = createEntryField();
@@ -162,7 +170,8 @@ public class ConsoleWindow extends JFrame
 					if (!Common.isEmpty(prefix))
 					{
 						String[] cmds = consoleManager.getCommandNamesForPrefix(prefix);
-						if (Common.isEmpty(cmds))
+						String[] vars = consoleManager.getVariableNamesForPrefix(prefix);
+						if (Common.isEmpty(cmds) && Common.isEmpty(vars))
 						{
 							println("NOTICE: No possible completions for input.");
 							toolkit.beep();
@@ -171,12 +180,26 @@ public class ConsoleWindow extends JFrame
 						{
 							field.setText(cmds[0]);
 						}
+						else if (vars.length == 1)
+						{
+							field.setText(vars[0]);
+						}
 						else
 						{
-							println("Possible completions:");
-							for (String cmd : cmds)
-								print(cmd + " ");
-							println();
+							if (!Common.isEmpty(cmds))
+							{
+								println("Commands:");
+								for (String c : cmds)
+									print(c + " ");
+								println();
+							}
+							if (!Common.isEmpty(vars))
+							{
+								println("\nVariables:");
+								for (String v : vars)
+									print(v + " ");
+								println();
+							}
 						}
 					}
 					
@@ -274,7 +297,6 @@ public class ConsoleWindow extends JFrame
 	{
 		print('\n');
 	}
-	
 	
 	/**
 	 * Prints a formatted message to the console with a newline appended to it.

@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 Black Rook Software
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ ******************************************************************************/
 package com.blackrook.engine;
 
 
@@ -243,7 +250,8 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 	
 	/**
 	 * Gets a resource by its identity.
-	 * Returns null if not found.
+	 * @param id the identity of thge resource.
+	 * @return the resource desired, or null if not found.
 	 */
 	public R get(String id)
 	{

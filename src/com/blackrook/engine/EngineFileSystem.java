@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 Black Rook Software
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ ******************************************************************************/
 package com.blackrook.engine;
 
 import java.io.File;
@@ -33,6 +40,7 @@ public class EngineFileSystem extends FileSystem
 	
 	/**
 	 * Creates a new file system.
+	 * @param logger the logger.
 	 * @param engine the Engine2D instance.
 	 * @param config the configuration class to use.
 	 */
@@ -100,7 +108,8 @@ public class EngineFileSystem extends FileSystem
 	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
 	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
 	 * @param path the path to use.
-	 * @return an open OutputStream for writing to the file.
+	 * @return an open OutputStream for writing to the file, or null if it couldn't be open.
+	 * @throws IOException if a write error occurs.
 	 * @see EngineConfig#getGlobalSettingsPath()
 	 */
 	public OutputStream createGlobalSettingFile(String path) throws IOException
@@ -119,7 +128,8 @@ public class EngineFileSystem extends FileSystem
 	 * Creates a new file off of the user settings path provided by {@link EngineConfig}.
 	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
 	 * @param path the path to use.
-	 * @return an open OutputStream for writing to the file.
+	 * @return an open OutputStream for writing to the file, or null if it couldn't be open.
+	 * @throws IOException if a write error occurs.
 	 * @see EngineConfig#getUserSettingsPath()
 	 */
 	public OutputStream createUserSettingFile(String path) throws IOException
@@ -138,7 +148,8 @@ public class EngineFileSystem extends FileSystem
 	 * Creates a new file off of the global settings path provided by {@link EngineConfig}.
 	 * If {@link EngineConfig#getGlobalSettingsPath()} returns null, the base path is the current working directory.
 	 * @param path the path to use.
-	 * @return an open InputStream for reading from the file.
+	 * @return an open InputStream for reading from the file, or null if the file does not exist.
+	 * @throws IOException if a read error occurs.
 	 * @see EngineConfig#getGlobalSettingsPath()
 	 */
 	public InputStream openGlobalSettingFile(String path) throws IOException
@@ -156,6 +167,7 @@ public class EngineFileSystem extends FileSystem
 	 * If {@link EngineConfig#getUserSettingsPath()} returns null, the base path is the current working directory.
 	 * @param path the path to use.
 	 * @return an open InputStream for reading from the file.
+	 * @throws IOException if a read error occurs.
 	 * @see EngineConfig#getUserSettingsPath()
 	 */
 	public InputStream openUserSettingFile(String path) throws IOException
@@ -169,7 +181,9 @@ public class EngineFileSystem extends FileSystem
 	}
 
 	/**
-	 * Returns the path to a file in the global setting path. 
+	 * Gets the path to a file in the global setting path.
+	 * @param path the path off of the path root.
+	 * @return the full file path to the file.
 	 */
 	public String getGlobalSettingFilePath(String path)
 	{
@@ -177,7 +191,9 @@ public class EngineFileSystem extends FileSystem
 	}
 	
 	/**
-	 * Returns the path to a file in the user setting path. 
+	 * Gets the path to a file in the user setting path. 
+	 * @param path the path off of the path root.
+	 * @return the full file path to the file.
 	 */
 	public String getUserSettingFilePath(String path)
 	{

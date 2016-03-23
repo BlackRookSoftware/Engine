@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 Black Rook Software
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ ******************************************************************************/
 package com.blackrook.engine;
 
 import java.io.IOException;
@@ -33,6 +40,8 @@ public class EngineConsole
 	/** Engine reference. */
 	private Engine engine;
 	/** A Trie that holds all auto-completable commands. */
+	private CaseInsensitiveTrie variableTrie;
+	/** A Trie that holds all auto-completable commands. */
 	private CaseInsensitiveTrie commandTrie;
 
 	/** Mapping of commands to invocation targets. */
@@ -54,6 +63,7 @@ public class EngineConsole
 	{
 		this.engine = engine;
 		commandTrie = new CaseInsensitiveTrie();
+		variableTrie = new CaseInsensitiveTrie();
 		commandMap = new CaseInsensitiveHashMap<CCMDMapping>();
 		commandLongestLength = 0;
 		variableMap = new CaseInsensitiveHashMap<CVARMapping>();
@@ -63,6 +73,8 @@ public class EngineConsole
 	
 	/**
 	 * Adds the entries for commands and variables to the console manager.
+	 * @param instance the object instance to inspect for commands and variables.
+	 * @param debug if true, add debug commands and variables. 
 	 */
 	public void addEntries(Object instance, boolean debug)
 	{
@@ -110,6 +122,7 @@ public class EngineConsole
 			}
 			
 			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), anno.global(), field));
+			variableTrie.put(varname);
 			variableLongestLength = Math.max(variableLongestLength, varname.length());
 		}
 		
@@ -135,6 +148,7 @@ public class EngineConsole
 			}
 			
 			variableMap.put(varname, new CVARMapping(instance, anno.description(), anno.archived(), anno.global(), method));
+			variableTrie.put(varname);
 			variableLongestLength = Math.max(variableLongestLength, varname.length());
 		}
 		
@@ -186,7 +200,8 @@ public class EngineConsole
 	}
 
 	/**
-	 * Returns all variable names in an array.
+	 * Gets all of the variable names known to the console.
+	 * @return all variable names in an array.
 	 */
 	public String[] getVariableNames()
 	{
@@ -198,6 +213,23 @@ public class EngineConsole
 		return out;
 	}
 
+	/**
+	 * Returns all variable names that start with a string.
+	 * @param prefix the start of the variable name.
+	 * @return the matching variable names in an array.
+	 */
+	public String[] getVariableNamesForPrefix(String prefix)
+	{
+		List<String> outList = new List<String>();
+		int amt = variableTrie.getAfter(prefix, outList);
+		String[] out = new String[amt];
+		Iterator<String> it = outList.iterator();
+		int i = 0;
+		while (it.hasNext())
+			out[i++] = it.next();
+		return out;
+	}
+	
 	/**
 	 * Sets all variables and their values using the entries on a {@link Properties} object. 
 	 * @param settings the properties object to set variable values on.
@@ -259,7 +291,7 @@ public class EngineConsole
 	/**
 	 * Returns all variable names in an array according to some criteria.
 	 * @param archived if true, get variables that will be saved/persisted to storage.
-	 * @param archived if true, get global variables. false, user variables.
+	 * @param global if true, get global variables. false, user variables.
 	 */
 	private String[] getVariableNames(boolean archived, boolean global)
 	{
@@ -281,6 +313,7 @@ public class EngineConsole
 	/**
 	 * Gets a variable definition.
 	 * @param name the name of the variable.
+	 * @return the variable mapping object for a variable.
 	 */
 	public CVARMapping getVariableDefinition(String name)
 	{
@@ -290,6 +323,7 @@ public class EngineConsole
 	/**
 	 * Gets the value of a variable by name.
 	 * @param name the name of the variable.
+	 * @return the value of the variable.
 	 */
 	public Object getVariable(String name)
 	{
@@ -301,8 +335,11 @@ public class EngineConsole
 	
 	/**
 	 * Gets the value of a variable by name, converted to a value type.
+	 * @param <T> the return/conversion type.
 	 * @param name the name of the variable.
 	 * @param type the target type.
+	 * @return the value of the variable, converted.
+	 * @throws ClassCastException if the read value cannot be converted.
 	 */
 	public <T> T getVariable(String name, Class<T> type)
 	{
@@ -338,7 +375,8 @@ public class EngineConsole
 	}
 	
 	/**
-	 * Returns all command names in an array.
+	 * Gets all of the command names known to the console.
+	 * @return all command names in an array.
 	 */
 	public String[] getCommandNames()
 	{
@@ -352,6 +390,8 @@ public class EngineConsole
 	
 	/**
 	 * Returns all command names that start with a string.
+	 * @param prefix the start of the command name.
+	 * @return the matching command names in an array.
 	 */
 	public String[] getCommandNamesForPrefix(String prefix)
 	{
@@ -366,8 +406,9 @@ public class EngineConsole
 	}
 	
 	/**
-	 * Gets a variable definition.
-	 * @param name the name of the variable.
+	 * Gets a command definition.
+	 * @param name the name of the command.
+	 * @return the command mapping object for a command.
 	 */
 	public CCMDMapping getCommandDefinition(String name)
 	{
@@ -375,6 +416,7 @@ public class EngineConsole
 	}
 	
 	/**
+	 * Gets the console window instance for this console.
 	 * @return the consoleWindow
 	 */
 	public ConsoleWindow getConsoleWindow()
@@ -396,13 +438,19 @@ public class EngineConsole
 			return commandMap.get(name).call(args);
 	}
 	
-	/** Returns the length of the command with the longest name. */
+	/** 
+	 * Returns the length of the command with the longest name.
+	 * @return the length in characters. 
+	 */
 	public int getCommandLongestLength()
 	{
 		return commandLongestLength;
 	}
 
-	/** Returns the length of the variable with the longest name. */
+	/** 
+	 * Returns the length of the variable with the longest name. 
+	 * @return the length in characters. 
+	 */
 	public int getVariableLongestLength()
 	{
 		return variableLongestLength;
@@ -481,7 +529,7 @@ public class EngineConsole
 
 	/**
 	 * Processes a single command.
-	 * @param commandString
+	 * @param commandString the command string to process.
 	 */
 	public void processCommand(String commandString)
 	{
@@ -762,6 +810,7 @@ public class EngineConsole
 		
 		/**
 		 * Gets the description of this command.
+		 * @return the description.
 		 */
 		public String getDescription()
 		{
@@ -770,6 +819,7 @@ public class EngineConsole
 
 		/**
 		 * Gets the usage blurb of this command.
+		 * @return the usage entries.
 		 */
 		public String[] getUsage()
 		{
@@ -847,6 +897,7 @@ public class EngineConsole
 
 		/**
 		 * Gets the description of this command.
+		 * @return the description.
 		 */
 		public String getDescription()
 		{
@@ -855,6 +906,7 @@ public class EngineConsole
 
 		/**
 		 * Gets if this variable is to be archived.
+		 * @return true if so, false if not.
 		 */
 		public boolean isArchived()
 		{
@@ -863,6 +915,7 @@ public class EngineConsole
 
 		/**
 		 * Gets if this variable is to stored/read from global.
+		 * @return true if so, false if not.
 		 */
 		public boolean isGlobal()
 		{
@@ -871,6 +924,7 @@ public class EngineConsole
 		
 		/**
 		 * Gets if this variable is to be archived.
+		 * @return true if so, false if not.
 		 */
 		public boolean isReadOnly()
 		{
