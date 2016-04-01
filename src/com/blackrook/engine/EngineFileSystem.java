@@ -10,10 +10,12 @@ package com.blackrook.engine;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.zip.ZipException;
 
 import com.blackrook.commons.Common;
@@ -35,9 +37,6 @@ public class EngineFileSystem extends FileSystem
 	/** Config ref. */
 	private EngineConfig config;
 
-	/** File filter. */
-	private FileFilter packFilter;
-	
 	/**
 	 * Creates a new file system.
 	 * @param logger the logger.
@@ -51,9 +50,41 @@ public class EngineFileSystem extends FileSystem
 		this.config = config;
 		this.logger = logger;
 		
-		final String EXT = config.getFileSystemArchiveExtension();
-		packFilter = null;
-		if (!Common.isEmpty(config.getFileSystemArchiveExtension()))
+		String[] archives = config.getFileSystemArchives();
+		String[] stack = config.getFileSystemStack();
+		
+		if (!Common.isEmpty(archives))
+			includeArchiveList(archives);
+		else if (!Common.isEmpty(stack))
+			includeArchiveSet(stack, config.getFileSystemStackArchiveAutoloadExtension());
+	}
+
+	/**
+	 * Includes a set of archives.
+	 * @param archiveFiles the list of paths.
+	 */
+	private void includeArchiveList(String[] archiveFiles)
+	{
+		boolean error = false;
+		for (String arch : archiveFiles) 
+			error = !addArchive(new File(arch)) || error;
+			
+		if (error)
+			throw new EngineSetupException("FileSystem: One or more found archives could not be added!");
+	}
+	
+	/**
+	 * Includes a set of archives.
+	 * @param fileSystemStack the filesystem path stack.
+	 * @param extension the extension to search for.
+	 */
+	private void includeArchiveSet(final String[] fileSystemStack, final String extension)
+	{
+		FileFilter packFilter;
+		
+		if (Common.isEmpty(extension))
+			packFilter = null;
+		else
 		{
 			packFilter = new FileFilter() 
 			{
@@ -64,12 +95,12 @@ public class EngineFileSystem extends FileSystem
 						return false;
 					String name = file.getName();
 					name = name.substring(name.lastIndexOf('.')).toLowerCase();
-					return name.equalsIgnoreCase(EXT);
+					return name.equalsIgnoreCase(extension);
 				}
 			};
 		}
-
-		if (!Common.isEmpty(config.getFileSystemStack())) for (String dirPaths : config.getFileSystemStack())
+		
+		for (String dirPaths : fileSystemStack)
 		{
 			File dir = new File(dirPaths);
 			
@@ -81,20 +112,47 @@ public class EngineFileSystem extends FileSystem
 			if (packFilter != null)
 			{
 				File[] archiveFiles = dir.listFiles(packFilter);
-				try {
-					for (File arch : archiveFiles) 
-						pushArchive(new ZipArchive(arch));
-				} catch (ZipException e) {
-					throw new EngineSetupException("FileSystem: \""+dir.getPath()+"\" is not an archive.", e);
-				} catch (IOException e) {
-					throw new EngineSetupException("FileSystem: \""+dir.getPath()+"\" cannot be read.", e);
-				} catch (SecurityException e) {
-					throw new EngineSetupException("FileSystem: No permission to access \""+dir.getPath()+"\".", e);
-				}
+				
+				// Sort lexicographically.
+				Arrays.sort(archiveFiles);
+
+				boolean error = false;
+				for (File arch : archiveFiles) 
+					error = !addArchive(arch) || error;
+					
+				if (error)
+					throw new EngineSetupException("FileSystem: One or more found archives could not be added!");
 			}
 			
 			pushArchive(new FolderArchive(dir));
 		}
+
+	}
+	
+	/**
+	 * Attempts to add an archive.
+	 * @param file the input archive file.
+	 * @return true if successful.
+	 */
+	private boolean addArchive(File file)
+	{
+		try {
+			pushArchive(new ZipArchive(file));
+		} catch (FileNotFoundException e) {
+			logger.error(e, "FileSystem: \""+file.getPath()+"\" cannot be found.");
+			return false;
+		} catch (ZipException e) {
+			logger.error(e, "FileSystem: \""+file.getPath()+"\" is not an archive.");
+			return false;
+		} catch (IOException e) {
+			logger.error(e, "FileSystem: \""+file.getPath()+"\" cannot be read.");
+			return false;
+		} catch (SecurityException e) {
+			logger.error(e, "FileSystem: No permission to access \""+file.getPath()+"\".");
+			return false;
+		}
+		
+		return true;
 	}
 	
 	@Override

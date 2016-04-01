@@ -9,6 +9,7 @@ package com.blackrook.engine;
 
 import java.awt.Image;
 
+import com.blackrook.commons.Common;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 
 /**
@@ -53,9 +54,9 @@ public interface EngineConfig
 	public String getApplicationSupportPage();
 
 	/**
-	 * @return the package root name for scanning stuff in the engine application. 
+	 * @return the package root name for scanning stuff in the engine application classpath. 
 	 */
-	public String[] getPackageRoot();
+	public String[] getPackageRoots();
 
 	/**
 	 * Gets the list of singleton/pool classes that should be instantiated on startup.
@@ -109,19 +110,36 @@ public interface EngineConfig
 	public LogLevel getLogLevel();
 
 	/**
-	 * Gets the file system extension for archive types to mount.
+	 * Gets the file system archives to mount.
 	 * Files are considered to be ZIP formatted.
-	 * If null, does not add archive types.
-	 * @return the archive file extension or null to not load archives.
+	 * If null, does not load specific archive types.
+	 * Archives are loaded in order specified in the array.
+	 * NOTE: If this is not empty, loading via FileSystemStack is ignored.
+	 * @return the array of archive paths off of the mounted filesystem.
+	 * @see Common#isEmpty(Object)
+	 * @see #getFileSystemStack()
+	 * @see #getFileSystemStackArchiveAutoloadExtension()
 	 */
-	public String getFileSystemArchiveExtension();
+	public String[] getFileSystemArchives();
 
 	/**
 	 * Gets the list of directory paths to add in lowest to greatest stack precedence.
-	 * If null, these directories are not added.
+	 * If empty, these directories are not added.
+	 * This is consulted if {@link #getFileSystemArchives()} returns an empty value.
 	 * @return the paths to push onto the filesystem stack.
+	 * @see Common#isEmpty(Object)
 	 */
 	public String[] getFileSystemStack();
+
+	/**
+	 * Gets the file system extension for archive types to mount.
+	 * Files are considered to be ZIP formatted.
+	 * If empty, does not auto-load archive types.
+	 * Archives are loaded in lexicographical order.
+	 * @return the archive file extension or null to not auto-load archives.
+	 * @see Common#isEmpty(Object)
+	 */
+	public String getFileSystemStackArchiveAutoloadExtension();
 
 	/**
 	 * Gets the file to read for reading resource definitions. This is filesystem-relative. 

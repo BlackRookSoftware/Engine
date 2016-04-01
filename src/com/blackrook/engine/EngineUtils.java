@@ -76,7 +76,7 @@ public final class EngineUtils
 		// Scan for singletons to instantiate.
 		Hash<String> packageMap = new Hash<String>();
 	
-		for (String root : config.getPackageRoot())
+		for (String root : config.getPackageRoots())
 			for (String className : Reflect.getClasses(root))
 				packageMap.put(className);
 		

@@ -22,7 +22,7 @@ public final class EngineTest
 		Engine engine = Engine.createEngine(new EngineConfig()
 		{
 			@Override
-			public String[] getPackageRoot()
+			public String[] getPackageRoots()
 			{
 				return new String[]{"com.blackrook.engine.test"};
 			}
@@ -58,7 +58,13 @@ public final class EngineTest
 			}
 
 			@Override
-			public String getFileSystemArchiveExtension() 
+			public String[] getFileSystemArchives() 
+			{
+				return null;
+			}
+
+			@Override
+			public String getFileSystemStackArchiveAutoloadExtension() 
 			{
 				return null;
 			}
