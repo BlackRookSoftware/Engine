@@ -272,7 +272,11 @@ public class EngineConsole
 	public void saveUserVariables(Properties settings)
 	{
 		for (String var : getVariableNames(true, false))
-			settings.setProperty(var, getVariable(var, String.class));
+		{
+			String s = getVariable(var, String.class);
+			if (s != null)
+				settings.setProperty(var, s);
+		}
 	}
 	
 	/**
@@ -285,7 +289,11 @@ public class EngineConsole
 	public void saveGlobalVariables(Properties settings)
 	{
 		for (String var : getVariableNames(true, true))
-			settings.setProperty(var, getVariable(var, String.class));
+		{
+			String s = getVariable(var, String.class);
+			if (s != null)
+				settings.setProperty(var, s);
+		}
 	}
 	
 	/**
