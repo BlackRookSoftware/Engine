@@ -174,6 +174,8 @@ public class EngineConsole
 			}
 			
 			CVARMapping mapping = variableMap.get(varname);
+			if (mapping == null)
+				throw new ConsoleSetupException("Variable \""+varname+"\" is missing a pairing!"); 
 			mapping.setter = method;
 		}
 		
