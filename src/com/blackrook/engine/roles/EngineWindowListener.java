@@ -61,4 +61,16 @@ public interface EngineWindowListener
 	 */
 	public void onMouseExit();
 
+	/**
+	 * Should be called when the window is resized.
+	 * <p><b>It would not be wise to call this from another method in this class.</b>
+	 */
+	public void onWindowResize(int width, int height);
+
+	/**
+	 * Should be called when the window is moved.
+	 * <p><b>It would not be wise to call this from another method in this class.</b>
+	 */
+	public void onWindowMove(int positionX, int positionY);
+	
 }

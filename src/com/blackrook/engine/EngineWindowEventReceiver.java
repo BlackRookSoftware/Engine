@@ -61,4 +61,14 @@ public interface EngineWindowEventReceiver
 	 */
 	public void fireMouseExit();
 
+	/**
+	 * Should be called when the window is resized.
+	 */
+	public void fireWindowResize(int width, int height);
+
+	/**
+	 * Should be called when the window is moved.
+	 */
+	public void fireWindowMove(int positionX, int positionY);
+
 }
