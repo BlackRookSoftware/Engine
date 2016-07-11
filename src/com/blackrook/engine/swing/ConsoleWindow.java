@@ -176,11 +176,11 @@ public class ConsoleWindow extends JFrame
 							println("NOTICE: No possible completions for input.");
 							toolkit.beep();
 						}
-						else if (cmds.length == 1)
+						else if (cmds.length == 1 && vars.length == 0)
 						{
 							field.setText(cmds[0]);
 						}
-						else if (vars.length == 1)
+						else if (vars.length == 1 && cmds.length == 0)
 						{
 							field.setText(vars[0]);
 						}
