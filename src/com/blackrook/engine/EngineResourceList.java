@@ -38,8 +38,6 @@ import com.blackrook.engine.roles.EngineResource;
  */
 public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 {
-	private static final String CACHE_KEY = Common.getPackagePathForClass(EngineResourceList.class) + "/Cache";
-	
 	private static final List<Class<?>> NUMERIC_CLASSES = new List<Class<?>>(12) 
 	{{
 		add(Byte.class);
@@ -190,7 +188,7 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 	 * Adds a resource to the list.
 	 * @param resource the added resource.
 	 */
-	public synchronized void add(R resource)
+	public void add(R resource)
 	{
 		String id = resource.getId();
 		if (id == null)
@@ -503,7 +501,7 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 		if (hash == null)
 			return 0;
 		
-		Cache cache = getIntervalCache();
+		Cache cache = getCache();
 		int amt = hash.getIntersections(value.doubleValue(), cache.intervalObjects, offset);
 		int count = 0;
 		for (int i = offset; i < amt && i < out.length; i++)
@@ -550,7 +548,7 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 		if (hash == null)
 			return 0;
 		
-		Cache cache = getIntervalCache();
+		Cache cache = getCache();
 		int amt = hash.getIntersections(valueMin.doubleValue(), valueMax.doubleValue(), cache.intervalObjects, offset);
 		int count = 0;
 		for (int i = offset; i < amt && i < out.length; i++)
@@ -610,18 +608,6 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 		return -1;
 	}
 	
-	/** Returns the cache used for repeat interval queries. */
-	private Cache getIntervalCache()
-	{
-		Cache out = null;
-		if ((out = (Cache)Common.getLocal(CACHE_KEY)) == null)
-		{
-			out = new Cache();
-			Common.setLocal(CACHE_KEY, out);
-		}
-		return out;
-	}
-
 	/**
 	 * Value getter thing for ease of use. 
 	 */
@@ -759,6 +745,16 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 		
 	}
 	
+	private static final String CACHE_NAME = "$$"+Cache.class.getCanonicalName();
+
+	// Get the cache.
+	private static Cache getCache()
+	{
+		Cache out;
+		if ((out = (Cache)Common.getLocal(CACHE_NAME)) == null)
+			Common.setLocal(CACHE_NAME, out = new Cache());
+		return out;
+	}
 	
 	/** Reused cache per thread. */
 	private static class Cache

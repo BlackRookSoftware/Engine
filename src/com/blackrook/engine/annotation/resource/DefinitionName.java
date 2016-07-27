@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface ResourceName
+public @interface DefinitionName
 {
 	/** 
 	 * The resource structure type name to use when reading resources.

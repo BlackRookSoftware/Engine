@@ -66,7 +66,41 @@ public final class EngineUtils
 	}
 
 	/**
-	 * Adds engine singletons to the engine singleton manager.
+	 * Finds the resource and component classes to instantiate.
+	 * @param config the engine configuration.
+	 * @param outComponentClasses the output list of component classes.
+	 * @param outResourceClasses the output list of resource classes.
+	 */
+	@SuppressWarnings("unchecked")
+	static void getComponentAndResourceClasses(EngineConfig config, List<Class<?>> outComponentClasses, List<Class<EngineResource>> outResourceClasses) 
+	{
+		Hash<String> componentStartupClass = new Hash<>();
+		if (!Common.isEmpty(config.getStartupComponentClasses()))
+			for (String name : config.getStartupComponentClasses())
+				componentStartupClass.put(name);
+
+		for (Class<?> componentClass : EngineUtils.getSingletonClasses(config))
+		{
+			if (EngineResource.class.isAssignableFrom(componentClass))
+			{
+				outResourceClasses.add((Class<EngineResource>)componentClass);
+			}
+			else if (componentClass.isAnnotationPresent(EngineElement.class))
+			{
+				EngineElement ecomp = componentClass.getAnnotation(EngineElement.class);
+				if (config.getDebugMode() || (!config.getDebugMode() && !ecomp.debug()))
+				{
+					if (componentStartupClass.isEmpty() || componentStartupClass.contains(componentClass.getName()) || componentStartupClass.contains(componentClass.getSimpleName()))
+					{
+						outComponentClasses.add(componentClass);
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Finds engine singletons to add to the engine singleton manager.
 	 * @param config the configuration to use for engine setup.
 	 */
 	static Iterable<Class<?>> getSingletonClasses(EngineConfig config)

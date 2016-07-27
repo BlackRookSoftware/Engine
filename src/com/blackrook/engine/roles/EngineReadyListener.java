@@ -14,16 +14,18 @@ import com.blackrook.engine.annotation.element.Ordering;
 /**
  * This is a component that has a method invoked on it after startup to kickstart the application (set gamestates and such).
  * These are called before the update ticker is started.
- * If more than one class has this, they all have their {@link #onEngineStartup()} method invoked.
+ * If more than one class has this, they all have their {@link #onEngineReady()} method invoked.
  * <p>
  * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
-public interface EngineStartupListener
+public interface EngineReadyListener
 {
 	/**
-	 * Invoked after {@link Engine} startup.
+	 * Invoked after {@link Engine} startup, which is after the filesystem, 
+	 * all resources, components are created, all user/global variables loaded,
+	 * devices created, and pending console commands executed, but BEFORE the update ticker is started.
 	 */
-	public void onEngineStartup();
+	public void onEngineReady();
 	
 }

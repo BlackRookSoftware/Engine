@@ -36,7 +36,7 @@ import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.element.Ordering;
-import com.blackrook.engine.annotation.resource.ResourceName;
+import com.blackrook.engine.annotation.resource.DefinitionName;
 import com.blackrook.engine.broadcaster.EngineInputBroadcaster;
 import com.blackrook.engine.broadcaster.EngineWindowBroadcaster;
 import com.blackrook.engine.exception.EngineSetupException;
@@ -45,7 +45,7 @@ import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineShutdownListener;
 import com.blackrook.engine.roles.EngineWindowListener;
-import com.blackrook.engine.roles.EngineStartupListener;
+import com.blackrook.engine.roles.EngineReadyListener;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EngineResource;
 import com.blackrook.engine.roles.EngineSettingsListener;
@@ -84,7 +84,7 @@ public final class Engine
 	/** Engine settings listener. */
 	private Queue<EngineSettingsListener> settingsListeners;
 	/** Engine startup listener. */
-	private Queue<EngineStartupListener> startupListeners;
+	private Queue<EngineReadyListener> readyListeners;
 	/** Engine shutdown listener. */
 	private Queue<EngineShutdownListener> shutdownListeners;
 	/** Engine window listener. */
@@ -113,7 +113,7 @@ public final class Engine
 		resources = new HashMap<Class<?>, EngineResourceList<?>>();
 		windowListeners = new Queue<EngineWindowListener>();
 		settingsListeners = new Queue<EngineSettingsListener>();
-		startupListeners = new Queue<EngineStartupListener>(); 
+		readyListeners = new Queue<EngineReadyListener>(); 
 		shutdownListeners = new Queue<EngineShutdownListener>();
 		messageListeners = new Queue<EngineMessageListener>();
 		inputListeners = new Queue<EngineInputListener>();
@@ -228,7 +228,6 @@ public final class Engine
 	 * @param config the engine configuration to use.
 	 * @return the new Engine instance.
 	 */
-	@SuppressWarnings("unchecked")
 	public static Engine createEngine(EngineConfig config)
 	{
 		Engine out = new Engine(config);
@@ -251,39 +250,20 @@ public final class Engine
 		ArcheTextRoot resourceDefinitionRoot = EngineUtils.loadResourceDefinitions(fileSystem, config.getResourceDefinitionFile());
 		out.logger.info("Done.");
 		
-		Hash<String> componentStartupClass = new Hash<>();
-		if (!Common.isEmpty(config.getStartupComponentClasses()))
-			for (String name : config.getStartupComponentClasses())
-				componentStartupClass.put(name);
 		
 		out.logger.debug("Scanning classes...");
 		
-		List<Class<EngineResource>> resourceClasses = new List<Class<EngineResource>>();
 		List<Class<?>> componentClasses = new List<Class<?>>();
+		List<Class<EngineResource>> resourceClasses = new List<Class<EngineResource>>();
 		
-		for (Class<?> componentClass : EngineUtils.getSingletonClasses(config))
-		{
-			if (EngineResource.class.isAssignableFrom(componentClass))
-			{
-				resourceClasses.add((Class<EngineResource>)componentClass);
-			}
-			else if (componentClass.isAnnotationPresent(EngineElement.class))
-			{
-				EngineElement ecomp = componentClass.getAnnotation(EngineElement.class);
-				if (config.getDebugMode() || (!config.getDebugMode() && !ecomp.debug()))
-				{
-					if (componentStartupClass.isEmpty() || componentStartupClass.contains(componentClass.getName()) || componentStartupClass.contains(componentClass.getSimpleName()))
-					{
-						componentClasses.add(componentClass);
-					}
-				}
-			}
-		}
+		EngineUtils.getComponentAndResourceClasses(config, componentClasses, resourceClasses);
 		
+		out.logger.debug("Gathering/creating resources...");
+
 		// create resources first.
 		for (Class<EngineResource> clazz : resourceClasses)
 		{
-			ResourceName anno = clazz.getAnnotation(ResourceName.class);
+			DefinitionName anno = clazz.getAnnotation(DefinitionName.class);
 			String className = clazz.getSimpleName();
 			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
 			String structName = (anno == null || Common.isEmpty(anno.value())) ? className : anno.value();
@@ -324,8 +304,8 @@ public final class Engine
 		// invokes main methods.
 		out.logger.info("Invoking engine start methods.");
 		// invoke start on stuff.
-		for (EngineStartupListener listener : out.startupListeners)
-			listener.onEngineStartup();
+		for (EngineReadyListener listener : out.readyListeners)
+			listener.onEngineReady();
 		
 		// start ticker.
 		out.updateTicker.start();
@@ -333,7 +313,7 @@ public final class Engine
 		
 		return out;
 	}
-	
+
 	/**
 	 * Sets up the loggers.
 	 */
@@ -430,10 +410,10 @@ public final class Engine
 			logger.debugf("%s added to settings listeners.", obj.object.getClass().getSimpleName());
 		}
 	
-		for (OrderingNode<EngineStartupListener> obj : lists.startupListeners)
+		for (OrderingNode<EngineReadyListener> obj : lists.readyListeners)
 		{
-			startupListeners.enqueue(obj.object);
-			logger.debugf("%s added to startup listeners.", obj.object.getClass().getSimpleName());
+			readyListeners.enqueue(obj.object);
+			logger.debugf("%s added to ready listeners.", obj.object.getClass().getSimpleName());
 		}
 	
 		for (OrderingNode<EngineShutdownListener> obj : lists.shutdownListeners)
@@ -904,7 +884,7 @@ public final class Engine
 		private List<OrderingNode<EngineInputListener>> inputListeners;
 		private List<OrderingNode<EngineMessageListener>> messageListeners;
 		private List<OrderingNode<EngineSettingsListener>> settingsListeners;
-		private List<OrderingNode<EngineStartupListener>> startupListeners;
+		private List<OrderingNode<EngineReadyListener>> readyListeners;
 		private List<OrderingNode<EngineShutdownListener>> shutdownListeners;
 		private List<OrderingNode<EngineUpdateListener>> updateListeners;
 		
@@ -917,7 +897,7 @@ public final class Engine
 			inputListeners = new List<Engine.OrderingNode<EngineInputListener>>();
 			messageListeners = new List<Engine.OrderingNode<EngineMessageListener>>();
 			settingsListeners = new List<Engine.OrderingNode<EngineSettingsListener>>();
-			startupListeners = new List<Engine.OrderingNode<EngineStartupListener>>();
+			readyListeners = new List<Engine.OrderingNode<EngineReadyListener>>();
 			shutdownListeners = new List<Engine.OrderingNode<EngineShutdownListener>>();
 			updateListeners = new List<Engine.OrderingNode<EngineUpdateListener>>();
 		}
@@ -931,7 +911,7 @@ public final class Engine
 			inputListeners.sort();
 			messageListeners.sort();
 			settingsListeners.sort();
-			startupListeners.sort();
+			readyListeners.sort();
 			shutdownListeners.sort();
 			updateListeners.sort();
 		}
@@ -992,11 +972,11 @@ public final class Engine
 				shutdownListeners.add(new OrderingNode<EngineShutdownListener>(ordering, obj));
 			}
 			
-			// check if engine starter.
-			if (EngineStartupListener.class.isAssignableFrom(clazz))
+			// check if engine ready listener.
+			if (EngineReadyListener.class.isAssignableFrom(clazz))
 			{
-				EngineStartupListener obj = (EngineStartupListener)object;
-				startupListeners.add(new OrderingNode<EngineStartupListener>(ordering, obj));
+				EngineReadyListener obj = (EngineReadyListener)object;
+				readyListeners.add(new OrderingNode<EngineReadyListener>(ordering, obj));
 			}
 		
 			// check if settings listener.
