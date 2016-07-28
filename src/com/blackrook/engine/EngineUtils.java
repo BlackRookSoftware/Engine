@@ -24,6 +24,7 @@ import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.EngineElementConstructor;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.roles.EngineResource;
+import com.blackrook.engine.roles.EngineResourceGenerator;
 import com.blackrook.fs.FSFile;
 
 /**
@@ -70,20 +71,30 @@ public final class EngineUtils
 	 * @param config the engine configuration.
 	 * @param outComponentClasses the output list of component classes.
 	 * @param outResourceClasses the output list of resource classes.
+	 * @param outResourceGeneratorClasses the output list of resource generator classes.
 	 */
 	@SuppressWarnings("unchecked")
-	static void getComponentAndResourceClasses(EngineConfig config, List<Class<?>> outComponentClasses, List<Class<EngineResource>> outResourceClasses) 
+	static void getComponentAndResourceClasses(
+		EngineConfig config, 
+		List<Class<?>> outComponentClasses, 
+		List<Class<EngineResource>> outResourceClasses, 
+		List<Class<EngineResourceGenerator<?>>> outResourceGeneratorClasses
+	) 
 	{
 		Hash<String> componentStartupClass = new Hash<>();
 		if (!Common.isEmpty(config.getStartupComponentClasses()))
 			for (String name : config.getStartupComponentClasses())
 				componentStartupClass.put(name);
 
-		for (Class<?> componentClass : EngineUtils.getSingletonClasses(config))
+		for (Class<?> componentClass : EngineUtils.getSignificantClasses(config))
 		{
 			if (EngineResource.class.isAssignableFrom(componentClass))
 			{
 				outResourceClasses.add((Class<EngineResource>)componentClass);
+			}
+			else if (EngineResourceGenerator.class.isAssignableFrom(componentClass))
+			{
+				outResourceGeneratorClasses.add((Class<EngineResourceGenerator<?>>)componentClass);
 			}
 			else if (componentClass.isAnnotationPresent(EngineElement.class))
 			{
@@ -100,10 +111,10 @@ public final class EngineUtils
 	}
 	
 	/**
-	 * Finds engine singletons to add to the engine singleton manager.
+	 * Finds classes to be managed by the engine.
 	 * @param config the configuration to use for engine setup.
 	 */
-	static Iterable<Class<?>> getSingletonClasses(EngineConfig config)
+	static Iterable<Class<?>> getSignificantClasses(EngineConfig config)
 	{
 		List<Class<?>> outList = new List<Class<?>>();
 		
@@ -133,9 +144,11 @@ public final class EngineUtils
 	static boolean isValidSingleton(Class<?> clazz)
 	{
 		return
-			clazz.isAnnotationPresent(EngineElement.class)
+			!Modifier.isAbstract(clazz.getModifiers())
+			|| clazz.isAnnotationPresent(EngineElement.class)
 			|| EngineResource.class.isAssignableFrom(clazz)
-			;
+			|| EngineResourceGenerator.class.isAssignableFrom(clazz)
+		;
 	}
 
 	static ArcheTextRoot loadResourceDefinitions(final EngineFileSystem fileSystem, String resourceDefinitionFile)

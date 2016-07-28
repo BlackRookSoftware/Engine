@@ -48,6 +48,7 @@ import com.blackrook.engine.roles.EngineWindowListener;
 import com.blackrook.engine.roles.EngineReadyListener;
 import com.blackrook.engine.roles.EngineMessageListener;
 import com.blackrook.engine.roles.EngineResource;
+import com.blackrook.engine.roles.EngineResourceGenerator;
 import com.blackrook.engine.roles.EngineSettingsListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.struct.EngineMessage;
@@ -99,6 +100,118 @@ public final class Engine
 	/** Engine console manager. */
 	private EngineConsole console;
 	
+	/**
+	 * Creates the Engine and prepares all of its singletons and starts stuff up and returns the instance.
+	 * @param config the engine configuration to use.
+	 * @return the new Engine instance.
+	 */
+	public static Engine createEngine(EngineConfig config)
+	{
+		Engine out = new Engine(config);
+		
+		out.loggingFactory.setLoggingLevel(config.getLogLevel() != null ? config.getLogLevel() : LogLevel.DEBUG);
+	
+		boolean debugMode = config.getDebugMode();
+	
+		out.setupLoggers();
+		
+		out.logger.info("Init application \"" + config.getApplicationName() + "\"");
+		out.logger.info("Version " + config.getApplicationVersion());
+		
+		// create console manager.
+		EngineFileSystem fileSystem = new EngineFileSystem(out.loggingFactory.getLogger(EngineFileSystem.class, false), out, config);
+		out.singletons.put(EngineFileSystem.class, fileSystem);
+		
+		// load resource definitions.
+		out.logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
+		out.logger.info("Reading definitions...");
+		ArcheTextRoot resourceDefinitionRoot = EngineUtils.loadResourceDefinitions(fileSystem, config.getResourceDefinitionFile());
+		
+		// Scan important classes.
+		out.logger.debug("Scanning classes...");
+		List<Class<?>> componentClasses = new List<Class<?>>();
+		List<Class<EngineResource>> resourceClasses = new List<Class<EngineResource>>();
+		List<Class<EngineResourceGenerator<?>>> resourceGeneratorClasses = new List<Class<EngineResourceGenerator<?>>>();
+		EngineUtils.getComponentAndResourceClasses(config, componentClasses, resourceClasses, resourceGeneratorClasses);
+	
+		// Create resources.
+		out.logger.debug("Gathering/creating resources...");
+		HashMap<Class<?>, EngineResourceGenerator<?>> resourceGeneratorMap = new HashMap<>();
+		for (Class<EngineResourceGenerator<?>> clazz : resourceGeneratorClasses)
+		{
+			try {
+				EngineResourceGenerator<?> gen = Reflect.create(clazz);
+				resourceGeneratorMap.put(gen.getResourceClass(), gen);
+			} catch (Exception e) {
+				throw new EngineSetupException(e);
+			}
+		}
+	
+		for (Class<EngineResource> clazz : resourceClasses)
+		{
+			DefinitionName anno = clazz.getAnnotation(DefinitionName.class);
+			String className = clazz.getSimpleName();
+			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
+			String structName = (anno == null || Common.isEmpty(anno.value())) ? className : anno.value();
+	
+			EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(clazz); 
+			out.resources.put(clazz, resourceList);
+			
+			int added = 0;
+			for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
+			{
+				try {
+					resourceList.add(object.newObject(clazz));
+				} catch (ClassCastException ex) {
+					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+object.getName()+"]: Could not create resource object.", ex);
+				}
+				added++;
+			}
+			
+			EngineResourceGenerator<?> generator = resourceGeneratorMap.get(clazz);
+			if (generator != null)
+			{
+				out.logger.debugf("Calling generator class %s...", generator.getClass().getSimpleName());
+				EngineResource[] generatedResources = generator.createResources(out.loggingFactory.getLogger(clazz), fileSystem);
+				if (!Common.isEmpty(generatedResources)) for (Object obj : generatedResources)
+				{
+					resourceList.add((EngineResource)obj);
+					added++;
+				}
+			}
+			
+			out.logger.infof("Created resource list. %s (count %d)", clazz.getSimpleName(), added);
+		}
+		
+		out.createComponents(componentClasses, debugMode);
+		
+		out.loadGlobalVariables(fileSystem);
+		out.loadUserVariables(fileSystem);
+		
+		// Starts the devices.
+		out.createAllDevices();
+	
+		// call console commands.
+		if (!Common.isEmpty(config.getConsoleCommandsToExecute()))
+		{
+			out.logger.info("Calling queued console commands...");
+			for (String command : config.getConsoleCommandsToExecute())
+				out.console.parseCommand(command);
+		}
+		
+		// invokes main methods.
+		out.logger.info("Invoking engine start methods.");
+		// invoke start on stuff.
+		for (EngineReadyListener listener : out.readyListeners)
+			listener.onEngineReady();
+		
+		// start ticker.
+		out.updateTicker.start();
+		out.logger.info("Started update ticker.");
+		
+		return out;
+	}
+
 	/**
 	 * Creates the engine and all of the other stuff.
 	 * @param config the configuration to use for engine setup.
@@ -221,97 +334,6 @@ public final class Engine
 		singletons.put(EngineConsole.class, console);
 		
 		singletons.put(EngineTicker.class, updateTicker);
-	}
-
-	/**
-	 * Creates the Engine and prepares all of its singletons and starts stuff up and returns the instance.
-	 * @param config the engine configuration to use.
-	 * @return the new Engine instance.
-	 */
-	public static Engine createEngine(EngineConfig config)
-	{
-		Engine out = new Engine(config);
-		
-		out.loggingFactory.setLoggingLevel(config.getLogLevel() != null ? config.getLogLevel() : LogLevel.DEBUG);
-
-		boolean debugMode = config.getDebugMode();
-
-		out.setupLoggers();
-		
-		out.logger.info("Init application \"" + config.getApplicationName() + "\"");
-		out.logger.info("Version " + config.getApplicationVersion());
-		
-		// create console manager.
-		EngineFileSystem fileSystem = new EngineFileSystem(out.loggingFactory.getLogger(EngineFileSystem.class, false), out, config);
-		out.singletons.put(EngineFileSystem.class, fileSystem);
-		
-		// load resource definitions.
-		out.logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
-		ArcheTextRoot resourceDefinitionRoot = EngineUtils.loadResourceDefinitions(fileSystem, config.getResourceDefinitionFile());
-		out.logger.info("Done.");
-		
-		
-		out.logger.debug("Scanning classes...");
-		
-		List<Class<?>> componentClasses = new List<Class<?>>();
-		List<Class<EngineResource>> resourceClasses = new List<Class<EngineResource>>();
-		
-		EngineUtils.getComponentAndResourceClasses(config, componentClasses, resourceClasses);
-		
-		out.logger.debug("Gathering/creating resources...");
-
-		// create resources first.
-		for (Class<EngineResource> clazz : resourceClasses)
-		{
-			DefinitionName anno = clazz.getAnnotation(DefinitionName.class);
-			String className = clazz.getSimpleName();
-			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
-			String structName = (anno == null || Common.isEmpty(anno.value())) ? className : anno.value();
-
-			EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(clazz); 
-			out.resources.put(clazz, resourceList);
-			
-			int added = 0;
-			for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
-			{
-				try {
-					resourceList.add(object.newObject(clazz));
-				} catch (ClassCastException ex) {
-					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+object.getName()+"]: Could not create resource object.", ex);
-				}
-				added++;
-			}
-			
-			out.logger.infof("Created resource list. %s (count %d)", clazz.getSimpleName(), added);
-		}
-		
-		out.createComponents(componentClasses, debugMode);
-		
-		out.loadGlobalVariables(fileSystem);
-		out.loadUserVariables(fileSystem);
-		
-		// Starts the devices.
-		out.createAllDevices();
-
-		// call console commands.
-		if (!Common.isEmpty(config.getConsoleCommandsToExecute()))
-		{
-			out.logger.info("Calling queued console commands...");
-			for (String command : config.getConsoleCommandsToExecute())
-				out.console.parseCommand(command);
-		}
-		
-		// invokes main methods.
-		out.logger.info("Invoking engine start methods.");
-		// invoke start on stuff.
-		for (EngineReadyListener listener : out.readyListeners)
-			listener.onEngineReady();
-		
-		// start ticker.
-		out.updateTicker.start();
-		out.logger.info("Started update ticker.");
-		
-		return out;
 	}
 
 	/**

@@ -10,6 +10,7 @@ package com.blackrook.engine.roles;
 /**
  * Describes a resource descriptor that the engine stores and indexes in its resource banks.
  * In Engine, these are classes that are engine resources imported via Archetext definitions.
+ * <p>Classes that implement this can NOT be EngineComponents.
  * @author Matthew Tropiano
  */
 public interface EngineResource
