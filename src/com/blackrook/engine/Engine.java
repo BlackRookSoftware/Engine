@@ -175,7 +175,7 @@ public final class Engine
 			{
 				out.logger.debugf("Calling generator class %s...", generator.getClass().getSimpleName());
 				try {
-					Iterable<?> generatedResources = generator.createResources(out.loggingFactory.getLogger(clazz), fileSystem);
+					Iterable<?> generatedResources = generator.createResources(out.loggingFactory.getLogger(generator.getClass()), fileSystem);
 					if (!Common.isEmpty(generatedResources)) for (Object obj : generatedResources)
 					{
 						resourceList.add((EngineResource)obj);
