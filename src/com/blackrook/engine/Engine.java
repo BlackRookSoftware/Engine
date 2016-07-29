@@ -174,11 +174,15 @@ public final class Engine
 			if (generator != null)
 			{
 				out.logger.debugf("Calling generator class %s...", generator.getClass().getSimpleName());
-				EngineResource[] generatedResources = generator.createResources(out.loggingFactory.getLogger(clazz), fileSystem);
-				if (!Common.isEmpty(generatedResources)) for (Object obj : generatedResources)
-				{
-					resourceList.add((EngineResource)obj);
-					added++;
+				try {
+					Iterable<?> generatedResources = generator.createResources(out.loggingFactory.getLogger(clazz), fileSystem);
+					if (!Common.isEmpty(generatedResources)) for (Object obj : generatedResources)
+					{
+						resourceList.add((EngineResource)obj);
+						added++;
+					}
+				} catch (Exception e) {
+					throw new EngineSetupException("An error occurred during resource generation.", e);
 				}
 			}
 			

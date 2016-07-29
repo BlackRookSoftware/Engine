@@ -25,9 +25,9 @@ public interface EngineResourceGenerator<T extends EngineResource>
 	 * are built from the resource definitions.
 	 * @param logger a logger passed to this for logging output. 
 	 * @param fileSystem the engine file system to use for generation.
-	 * @return an array of resources to add to the resource list.
+	 * @return an iterable object of resources to add to the resource list.
 	 */
-	public T[] createResources(Logger logger, EngineFileSystem fileSystem);
+	public Iterable<T> createResources(Logger logger, EngineFileSystem fileSystem) throws Exception;
 	
 	
 }
