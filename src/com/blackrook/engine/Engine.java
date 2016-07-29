@@ -152,13 +152,15 @@ public final class Engine
 			DefinitionName anno = clazz.getAnnotation(DefinitionName.class);
 			String className = clazz.getSimpleName();
 			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
-			String structName = (anno == null || Common.isEmpty(anno.value())) ? className : anno.value();
+			String structName = anno != null && !Common.isEmpty(anno.value()) ? anno.value() : null;
 	
 			EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(clazz); 
 			out.resources.put(clazz, resourceList);
 			
 			int added = 0;
-			for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
+			
+			
+			if (structName != null) for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
 			{
 				try {
 					resourceList.add(object.newObject(clazz));
