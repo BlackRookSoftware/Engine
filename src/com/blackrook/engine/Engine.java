@@ -803,7 +803,7 @@ public final class Engine
 	 */
 	public void handleException(Throwable t)
 	{
-		logger.severe(t, "Uncaught exception thrown: " + t.getClass().getName() +": " + t.getLocalizedMessage());
+		logger.severe(t, "Uncaught exception thrown: " + t.getClass().getSimpleName() +": " + t.getLocalizedMessage());
 	
 		stopTicker();
 		
