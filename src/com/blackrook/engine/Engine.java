@@ -164,7 +164,7 @@ public final class Engine
 			{
 				try {
 					resourceList.add(object.newObject(clazz));
-				} catch (ClassCastException ex) {
+				} catch (Exception ex) {
 					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+object.getName()+"]: Could not create resource object.", ex);
 				}
 				added++;
