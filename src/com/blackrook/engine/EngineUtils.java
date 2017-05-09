@@ -164,7 +164,7 @@ public final class EngineUtils
 		ArcheTextIncluder includer = new ArcheTextIncluder()
 		{
 			@Override
-			public InputStream getIncludeResource(String streamName, String path) throws IOException
+			public String getIncludeResourceName(String streamName, String path) throws IOException 
 			{
 				// convert backslash to slash.
 				path = path.replace("\\", "/");
@@ -178,14 +178,18 @@ public final class EngineUtils
 	
 				FSFile nextfile = fileSystem.getFile(parentPath + path);
 				if (nextfile != null)
-					return nextfile.getInputStream();
+					return parentPath + path;
 				else
-				{
-					nextfile = fileSystem.getFile(path);
-					if (nextfile != null)
-						return nextfile.getInputStream();
-					return null;
-				}
+					return path;
+			}
+
+			@Override
+			public InputStream getIncludeResource(String path) throws IOException
+			{
+				FSFile nextfile = fileSystem.getFile(path);
+				if (nextfile != null)
+					return nextfile.getInputStream();
+				return null;
 			}
 		};
 		
