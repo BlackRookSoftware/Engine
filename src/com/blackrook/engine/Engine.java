@@ -159,17 +159,7 @@ public final class Engine
 			
 			int added = 0;
 			
-			
-			if (structName != null) for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
-			{
-				try {
-					resourceList.add(object.newObject(clazz));
-				} catch (Exception ex) {
-					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+object.getName()+"]: Could not create resource object.", ex);
-				}
-				added++;
-			}
-			
+			// Call generator first.
 			EngineResourceGenerator<?> generator = resourceGeneratorMap.get(clazz);
 			if (generator != null)
 			{
@@ -184,6 +174,17 @@ public final class Engine
 				} catch (Exception e) {
 					throw new EngineSetupException("An error occurred during resource generation.", e);
 				}
+			}
+			
+			// Get from Archetext next.
+			if (structName != null) for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
+			{
+				try {
+					resourceList.add(object.newObject(clazz));
+				} catch (Exception ex) {
+					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+object.getName()+"]: Could not create resource object.", ex);
+				}
+				added++;
 			}
 			
 			out.logger.infof("Created resource list. %s (count %d)", clazz.getSimpleName(), added);

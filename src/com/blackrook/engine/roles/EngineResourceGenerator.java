@@ -6,6 +6,7 @@ import com.blackrook.engine.EngineFileSystem;
 /**
  * Describes an object to instantiate at engine startup that generates
  * resources on startup outside of the normal method via Archetext definitions.
+ * The generators get called BEFORE the ArcheText definitions are parsed.
  * <p>
  * Classes that implement this are instantiated at resource time to create resources, and can NOT be EngineComponents.
  * The constructor for this class must be a default constructor.
