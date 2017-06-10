@@ -15,6 +15,7 @@ import java.util.Iterator;
 import com.blackrook.commons.Common;
 import com.blackrook.commons.ObjectPair;
 import com.blackrook.commons.Reflect;
+import com.blackrook.commons.Sizable;
 import com.blackrook.commons.TypeProfile;
 import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.Hash;
@@ -36,7 +37,7 @@ import com.blackrook.engine.roles.EngineResource;
 /**
  * Mapping of name-to-resource and id-to-resource.
  */
-public class EngineResourceList<R extends EngineResource> implements Iterable<R>
+public class EngineResourceList<R extends EngineResource> implements Iterable<R>, Sizable
 {
 	private static final List<Class<?>> NUMERIC_CLASSES = new List<Class<?>>(12) 
 	{{
@@ -566,6 +567,18 @@ public class EngineResourceList<R extends EngineResource> implements Iterable<R>
 		return idMap.valueIterator();
 	}
 
+	@Override
+	public int size()
+	{
+		return idMap.size();
+	}
+	
+	@Override
+	public boolean isEmpty()
+	{
+		return idMap.isEmpty();
+	}
+	
 	// Find closest index.
 	private static int closestIndex(SortedMap<Index, ?> map, Index index, boolean lower)
 	{
