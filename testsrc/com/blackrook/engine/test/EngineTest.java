@@ -88,7 +88,7 @@ public final class EngineTest
 			}
 
 			@Override
-			public int getUpdatesPerSecond()
+			public Integer getUpdatesPerSecond()
 			{
 				return 30;
 			}

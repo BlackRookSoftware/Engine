@@ -19,7 +19,7 @@ import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 public interface EngineConfig
 {
 	/**
-	 * @return the application name. 
+	 * @return the application name. Can be null.
 	 */
 	public String getApplicationName();
 
@@ -34,22 +34,22 @@ public interface EngineConfig
 	public Image getApplicationIcon();
 
 	/**
-	 * @return the e-mail address used for support.
+	 * @return the e-mail address used for support. Can be null.
 	 */
 	public String getApplicationSupportEmail();
 
 	/**
-	 * @return the e-mail address used for general contact.
+	 * @return the e-mail address used for general contact. Can be null.
 	 */
 	public String getApplicationContactEmail();
 
 	/**
-	 * @return the URL for the application homepage.
+	 * @return the URL for the application homepage. Can be null.
 	 */
 	public String getApplicationHomepage();
 
 	/**
-	 * @return the e-mail address used for general contact.
+	 * @return the e-mail address used for general contact. Can be null.
 	 */
 	public String getApplicationSupportPage();
 
@@ -59,7 +59,7 @@ public interface EngineConfig
 	public String[] getPackageRoots();
 
 	/**
-	 * Gets the list of singleton/pool classes that should be instantiated on startup.
+	 * Gets the list of singleton classes that should be instantiated on startup.
 	 * Their dependencies are also loaded.
 	 * All names do not need full qualification.
 	 * If null, all classes are loaded.
@@ -110,6 +110,15 @@ public interface EngineConfig
 	public LogLevel getLogLevel();
 
 	/**
+	 * Gets the list of directory paths to add in lowest to greatest stack precedence.
+	 * If empty, these directories are not added.
+	 * This is consulted if {@link #getFileSystemArchives()} returns an empty value.
+	 * @return the paths to push onto the filesystem stack.
+	 * @see Common#isEmpty(Object)
+	 */
+	public String[] getFileSystemStack();
+
+	/**
 	 * Gets the file system archives to mount.
 	 * Files are considered to be ZIP formatted.
 	 * If null, does not load specific archive types.
@@ -121,15 +130,6 @@ public interface EngineConfig
 	 * @see #getFileSystemStackArchiveAutoloadExtension()
 	 */
 	public String[] getFileSystemArchives();
-
-	/**
-	 * Gets the list of directory paths to add in lowest to greatest stack precedence.
-	 * If empty, these directories are not added.
-	 * This is consulted if {@link #getFileSystemArchives()} returns an empty value.
-	 * @return the paths to push onto the filesystem stack.
-	 * @see Common#isEmpty(Object)
-	 */
-	public String[] getFileSystemStack();
 
 	/**
 	 * Gets the file system extension for archive types to mount.
@@ -149,11 +149,12 @@ public interface EngineConfig
 	public String getResourceDefinitionFile();
 	
 	/**
-	 * Returns how many updates per second that the main updating thread needs to do.
-	 * If the returned value is 0 or less, this runs full bore. 
+	 * Gets how many updates per second that the main updating thread needs to do.
+	 * If the returned value is 0 or less, this runs full bore.
+	 * If this returns <code>null</code> the updater is not started. 
 	 * @return the updates per second of the main ticker.
 	 */
-	public int getUpdatesPerSecond();
+	public Integer getUpdatesPerSecond();
 	
 	/**
 	 * @return if this Engine should start in debug mode. 
@@ -161,6 +162,8 @@ public interface EngineConfig
 	public boolean getDebugMode();
 
 	/**
+	 * Gets the list of console commands to execute after startup.
+	 * If empty, nothing happens.
 	 * @return a list of console commands to execute after startup. 
 	 */
 	public String[] getConsoleCommandsToExecute();

@@ -115,17 +115,30 @@ public final class Engine
 	
 		out.setupLoggers();
 		
-		out.logger.info("Init application \"" + config.getApplicationName() + "\"");
-		out.logger.info("Version " + config.getApplicationVersion());
+		if (!Common.isEmpty(config.getApplicationName()))
+			out.logger.info("Init application \"" + config.getApplicationName() + "\"");
+		else
+			out.logger.info("Init application.");
+			
+		if (!Common.isEmpty(config.getApplicationVersion()))
+			out.logger.info("Version " + config.getApplicationVersion());
 		
 		// create console manager.
 		EngineFileSystem fileSystem = new EngineFileSystem(out.loggingFactory.getLogger(EngineFileSystem.class, false), out, config);
 		out.singletons.put(EngineFileSystem.class, fileSystem);
 		
 		// load resource definitions.
-		out.logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
-		out.logger.info("Reading definitions...");
-		ArcheTextRoot resourceDefinitionRoot = EngineUtils.loadResourceDefinitions(fileSystem, config.getResourceDefinitionFile());
+		ArcheTextRoot resourceDefinitionRoot;
+		if (!Common.isEmpty(config.getResourceDefinitionFile()))
+		{
+			out.logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
+			out.logger.info("Reading definitions...");
+			resourceDefinitionRoot = EngineUtils.loadResourceDefinitions(fileSystem, config.getResourceDefinitionFile());
+		}
+		else
+		{
+			resourceDefinitionRoot = new ArcheTextRoot();
+		}
 		
 		// Scan important classes.
 		out.logger.debug("Scanning classes...");
@@ -366,20 +379,23 @@ public final class Engine
 			}
 		});
 	
-		final PrintStream ps;
-		try {
-			FileOutputStream fos = new FileOutputStream(new File(config.getLogFile()));
-			ps = new PrintStream(fos, true);
-			loggingFactory.addDriver(new LogDriver()
-			{
-				@Override
-				public void output(String line)
+		if (!Common.isEmpty(config.getLogFile()))
+		{
+			final PrintStream ps;
+			try {
+				FileOutputStream fos = new FileOutputStream(new File(config.getLogFile()));
+				ps = new PrintStream(fos, true);
+				loggingFactory.addDriver(new LogDriver()
 				{
-					ps.println(line);
-				}
-			});
-		} catch (IOException e) {
-			logger.error("ERROR: Could not open log file "+config.getLogFile());
+					@Override
+					public void output(String line)
+					{
+						ps.println(line);
+					}
+				});
+			} catch (IOException e) {
+				logger.error("ERROR: Could not open log file "+config.getLogFile());
+			}
 		}
 	}
 
@@ -500,7 +516,7 @@ public final class Engine
 		Properties settings = null;
 		InputStream inStream = null;
 	
-		if (config.getGlobalVariablesFile() != null)
+		if (!Common.isEmpty(config.getGlobalVariablesFile()))
 		{
 			logger.infof("Loading global settings...");
 			settings = new Properties();
@@ -526,7 +542,7 @@ public final class Engine
 		Properties settings = null;
 		InputStream inStream = null;
 	
-		if (config.getUserVariablesFile() != null)
+		if (!Common.isEmpty(config.getUserVariablesFile()))
 		{
 			logger.infof("Loading user settings...");
 			settings = new Properties();
@@ -550,10 +566,12 @@ public final class Engine
 
 	private void saveGlobalVariables(EngineFileSystem fileSystem)
 	{
-		String applicationString = config.getApplicationName() + " v" + config.getApplicationVersion();
+		String applicationString = 
+			(!Common.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
+			+ (!Common.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "");
 		OrderedProperties settings = null;
 		OutputStream outStream = null;
-		if (config.getGlobalVariablesFile() != null)
+		if (!Common.isEmpty(config.getGlobalVariablesFile()))
 		{
 			logger.infof("Saving global settings...");
 			settings = new OrderedProperties();
@@ -573,11 +591,13 @@ public final class Engine
 
 	private void saveUserVariables(EngineFileSystem fileSystem)
 	{
-		String applicationString = config.getApplicationName() + " v" + config.getApplicationVersion();
+		String applicationString = 
+			(!Common.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
+			+ (!Common.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "");
 		OrderedProperties settings = null;
 		OutputStream outStream = null;
 	
-		if (config.getUserVariablesFile() != null)
+		if (!Common.isEmpty(config.getUserVariablesFile()))
 		{
 			logger.infof("Saving user settings...");
 			settings = new OrderedProperties();

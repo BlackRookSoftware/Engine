@@ -41,45 +41,61 @@ public class EngineTicker
 		this.logger = logger;
 		this.engine = engine;
 		updatables = new Queue<EngineUpdateListener>();
-		updateTicker = new UpdateTicker(config.getUpdatesPerSecond());
 		updatableIterator = updatables.iterator();
+		Integer ups;
+		if ((ups = config.getUpdatesPerSecond()) != null)
+			updateTicker = new UpdateTicker(ups);
+		else
+			logger.info("Ticker not started.");
 	}
 
 	public void start()
 	{
+		if (updateTicker == null)
+			return;
 		updateTicker.start();
 		logger.info("Started Ticker.");
 	}
 	
 	/**
 	 * Suspends the ticker.
+	 * If no updater was created, this does nothing.
 	 */
 	public void pause()
 	{
+		if (updateTicker == null)
+			return;
 		updateTicker.setSuspended(true);
 		logger.info("Ticker suspended.");
 	}
 	
 	/**
 	 * Resumes the ticker.
+	 * If no updater was created, this does nothing.
 	 */
 	public void resume()
 	{
+		if (updateTicker == null)
+			return;
 		updateTicker.setSuspended(false);
 		logger.info("Ticker resumed.");
 	}
 
 	/**
 	 * Stops the ticker dead.
+	 * If no updater was created, this does nothing.
 	 */
 	public void stop()
 	{
+		if (updateTicker == null)
+			return;
 		updateTicker.stop();
 		logger.info("Ticker stopped.");
 	}
 	
 	/** 
 	 * Adds an updatable to this ticker.
+	 * If no updater was created, this does nothing.
 	 * @param updatable the EngineUpdateListener to add. 
 	 */
 	void add(EngineUpdateListener updatable)

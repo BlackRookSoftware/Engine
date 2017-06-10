@@ -71,8 +71,11 @@ public class ConsoleWindow extends JFrame
 	{
 		super();
 		
-		String windowTitle = config.getApplicationName() + (config.getApplicationVersion() == null ? "" : " v"+config.getApplicationVersion()) + " Console";
-		setTitle(windowTitle);
+		String windowTitle = 
+				(!Common.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
+				+ (!Common.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "") 
+				+ " Console";
+		setTitle(windowTitle.trim());
 		setIconImage(config.getApplicationIcon());
 		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		setVisible(false);
