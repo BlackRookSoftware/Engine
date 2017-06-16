@@ -189,13 +189,18 @@ public final class Engine
 				}
 			}
 			
-			// Get from Archetext next.
+			// Merge/Get from Archetext next.
 			if (structName != null) for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
 			{
+				String name = object.getName();
 				try {
-					resourceList.add(object.newObject(clazz));
+					EngineResource resource;
+					if ((resource = resourceList.get(name)) != null)
+						object.applyToObject(clazz.cast(resource));
+					else
+						resourceList.add(object.newObject(clazz));
 				} catch (Exception ex) {
-					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+object.getName()+"]: Could not create resource object.", ex);
+					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+name+"]: Could not create resource object.", ex);
 				}
 				added++;
 			}
