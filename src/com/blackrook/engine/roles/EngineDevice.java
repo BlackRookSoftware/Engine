@@ -29,7 +29,7 @@ public interface EngineDevice
 	 * Checks if this device was "created" and can be destroyed.
 	 * @return true if so, false if not.
 	 */
-	public boolean isActive();
+	public boolean isDeviceActive();
 	
 	/**
 	 * Creates this device.
@@ -39,7 +39,7 @@ public interface EngineDevice
 	 * creating.
 	 * @return true if created successfully, false if not.
 	 */
-	public boolean create();
+	public boolean createDevice();
 	
 	/**
 	 * Destroys this device.
@@ -48,6 +48,6 @@ public interface EngineDevice
 	 * restarted or the engine is shutting down.
 	 * @return true if destroyed successfully, false if not.
 	 */
-	public boolean destroy();
+	public boolean destroyDevice();
 	
 }

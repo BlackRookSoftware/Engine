@@ -31,13 +31,13 @@ public class TestDevice implements EngineDevice
 	}
 
 	@Override
-	public boolean isActive()
+	public boolean isDeviceActive()
 	{
 		return active;
 	}
 
 	@Override
-	public boolean create()
+	public boolean createDevice()
 	{
 		active = true;
 		logger.info("Created.");
@@ -45,7 +45,7 @@ public class TestDevice implements EngineDevice
 	}
 
 	@Override
-	public boolean destroy()
+	public boolean destroyDevice()
 	{
 		active = false;
 		logger.info("Destroyed.");

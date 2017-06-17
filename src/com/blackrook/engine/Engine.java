@@ -493,7 +493,7 @@ public final class Engine
 			EngineDevice ed = device.getValue(); 
 			logger.infof("Starting device %s.", ed.getDeviceName());
 			try {
-				if (ed.create())
+				if (ed.createDevice())
 					logger.infof("Finished starting device %s.", ed.getDeviceName());
 				else
 					logger.errorf("Failed starting device %s.", ed.getDeviceName());
@@ -509,7 +509,7 @@ public final class Engine
 		{
 			EngineDevice ed = device.getValue(); 
 			logger.infof("Destroying device %s.", ed.getDeviceName());
-			if (ed.destroy())
+			if (ed.destroyDevice())
 				logger.infof("Finished destroying device %s.", ed.getDeviceName());
 			else
 				logger.errorf("Failed destroying device %s.", ed.getDeviceName());
@@ -706,7 +706,7 @@ public final class Engine
 		EngineDevice device = devices.get(name);
 		if (device != null)
 		{
-			if (device.isActive())
+			if (device.isDeviceActive())
 			{
 				return false;
 			}
@@ -729,7 +729,7 @@ public final class Engine
 		EngineDevice device = devices.get(name);
 		if (device != null)
 		{
-			if (!device.isActive())
+			if (!device.isDeviceActive())
 			{
 				return false;
 			}
@@ -823,7 +823,7 @@ public final class Engine
 	
 	/**
 	 * Handles an uncaught, fatal exception and initiates engine shutdown.
-	 * <p>The ticker is stopped, all devices have {@link EngineDevice#destroy()} called on them, 
+	 * <p>The ticker is stopped, all devices have {@link EngineDevice#destroyDevice()} called on them, 
 	 * all listeners have {@link EngineShutdownListener#onUnexpectedEngineShutDown(Throwable)} called on them, and tells the JVM to exit.
 	 * @param t the throwable that caused this to be called.
 	 */
@@ -846,7 +846,7 @@ public final class Engine
 	/**
 	 * Initiates engine shutdown.
 	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
-	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 * all devices have {@link EngineDevice#destroyDevice()} called on them, and tells the JVM to exit.
 	 * <p>Convenience method for <code>shutDown(0);</code>
 	 * @see #shutDown(int)
 	 */
@@ -858,7 +858,7 @@ public final class Engine
 	/**
 	 * Initiates engine shutdown.
 	 * <p>The ticker is stopped, all listeners have {@link EngineShutdownListener#onEngineShutdown()} called on them, all settings are saved, 
-	 * all devices have {@link EngineDevice#destroy()} called on them, and tells the JVM to exit.
+	 * all devices have {@link EngineDevice#destroyDevice()} called on them, and tells the JVM to exit.
 	 * @param status the status code to return upon program completion (aka "errorlevel" on some OSes).
 	 */
 	public void shutDown(int status)
