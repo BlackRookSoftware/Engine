@@ -8,24 +8,23 @@
 package com.blackrook.engine.broadcaster;
 
 import com.blackrook.engine.Engine;
-import com.blackrook.engine.EngineWindowEventReceiver;
+import com.blackrook.engine.EngineMessageReceiver;
 
 /**
- * This interface describes an object that should receive a window listener
- * to attach itself to in order to pass window events along to the EngineListeners.
+ * This interface describes an object that should receive a message listener
+ * to attach itself to in order to pass messages along to the active EngineMessageListeners.
  * <p>
  * You cannot guarantee the order in which these objects have their methods called on them.
  * @author Matthew Tropiano
  */
-public interface EngineWindowBroadcaster
+public interface EngineMessageBroadcaster
 {
 
 	/**
-	 * Called by {@link Engine} in order to pass along the event receiver
-	 * that is used to broadcast main window events to listening components
-	 * in the engine.
-	 * @param receiver the listener to use.
+	 * Called by {@link Engine} in order to pass along the message receiver
+	 * that is used to broadcast messages to listening components in the engine.
+	 * @param receiver the receiver to use.
 	 */
-	public void addWindowEventReceiver(EngineWindowEventReceiver receiver);
+	public void addMessageReceiver(EngineMessageReceiver receiver);
 	
 }

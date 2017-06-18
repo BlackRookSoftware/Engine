@@ -31,8 +31,8 @@ public interface EngineInputBroadcaster
 	 * Called by {@link Engine} in order to pass along the event receiver
 	 * that is used to broadcast input events to listening components
 	 * in the engine.
-	 * @param listener the listener to use.
+	 * @param receiver the receiver to use.
 	 */
-	public void addInputReceiver(EngineInputEventReceiver listener);
+	public void addInputReceiver(EngineInputEventReceiver receiver);
 	
 }

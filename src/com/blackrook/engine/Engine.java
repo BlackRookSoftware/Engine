@@ -38,6 +38,7 @@ import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.element.Ordering;
 import com.blackrook.engine.annotation.resource.DefinitionName;
 import com.blackrook.engine.broadcaster.EngineInputBroadcaster;
+import com.blackrook.engine.broadcaster.EngineMessageBroadcaster;
 import com.blackrook.engine.broadcaster.EngineWindowBroadcaster;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.engine.exception.NoSuchComponentException;
@@ -51,7 +52,6 @@ import com.blackrook.engine.roles.EngineResource;
 import com.blackrook.engine.roles.EngineResourceGenerator;
 import com.blackrook.engine.roles.EngineSettingsListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
-import com.blackrook.engine.struct.EngineMessage;
 import com.blackrook.engine.struct.OrderedProperties;
 import com.blackrook.engine.swing.ConsoleWindow;
 
@@ -68,6 +68,8 @@ public final class Engine
 	private LoggingFactory loggingFactory;
 	/** Engine config. */
 	private EngineConfig config;
+	/** Common message receiver. */
+	private EngineMessageReceiver messageReceiver; 
 	/** Common window event receiver. */
 	private EngineInputEventReceiver inputEventReceiver; 
 	/** Common window event receiver. */
@@ -259,6 +261,17 @@ public final class Engine
 		loggingFactory = new LoggingFactory();
 		logger = loggingFactory.getLogger(Engine.class, false);
 
+		// Create message receiver.
+		messageReceiver = new EngineMessageReceiver()
+		{
+			@Override
+			public void sendMessage(Object type, Object... arguments)
+			{
+				for (EngineMessageListener listener : messageListeners)
+					listener.onEngineMessage(type, arguments);
+			}
+		};
+		
 		// Create input receiver.
 		inputEventReceiver = new EngineInputEventReceiver()
 		{
@@ -430,6 +443,12 @@ public final class Engine
 			logger.debugf("%s was passed an input event receiver.", obj.object.getClass().getSimpleName());
 		}
 	
+		for (OrderingNode<EngineMessageBroadcaster> obj : lists.messageBroadcasters)
+		{
+			obj.object.addMessageReceiver(messageReceiver);
+			logger.debugf("%s was passed a message receiver.", obj.object.getClass().getSimpleName());
+		}
+	
 		for (OrderingNode<EngineDevice> obj : lists.devices)
 		{
 			devices.put(obj.object.getDeviceName(), obj.object);
@@ -516,6 +535,7 @@ public final class Engine
 		}
 	}
 
+	// Loads all archived global variables.
 	private void loadGlobalVariables(EngineFileSystem fileSystem)
 	{
 		Properties settings = null;
@@ -542,6 +562,7 @@ public final class Engine
 		}
 	}
 
+	// Loads all archived user variables.
 	private void loadUserVariables(EngineFileSystem fileSystem)
 	{
 		Properties settings = null;
@@ -569,6 +590,7 @@ public final class Engine
 	
 	}
 
+	// Saves all archived global variables.
 	private void saveGlobalVariables(EngineFileSystem fileSystem)
 	{
 		String applicationString = 
@@ -594,6 +616,7 @@ public final class Engine
 		}
 	}
 
+	// Saves all archived user variables.
 	private void saveUserVariables(EngineFileSystem fileSystem)
 	{
 		String applicationString = 
@@ -635,9 +658,9 @@ public final class Engine
 
 	/**
 	 * Creates a new component for a class and using one of its constructors.
+	 * @param lists the set of ordering lists to use for ordering sorting.
 	 * @param clazz the class to instantiate.
 	 * @param constructor the constructor to call for instantiation.
-	 * @param skipConsole if true, skips the CVAR and CCMD steps.
 	 * @param debugMode if true, processes CVARs and CCMDs only available in debug mode.
 	 * @return the new class instance.
 	 */
@@ -682,15 +705,17 @@ public final class Engine
 
 	/**
 	 * Creates or gets an engine singleton component by class.
+	 * @param lists the set of ordering lists to use for ordering sorting.
 	 * @param clazz the class to create/retrieve.
+	 * @param debugMode if true, processes CVARs and CCMDs only available in debug mode.
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> T createOrGetElement(OrderingLists lists, Class<T> clazz, boolean debug)
+	private <T> T createOrGetElement(OrderingLists lists, Class<T> clazz, boolean debugMode)
 	{
 		if (singletons.containsKey(clazz))
 			return (T)singletons.get(clazz);
 		
-		T instance = createElement(lists, clazz, EngineUtils.getAnnotatedConstructor(clazz), debug);
+		T instance = createElement(lists, clazz, EngineUtils.getAnnotatedConstructor(clazz), debugMode);
 		singletons.put(clazz, instance);
 		logger.infof("Created element. %s", clazz.getSimpleName());
 		return instance;
@@ -699,7 +724,7 @@ public final class Engine
 	/**
 	 * Creates an engine device. 
 	 * @param name the name of the device.
-	 * @return true if successful, false if not.
+	 * @return true if successful, false if not, not found, or device was already active.
 	 */
 	private boolean createDevice(String name)
 	{
@@ -720,9 +745,9 @@ public final class Engine
 	}
 
 	/**
-	 * Creates an engine device. 
+	 * Destroys an engine device. 
 	 * @param name the name of the device.
-	 * @return true if successful, false if not.
+	 * @return true if successful, false if not, not found, or device was not active.
 	 */
 	private boolean destroyDevice(String name)
 	{
@@ -756,16 +781,6 @@ public final class Engine
 		if (list == null)
 			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid resource component.");
 		return list;
-	}
-	
-	/**
-	 * Broadcasts a message to all message listeners.
-	 * @param message the message to broadcast to all who would listen.
-	 */
-	public void sendMessage(EngineMessage message)
-	{
-		for (EngineMessageListener listener : messageListeners)
-			listener.onEngineMessage(message);
 	}
 	
 	/**
@@ -934,6 +949,7 @@ public final class Engine
 		private List<OrderingNode<EngineDevice>> devices;
 		private List<OrderingNode<EngineWindowBroadcaster>> windowBroadcasters;
 		private List<OrderingNode<EngineInputBroadcaster>> inputBroadcasters;
+		private List<OrderingNode<EngineMessageBroadcaster>> messageBroadcasters;
 		private List<OrderingNode<EngineWindowListener>> windowListeners;
 		private List<OrderingNode<EngineInputListener>> inputListeners;
 		private List<OrderingNode<EngineMessageListener>> messageListeners;
@@ -947,6 +963,7 @@ public final class Engine
 			devices = new List<Engine.OrderingNode<EngineDevice>>();
 			windowBroadcasters = new List<Engine.OrderingNode<EngineWindowBroadcaster>>();
 			inputBroadcasters = new List<Engine.OrderingNode<EngineInputBroadcaster>>();
+			messageBroadcasters = new List<Engine.OrderingNode<EngineMessageBroadcaster>>();
 			windowListeners = new List<Engine.OrderingNode<EngineWindowListener>>();
 			inputListeners = new List<Engine.OrderingNode<EngineInputListener>>();
 			messageListeners = new List<Engine.OrderingNode<EngineMessageListener>>();
@@ -961,6 +978,7 @@ public final class Engine
 			devices.sort();
 			windowBroadcasters.sort();
 			inputBroadcasters.sort();
+			messageBroadcasters.sort();
 			windowListeners.sort();
 			inputListeners.sort();
 			messageListeners.sort();
@@ -989,6 +1007,13 @@ public final class Engine
 			{
 				EngineInputBroadcaster obj = (EngineInputBroadcaster)object;
 				inputBroadcasters.add(new OrderingNode<EngineInputBroadcaster>(ordering, obj));
+			}
+
+			// check if engine message broadcaster.
+			if (EngineMessageBroadcaster.class.isAssignableFrom(clazz))
+			{
+				EngineMessageBroadcaster obj = (EngineMessageBroadcaster)object;
+				messageBroadcasters.add(new OrderingNode<EngineMessageBroadcaster>(ordering, obj));
 			}
 
 			// check if device.
