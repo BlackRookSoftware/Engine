@@ -8,7 +8,6 @@
 package com.blackrook.engine.broadcaster;
 
 import com.blackrook.engine.Engine;
-import com.blackrook.engine.EngineMessageReceiver;
 
 /**
  * This interface describes an object that should receive a message listener

@@ -5,10 +5,9 @@
  * which accompanies this distribution, and is available at
  * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  ******************************************************************************/
-package com.blackrook.engine;
+package com.blackrook.engine.broadcaster;
 
 import com.blackrook.engine.annotation.EngineElement;
-import com.blackrook.engine.broadcaster.EngineInputBroadcaster;
 
 /**
  * This class is designed to be the class that implementors of {@link EngineInputBroadcaster}

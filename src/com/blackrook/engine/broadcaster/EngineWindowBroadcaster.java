@@ -8,7 +8,6 @@
 package com.blackrook.engine.broadcaster;
 
 import com.blackrook.engine.Engine;
-import com.blackrook.engine.EngineWindowEventReceiver;
 
 /**
  * This interface describes an object that should receive a window listener
