@@ -13,7 +13,7 @@ import com.blackrook.commons.Common;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
-import com.blackrook.engine.EngineResourceList;
+import com.blackrook.engine.EngineResources.ResourceSet;
 
 public final class EngineTest
 {
@@ -155,8 +155,8 @@ public final class EngineTest
 		});
 		
 		IntegerRange[] out = new IntegerRange[5];
-		EngineResourceList<IntegerRange> list = engine.getResourceList(IntegerRange.class);
-		list.getIntervalIntersection("value", 8, out);
+		ResourceSet<IntegerRange> set = engine.getResourceSet(IntegerRange.class);
+		set.getIntervalIntersection("value", 8, out);
 		Common.noop();
 	}
 

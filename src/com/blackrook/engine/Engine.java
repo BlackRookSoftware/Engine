@@ -34,6 +34,7 @@ import com.blackrook.commons.logging.Logger;
 import com.blackrook.commons.logging.LoggingDriver;
 import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
+import com.blackrook.engine.EngineResources.ResourceSet;
 import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.element.Ordering;
 import com.blackrook.engine.annotation.resource.DefinitionName;
@@ -44,7 +45,6 @@ import com.blackrook.engine.broadcaster.EngineMessageReceiver;
 import com.blackrook.engine.broadcaster.EngineWindowBroadcaster;
 import com.blackrook.engine.broadcaster.EngineWindowEventReceiver;
 import com.blackrook.engine.exception.EngineSetupException;
-import com.blackrook.engine.exception.NoSuchComponentException;
 import com.blackrook.engine.roles.EngineDevice;
 import com.blackrook.engine.roles.EngineInputListener;
 import com.blackrook.engine.roles.EngineShutdownListener;
@@ -84,8 +84,6 @@ public final class Engine
 	private HashMap<Class<?>, Object> singletons;
 	/** Engine devices. */
 	private HashMap<String, EngineDevice> devices;
-	/** Engine resources. */
-	private HashMap<Class<?>, EngineResourceList<?>> resources;
 	
 	/** Engine settings listener. */
 	private Queue<EngineSettingsListener> settingsListeners;
@@ -113,25 +111,14 @@ public final class Engine
 	public static Engine createEngine(EngineConfig config)
 	{
 		Engine out = new Engine(config);
-		
-		out.loggingFactory.setLoggingLevel(config.getLogLevel() != null ? config.getLogLevel() : LogLevel.DEBUG);
-	
 		boolean debugMode = config.getDebugMode();
-	
-		out.setupLoggers();
+
+		createEngineLoggers(out, config);
 		
-		if (!Common.isEmpty(config.getApplicationName()))
-			out.logger.info("Init application \"" + config.getApplicationName() + "\"");
-		else
-			out.logger.info("Init application.");
-			
-		if (!Common.isEmpty(config.getApplicationVersion()))
-			out.logger.info("Version " + config.getApplicationVersion());
-		
-		// create console manager.
+		// create file system.
 		EngineFileSystem fileSystem = new EngineFileSystem(out.loggingFactory.getLogger(EngineFileSystem.class, false), out, config);
 		out.singletons.put(EngineFileSystem.class, fileSystem);
-		
+
 		// load resource definitions.
 		ArcheTextRoot resourceDefinitionRoot;
 		if (!Common.isEmpty(config.getResourceDefinitionFile()))
@@ -165,6 +152,8 @@ public final class Engine
 			}
 		}
 	
+		EngineResources resources = new EngineResources();
+		out.singletons.put(EngineResources.class, resources);
 		for (Class<EngineResource> clazz : resourceClasses)
 		{
 			DefinitionName anno = clazz.getAnnotation(DefinitionName.class);
@@ -172,9 +161,6 @@ public final class Engine
 			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
 			String structName = anno != null && !Common.isEmpty(anno.value()) ? anno.value() : null;
 	
-			EngineResourceList<EngineResource> resourceList = new EngineResourceList<EngineResource>(clazz); 
-			out.resources.put(clazz, resourceList);
-			
 			int added = 0;
 			
 			// Call generator first.
@@ -186,7 +172,7 @@ public final class Engine
 					Iterable<?> generatedResources = generator.createResources(out.loggingFactory.getLogger(generator.getClass()), fileSystem);
 					if (!Common.isEmpty(generatedResources)) for (Object obj : generatedResources)
 					{
-						resourceList.add((EngineResource)obj);
+						resources.addResource((EngineResource)obj);
 						added++;
 					}
 				} catch (Exception e) {
@@ -200,10 +186,10 @@ public final class Engine
 				String name = object.getName();
 				try {
 					EngineResource resource;
-					if ((resource = resourceList.get(name)) != null)
+					if ((resource = resources.getResource(clazz, name)) != null)
 						object.applyToObject(clazz.cast(resource));
 					else
-						resourceList.add(object.newObject(clazz));
+						resources.addResource(object.newObject(clazz));
 				} catch (Exception ex) {
 					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+name+"]: Could not create resource object.", ex);
 				}
@@ -243,6 +229,61 @@ public final class Engine
 	}
 
 	/**
+	 * Creates the engine loggers.
+	 * @param config the engine configuration.
+	 * @param engine the engine to apply to.
+	 */
+	private static void createEngineLoggers(final Engine engine, EngineConfig config)
+	{
+		engine.loggingFactory.setLoggingLevel(config.getLogLevel() != null ? config.getLogLevel() : LogLevel.DEBUG);
+	
+		engine.loggingFactory.addDriver(new LogDriver()
+		{
+			@Override
+			public void output(String line)
+			{
+				System.out.println(line);
+			}
+		});
+	
+		engine.loggingFactory.addDriver(new LogDriver()
+		{
+			@Override
+			public void output(String line)
+			{
+				engine.console.getConsoleWindow().println(line);
+			}
+		});
+	
+		if (!Common.isEmpty(config.getLogFile()))
+		{
+			final PrintStream ps;
+			try {
+				FileOutputStream fos = new FileOutputStream(new File(config.getLogFile()));
+				ps = new PrintStream(fos, true);
+				engine.loggingFactory.addDriver(new LogDriver()
+				{
+					@Override
+					public void output(String line)
+					{
+						ps.println(line);
+					}
+				});
+			} catch (IOException e) {
+				engine.logger.error("ERROR: Could not open log file "+config.getLogFile());
+			}
+		}
+		
+		if (!Common.isEmpty(config.getApplicationName()))
+			engine.logger.info("Init application \"" + config.getApplicationName() + "\"");
+		else
+			engine.logger.info("Init application.");
+			
+		if (!Common.isEmpty(config.getApplicationVersion()))
+			engine.logger.info("Version " + config.getApplicationVersion());
+	}
+
+	/**
 	 * Creates the engine and all of the other stuff.
 	 * @param config the configuration to use for engine setup.
 	 */
@@ -253,7 +294,6 @@ public final class Engine
 		singletonsConstructing = new Hash<Class<?>>();
 		singletons = new HashMap<Class<?>, Object>();
 		devices = new HashMap<String, EngineDevice>();
-		resources = new HashMap<Class<?>, EngineResourceList<?>>();
 		windowListeners = new Queue<EngineWindowListener>();
 		settingsListeners = new Queue<EngineSettingsListener>();
 		readyListeners = new Queue<EngineReadyListener>(); 
@@ -375,49 +415,6 @@ public final class Engine
 		singletons.put(EngineConsole.class, console);
 		
 		singletons.put(EngineTicker.class, updateTicker);
-	}
-
-	/**
-	 * Sets up the loggers.
-	 */
-	private void setupLoggers()
-	{
-		loggingFactory.addDriver(new LogDriver()
-		{
-			@Override
-			public void output(String line)
-			{
-				System.out.println(line);
-			}
-		});
-	
-		loggingFactory.addDriver(new LogDriver()
-		{
-			@Override
-			public void output(String line)
-			{
-				console.getConsoleWindow().println(line);
-			}
-		});
-	
-		if (!Common.isEmpty(config.getLogFile()))
-		{
-			final PrintStream ps;
-			try {
-				FileOutputStream fos = new FileOutputStream(new File(config.getLogFile()));
-				ps = new PrintStream(fos, true);
-				loggingFactory.addDriver(new LogDriver()
-				{
-					@Override
-					public void output(String line)
-					{
-						ps.println(line);
-					}
-				});
-			} catch (IOException e) {
-				logger.error("ERROR: Could not open log file "+config.getLogFile());
-			}
-		}
 	}
 
 	private void createComponents(List<Class<?>> componentClasses, boolean debugMode)
@@ -647,19 +644,6 @@ public final class Engine
 	}
 
 	/**
-	 * Creates or gets an engine singleton component by class.
-	 * @param clazz the class to create/retrieve.
-	 */
-	@SuppressWarnings("unchecked")
-	private <T> T getElement(Class<T> clazz)
-	{
-		if (singletons.containsKey(clazz))
-			return (T)singletons.get(clazz);
-		
-		return null;
-	}
-
-	/**
 	 * Creates a new component for a class and using one of its constructors.
 	 * @param lists the set of ordering lists to use for ordering sorting.
 	 * @param clazz the class to instantiate.
@@ -771,21 +755,39 @@ public final class Engine
 	}
 
 	/**
-	 * Returns the resource list that stores a set of resources.
-	 * @param <T> the type contained by the list.
-	 * @param clazz the resource class to retrieve the list of.
-	 * @return the corresponding list of resources.
-	 * @throws NoSuchComponentException if the provided class is not a valid resource component.
+	 * Creates or gets an engine singleton component by class.
+	 * @param clazz the class to create/retrieve.
 	 */
 	@SuppressWarnings("unchecked")
-	public <T extends EngineResource> EngineResourceList<T> getResourceList(Class<T> clazz)
+	public <T> T getElement(Class<T> clazz)
 	{
-		EngineResourceList<T> list = (EngineResourceList<T>)resources.get(clazz);
-		if (list == null)
-			throw new NoSuchComponentException("The class "+clazz.getSimpleName()+" is not a valid resource component.");
-		return list;
+		if (singletons.containsKey(clazz))
+			return (T)singletons.get(clazz);
+		
+		return null;
 	}
-	
+
+	/**
+	 * Creates or gets an engine resource by class and name.
+	 * @param clazz the class to use.
+	 * @param name the name of the resource.
+	 * @return the corresponding resource or null if not found.
+	 */
+	public <T extends EngineResource> T getResource(Class<T> clazz, String name)
+	{
+		return getElement(EngineResources.class).getResource(clazz, name);
+	}
+
+	/**
+	 * Creates or gets an engine resource set by class.
+	 * @param clazz the class to use.
+	 * @return the corresponding set or null if not found.
+	 */
+	public <T extends EngineResource> ResourceSet<T> getResourceSet(Class<T> clazz)
+	{
+		return getElement(EngineResources.class).getResourceSet(clazz);
+	}
+
 	/**
 	 * Saves user and global settings to persistent storage.
 	 * Calls the following: 

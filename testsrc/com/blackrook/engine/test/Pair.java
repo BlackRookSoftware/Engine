@@ -8,9 +8,11 @@
 package com.blackrook.engine.test;
 
 import com.blackrook.archetext.annotation.ATName;
+import com.blackrook.engine.annotation.resource.DefinitionName;
 import com.blackrook.engine.annotation.resource.Indexed;
 import com.blackrook.engine.roles.EngineResource;
 
+@DefinitionName("pair")
 public class Pair implements EngineResource
 {
 	private String id;
