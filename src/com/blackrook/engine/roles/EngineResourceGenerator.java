@@ -2,33 +2,30 @@ package com.blackrook.engine.roles;
 
 import com.blackrook.commons.logging.Logger;
 import com.blackrook.engine.EngineFileSystem;
+import com.blackrook.engine.EngineResources;
+import com.blackrook.engine.annotation.EngineElement;
+import com.blackrook.engine.annotation.element.Ordering;
 
 /**
  * Describes an object to instantiate at engine startup that generates
  * resources on startup outside of the normal method via Archetext definitions.
  * The generators get called BEFORE the ArcheText definitions are parsed.
  * <p>
- * Classes that implement this are instantiated at resource time to create resources, and can NOT be EngineComponents.
+ * Classes that implement this are instantiated at resource time to create resources, and cannot be an {@link EngineElement}.
  * The constructor for this class must be a default constructor.
+ * <p>
+ * The {@link Ordering} annotation can influence invocation order on this type of object.
  * @author Matthew Tropiano
  */
-public interface EngineResourceGenerator<T extends EngineResource>
+public interface EngineResourceGenerator
 {
 	/**
-	 * Gets the class type that this generates.
-	 * This is used to match the generator to use using the class.
-	 * @return the class type.
-	 */
-	public Class<T> getResourceClass();
-	
-	/**
-	 * Called when resources are needed to be created, after the first set of resources
+	 * Called when resources are needed to be created, before the first set of resources
 	 * are built from the resource definitions.
 	 * @param logger a logger passed to this for logging output. 
 	 * @param fileSystem the engine file system to use for generation.
-	 * @return an iterable object of resources to add to the resource list.
+	 * @param resources the resource bank to add to.
 	 */
-	public Iterable<T> createResources(Logger logger, EngineFileSystem fileSystem) throws Exception;
-	
+	public void createResources(Logger logger, EngineFileSystem fileSystem, EngineResources resources) throws Exception;
 	
 }

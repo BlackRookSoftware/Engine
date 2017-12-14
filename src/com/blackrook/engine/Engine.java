@@ -136,24 +136,41 @@ public final class Engine
 		out.logger.debug("Scanning classes...");
 		List<Class<?>> componentClasses = new List<Class<?>>();
 		List<Class<EngineResource>> resourceClasses = new List<Class<EngineResource>>();
-		List<Class<EngineResourceGenerator<?>>> resourceGeneratorClasses = new List<Class<EngineResourceGenerator<?>>>();
+		List<Class<EngineResourceGenerator>> resourceGeneratorClasses = new List<Class<EngineResourceGenerator>>();
 		EngineUtils.getComponentAndResourceClasses(config, componentClasses, resourceClasses, resourceGeneratorClasses);
 	
-		// Create resources.
-		out.logger.debug("Gathering/creating resources...");
-		HashMap<Class<?>, EngineResourceGenerator<?>> resourceGeneratorMap = new HashMap<>();
-		for (Class<EngineResourceGenerator<?>> clazz : resourceGeneratorClasses)
+		// Sort the resource generator classes.
+		List<OrderingNode<EngineResourceGenerator>> generators = new List<>(resourceGeneratorClasses.size());
+		for (Class<EngineResourceGenerator> clazz : resourceGeneratorClasses)
 		{
+			Ordering anno = clazz.getAnnotation(Ordering.class);
+			int ordering = anno == null ? 0 : anno.value();
 			try {
-				EngineResourceGenerator<?> gen = Reflect.create(clazz);
-				resourceGeneratorMap.put(gen.getResourceClass(), gen);
+				generators.add(new OrderingNode<EngineResourceGenerator>(ordering, Reflect.create(clazz)));
 			} catch (Exception e) {
 				throw new EngineSetupException(e);
 			}
 		}
-	
+		generators.sort();
+
+		// Create resources.
+		out.logger.debug("Gathering/creating resources...");
 		EngineResources resources = new EngineResources();
 		out.singletons.put(EngineResources.class, resources);
+
+		// Call generators first.
+		for (OrderingNode<EngineResourceGenerator> generatorNode : generators)
+		{
+			EngineResourceGenerator generator = generatorNode.object;
+			out.logger.debugf("Calling generator class %s...", generator.getClass().getSimpleName());
+			try {
+				generator.createResources(out.loggingFactory.getLogger(generator.getClass()), fileSystem, resources);
+			} catch (Exception e) {
+				throw new EngineSetupException("An error occurred during resource generation.", e);
+			}
+		}
+
+		// Get/create resources from Archetext.
 		for (Class<EngineResource> clazz : resourceClasses)
 		{
 			DefinitionName anno = clazz.getAnnotation(DefinitionName.class);
@@ -161,26 +178,6 @@ public final class Engine
 			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
 			String structName = anno != null && !Common.isEmpty(anno.value()) ? anno.value() : null;
 	
-			int added = 0;
-			
-			// Call generator first.
-			EngineResourceGenerator<?> generator = resourceGeneratorMap.get(clazz);
-			if (generator != null)
-			{
-				out.logger.debugf("Calling generator class %s...", generator.getClass().getSimpleName());
-				try {
-					Iterable<?> generatedResources = generator.createResources(out.loggingFactory.getLogger(generator.getClass()), fileSystem);
-					if (!Common.isEmpty(generatedResources)) for (Object obj : generatedResources)
-					{
-						resources.addResource((EngineResource)obj);
-						added++;
-					}
-				} catch (Exception e) {
-					throw new EngineSetupException("An error occurred during resource generation.", e);
-				}
-			}
-			
-			// Merge/Get from Archetext next.
 			if (structName != null) for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
 			{
 				String name = object.getName();
@@ -193,10 +190,7 @@ public final class Engine
 				} catch (Exception ex) {
 					throw new EngineSetupException("Class "+clazz.getSimpleName()+" using ["+object.getType()+":"+name+"]: Could not create resource object.", ex);
 				}
-				added++;
 			}
-			
-			out.logger.infof("Created resource list. %s (count %d)", clazz.getSimpleName(), added);
 		}
 		
 		out.createComponents(componentClasses, debugMode);

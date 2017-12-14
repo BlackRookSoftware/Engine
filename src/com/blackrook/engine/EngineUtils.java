@@ -78,7 +78,7 @@ public final class EngineUtils
 		EngineConfig config, 
 		List<Class<?>> outComponentClasses, 
 		List<Class<EngineResource>> outResourceClasses, 
-		List<Class<EngineResourceGenerator<?>>> outResourceGeneratorClasses
+		List<Class<EngineResourceGenerator>> outResourceGeneratorClasses
 	) 
 	{
 		Hash<String> componentStartupClass = new Hash<>();
@@ -94,7 +94,7 @@ public final class EngineUtils
 			}
 			else if (EngineResourceGenerator.class.isAssignableFrom(componentClass))
 			{
-				outResourceGeneratorClasses.add((Class<EngineResourceGenerator<?>>)componentClass);
+				outResourceGeneratorClasses.add((Class<EngineResourceGenerator>)componentClass);
 			}
 			else if (componentClass.isAnnotationPresent(EngineElement.class))
 			{
