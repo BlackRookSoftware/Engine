@@ -26,6 +26,6 @@ public interface EngineResourceGenerator
 	 * @param fileSystem the engine file system to use for generation.
 	 * @param resources the resource bank to add to.
 	 */
-	public void createResources(Logger logger, EngineFileSystem fileSystem, EngineResources resources) throws Exception;
+	public void createResources(Logger logger, EngineFileSystem fileSystem, EngineResources resources);
 	
 }

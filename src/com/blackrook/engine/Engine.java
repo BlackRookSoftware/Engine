@@ -165,6 +165,8 @@ public final class Engine
 			out.logger.debugf("Calling generator class %s...", generator.getClass().getSimpleName());
 			try {
 				generator.createResources(out.loggingFactory.getLogger(generator.getClass()), fileSystem, resources);
+			} catch (EngineSetupException e) {
+				throw e;
 			} catch (Exception e) {
 				throw new EngineSetupException("An error occurred during resource generation.", e);
 			}
