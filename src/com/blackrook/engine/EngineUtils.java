@@ -168,6 +168,8 @@ public final class EngineUtils
 			{
 				// convert backslash to slash.
 				path = path.replace("\\", "/");
+				// convert backslash to slash.
+				streamName = streamName.replace("\\", "/");
 				
 				String parentPath = null;
 				int slashidx = streamName.lastIndexOf("/");
