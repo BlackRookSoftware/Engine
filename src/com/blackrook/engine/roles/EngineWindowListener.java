@@ -73,4 +73,10 @@ public interface EngineWindowListener
 	 */
 	public void onResize(int width, int height);
 
+	/**
+	 * Should be called when the canvas is moved (absolutely).
+	 * <p><b>It would not be wise to call this from another method in this class.</b>
+	 */
+	public void onMove(int positionX, int positionY);
+
 }

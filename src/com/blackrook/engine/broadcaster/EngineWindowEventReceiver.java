@@ -68,10 +68,17 @@ public interface EngineWindowEventReceiver
 	public void fireMouseMove(int canvasX, int canvasY);
 
 	/**
-	 * Should be called when the window is resized.
+	 * Should be called when the canvas is resized.
 	 * @param width the new canvas width.
 	 * @param height the new canvas height.
 	 */
 	public void fireResize(int width, int height);
+
+	/**
+	 * Should be called when the canvas is moved.
+	 * @param positionX the new canvas ABSOLUTE POSITION X on the screen.
+	 * @param positionY the new canvas ABSOLUTE POSITION Y on the screen.
+	 */
+	public void fireMove(int positionX, int positionY);
 
 }

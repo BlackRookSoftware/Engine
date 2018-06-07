@@ -397,6 +397,14 @@ public final class Engine
 					listener.onResize(width, height);
 			}
 
+			@Override
+			public void fireMove(int positionX, int positionY)
+			{
+				for (EngineWindowListener listener : windowListeners)
+					listener.onMove(positionX, positionY);
+			}
+			
+			
 		};
 
 		updateTicker = new EngineTicker(loggingFactory.getLogger(EngineTicker.class, false), this, config);
