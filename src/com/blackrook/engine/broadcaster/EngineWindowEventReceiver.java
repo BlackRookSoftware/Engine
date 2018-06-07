@@ -61,13 +61,17 @@ public interface EngineWindowEventReceiver
 	public void fireMouseExit();
 
 	/**
-	 * Should be called when the window is resized.
+	 * Should be called when the mouse moves on the main canvas.
+	 * @param canvasX the new canvas-local x-coordinate.
+	 * @param canvasY the new canvas-local y-coordinate.
 	 */
-	public void fireWindowResize(int width, int height);
+	public void fireMouseMove(int canvasX, int canvasY);
 
 	/**
-	 * Should be called when the window is moved.
+	 * Should be called when the window is resized.
+	 * @param width the new canvas width.
+	 * @param height the new canvas height.
 	 */
-	public void fireWindowMove(int positionX, int positionY);
+	public void fireResize(int width, int height);
 
 }

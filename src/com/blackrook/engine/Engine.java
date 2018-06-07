@@ -356,6 +356,13 @@ public final class Engine
 			}
 			
 			@Override
+			public void fireMouseMove(int canvasX, int canvasY)
+			{
+				for (EngineWindowListener listener : windowListeners)
+					listener.onMouseMove(canvasX, canvasY);
+			}
+
+			@Override
 			public void fireMinimize()
 			{
 				for (EngineWindowListener listener : windowListeners)
@@ -384,19 +391,12 @@ public final class Engine
 			}
 
 			@Override
-			public void fireWindowResize(int width, int height)
+			public void fireResize(int width, int height)
 			{
 				for (EngineWindowListener listener : windowListeners)
-					listener.onWindowResize(width, height);
+					listener.onResize(width, height);
 			}
 
-			@Override
-			public void fireWindowMove(int positionX, int positionY) 
-			{
-				for (EngineWindowListener listener : windowListeners)
-					listener.onWindowMove(positionX, positionY);
-			}
-			
 		};
 
 		updateTicker = new EngineTicker(loggingFactory.getLogger(EngineTicker.class, false), this, config);

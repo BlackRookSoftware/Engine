@@ -62,15 +62,15 @@ public interface EngineWindowListener
 	public void onMouseExit();
 
 	/**
-	 * Should be called when the window is resized.
+	 * Called by Engine when the mouse has moved on the main display canvas.
 	 * <p><b>It would not be wise to call this from another method in this class.</b>
 	 */
-	public void onWindowResize(int width, int height);
+	public void onMouseMove(int canvasX, int canvasY);
 
 	/**
-	 * Should be called when the window is moved.
+	 * Should be called when the canvas is resized.
 	 * <p><b>It would not be wise to call this from another method in this class.</b>
 	 */
-	public void onWindowMove(int positionX, int positionY);
-	
+	public void onResize(int width, int height);
+
 }
