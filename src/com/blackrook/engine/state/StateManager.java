@@ -75,6 +75,7 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 			return null;
 		
 		State out = states[--size];
+		states[size] = null;
 		out.exit();
 		return out;
 	}
