@@ -14,12 +14,6 @@ package com.blackrook.engine.roles;
 public interface EngineUpdateHandler
 {
 	/**
-	 * Checks if this object should be updated.
-	 * @return true if so, false if not.
-	 */
-	public boolean isUpdatable();
-	
-	/**
 	 * Updates this component.
 	 * @param tick the current tick in the updater (counts upward each update).
 	 * @param currentNanos the current nanotime for the update frame.

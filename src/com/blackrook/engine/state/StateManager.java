@@ -93,12 +93,6 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 	}
 
 	@Override
-	public synchronized boolean isUpdatable()
-	{
-		return true;
-	}
-
-	@Override
 	public synchronized void update(long tick, long currentNanos)
 	{
 		for (int i = size - 1; i >= 0; i--)
