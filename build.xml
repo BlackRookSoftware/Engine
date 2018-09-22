@@ -57,9 +57,9 @@
 		<git-export repository="https://github.com/BlackRookSoftware/CommonLang" dest="${dependencies.dir}/CommonLang" />
 		<ant antfile="${dependencies.dir}/CommonLang/build.xml" useNativeBasedir="true" inheritAll="false" target="compile" />
 	</target>
-	<target name="dependency.expression">
-		<git-export repository="https://github.com/BlackRookSoftware/Expression" dest="${dependencies.dir}/Expression" />
-		<ant antfile="${dependencies.dir}/Expression/build.xml" useNativeBasedir="true" inheritAll="false" target="compile" />
+	<target name="dependency.filesystem">
+		<git-export repository="https://github.com/BlackRookSoftware/FileSystem" dest="${dependencies.dir}/FileSystem" />
+		<ant antfile="${dependencies.dir}/FileSystem/build.xml" useNativeBasedir="true" inheritAll="false" target="compile" />
 	</target>
 	<target name="dependency.archetext">
 		<git-export repository="https://github.com/BlackRookSoftware/ArcheText" dest="${dependencies.dir}/ArcheText" />
@@ -70,7 +70,7 @@
 		<echo message="dev.base=${dependencies.dir}&#10;" file="build.properties" append="true" />
 	</target>
 
-	<target name="dependencies" depends="init.dependencies, dependency.common, dependency.commonio, dependency.commonlang, dependency.expression, dependency.archetext, dependency.properties" description="Downloads and compiles the dependencies.">
+	<target name="dependencies" depends="init.dependencies, dependency.common, dependency.commonio, dependency.commonlang, dependency.filesystem, dependency.archetext, dependency.properties" description="Downloads and compiles the dependencies.">
 	</target>
 
 	<target name="javadoc" depends="init.docs" description="Builds the documentation.">
@@ -95,7 +95,6 @@
             <link href="http://blackrooksoftware.com/docs/commonio/"/>
             <link href="http://blackrooksoftware.com/docs/commonlang/"/>
             <link href="http://blackrooksoftware.com/docs/filesystem/"/>
-            <link href="http://blackrooksoftware.com/docs/input/"/>
             <link href="http://blackrooksoftware.com/docs/archetext/"/>
             <link href="http://download.oracle.com/javase/8/docs/api/"/>
         </javadoc>
