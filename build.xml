@@ -63,10 +63,6 @@
 		<git-export repository="https://github.com/BlackRookSoftware/ArcheText" dest="${dependencies.dir}/ArcheText" />
 		<ant antfile="${dependencies.dir}/ArcheText/build.xml" useNativeBasedir="true" inheritAll="false" target="compile" />
 	</target>
-	<target name="dependency.input">
-		<git-export repository="https://github.com/BlackRookSoftware/ArcheText" dest="${dependencies.dir}/ArcheText" />
-		<ant antfile="${dependencies.dir}/ArcheText/build.xml" useNativeBasedir="true" inheritAll="false" target="compile" />
-	</target>
 	<target name="dependency.properties">
 		<echo message="Writing to build.properties...." />
 		<echo message="dev.base=${dependencies.dir}&#10;" file="build.properties" append="true" />
