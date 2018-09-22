@@ -1,6 +1,6 @@
 # Black Rook Engine
 
-Copyright (c) 2015-2018 Black Rook Software. All rights reserved.  
+Copyright (c) 2016-2018 Black Rook Software. All rights reserved.  
 [http://blackrooksoftware.com/projects.htm?name=engine](http://blackrooksoftware.com/projects.htm?name=engine)  
 [https://github.com/BlackRookSoftware/Engine](https://github.com/BlackRookSoftware/Engine)
 
@@ -28,7 +28,10 @@ Black Rook Common FileSystem
 
 ### Required Java Modules
 
-[java.base](https://docs.oracle.com/javase/10/docs/api/java.base-summary.html)  
+[java.desktop](https://docs.oracle.com/javase/10/docs/api/java.desktop-summary.html) 
+* [java.datatransfer](https://docs.oracle.com/javase/10/docs/api/java.datatransfer-summary.html)
+* [java.xml](https://docs.oracle.com/javase/10/docs/api/java.xml-summary.html)
+* [java.base](https://docs.oracle.com/javase/10/docs/api/java.base-summary.html)
 
 ### Introduction
 
