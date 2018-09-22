@@ -1,14 +1,54 @@
 # Black Rook Engine
 
-Copyright (c) 2015 Black Rook Software. All rights reserved.  
+Copyright (c) 2015-2018 Black Rook Software. All rights reserved.  
 [http://blackrooksoftware.com/projects.htm?name=engine](http://blackrooksoftware.com/projects.htm?name=engine)  
 [https://github.com/BlackRookSoftware/Engine](https://github.com/BlackRookSoftware/Engine)
 
+### NOTICE
+
+This library is currently in **EXPERIMENTAL** status. This library's API
+may change many times in different ways over the course of its development!
+
 ### Required Libraries
+
+Black Rook Commons 2.31.0+  
+[https://github.com/BlackRookSoftware/Common](https://github.com/BlackRookSoftware/Common)
+
+Black Rook Common I/O 2.5.0+  
+[https://github.com/BlackRookSoftware/CommonIO](https://github.com/BlackRookSoftware/CommonIO)
+
+Black Rook Common Lang 2.10.0+  
+[https://github.com/BlackRookSoftware/CommonLang](https://github.com/BlackRookSoftware/CommonLang)
+
+Black Rook Common ArcheText  
+[https://github.com/BlackRookSoftware/ArcheText](https://github.com/BlackRookSoftware/ArcheText)
+
+Black Rook Common FileSystem  
+[https://github.com/BlackRookSoftware/FileSystem](https://github.com/BlackRookSoftware/FileSystem)
 
 
 ### Introduction
 
+Black Rook Engine is a dependency injection system built around several roles for hooking into
+a single program and managing device contexts, message passing, and update loops.
+
+### Compiling with Ant
+
+To download the dependencies for this project (if you didn't set that up yourself already), type:
+
+	ant dependencies
+
+A *build.properties* file will be created/appended to with the *dev.base* property set.
+	
+To compile this library with Apache Ant, type:
+
+	ant compile
+
+To make a JAR of this library, type:
+
+	ant jar
+
+And it will be placed in the *build/jar* directory.
 
 ### Other
 
