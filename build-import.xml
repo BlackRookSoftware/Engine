@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE project>
-<project name="project" default="compile">
+<project name="imports">
 	
 	<!-- Folders and File Names -->
 	<tstamp>
@@ -85,7 +85,7 @@
         	sourcepath="${src.dir}" 
         	packagenames="${project.javadoc.packages}"
         	destdir="${docs.dir}" 
-    		source="1.7" 
+    		source="1.8" 
         	splitindex="true" 
         	use="true" 
         	version="true" 
@@ -101,7 +101,7 @@
 	
 	<target name="compile" depends="init.compile" description="Compiles the project.">
 		<javac 
-			source="1.7"
+			source="1.8"
 			srcdir="${src.dir}" 
 			destdir="${bin.dir}"
             includeAntRuntime="false"

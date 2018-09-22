@@ -26,6 +26,9 @@ Black Rook Common ArcheText
 Black Rook Common FileSystem  
 [https://github.com/BlackRookSoftware/FileSystem](https://github.com/BlackRookSoftware/FileSystem)
 
+### Required Java Modules
+
+[java.base](https://docs.oracle.com/javase/10/docs/api/java.base-summary.html)  
 
 ### Introduction
 

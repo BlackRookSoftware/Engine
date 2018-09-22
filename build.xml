@@ -20,21 +20,19 @@
 	<property name="common.lang.lib" value="${dev.base}/CommonLang/bin" />
 	<property name="fs.lib" value="${dev.base}/FileSystem/bin"/>
 	<property name="archetext.lib" value="${dev.base}/ArcheText/bin"/>
-	<property name="input.lib" value="${dev.base}/Input/bin"/>
 
 	<!-- Project Info -->
 	<property name="project.archive" value="blackrook-engine" />
 	<property name="project.javadoc.title" value="Black Rook Engine" />
-	<property name="project.classpath" value="${common.lib}${S}${common.io.lib}${S}${common.lang.lib}${S}${fs.lib}${S}${archetext.lib}${S}${input.lib}" />
+	<property name="project.classpath" value="${common.lib}${S}${common.io.lib}${S}${common.lang.lib}${S}${fs.lib}${S}${archetext.lib}" />
 	<property name="project.javadoc.packages" value="
 		com.blackrook.engine,
+		com.blackrook.engine.adapter,
 		com.blackrook.engine.annotation,
 		com.blackrook.engine.annotation.element,
 		com.blackrook.engine.annotation.resource,
 		com.blackrook.engine.broadcaster,
 		com.blackrook.engine.exception,
-		com.blackrook.engine.input,
-		com.blackrook.engine.resource,
 		com.blackrook.engine.roles,
 		com.blackrook.engine.state,
 		com.blackrook.engine.struct,
@@ -65,6 +63,10 @@
 		<git-export repository="https://github.com/BlackRookSoftware/ArcheText" dest="${dependencies.dir}/ArcheText" />
 		<ant antfile="${dependencies.dir}/ArcheText/build.xml" useNativeBasedir="true" inheritAll="false" target="compile" />
 	</target>
+	<target name="dependency.input">
+		<git-export repository="https://github.com/BlackRookSoftware/ArcheText" dest="${dependencies.dir}/ArcheText" />
+		<ant antfile="${dependencies.dir}/ArcheText/build.xml" useNativeBasedir="true" inheritAll="false" target="compile" />
+	</target>
 	<target name="dependency.properties">
 		<echo message="Writing to build.properties...." />
 		<echo message="dev.base=${dependencies.dir}&#10;" file="build.properties" append="true" />
@@ -91,12 +93,12 @@
         	nonavbar="false" 
         	notree="false"
     		>
-            <link href="http://blackrooksoftware.com/docs/common/"/>
-            <link href="http://blackrooksoftware.com/docs/commonio/"/>
-            <link href="http://blackrooksoftware.com/docs/commonlang/"/>
-            <link href="http://blackrooksoftware.com/docs/filesystem/"/>
-            <link href="http://blackrooksoftware.com/docs/archetext/"/>
-            <link href="http://download.oracle.com/javase/8/docs/api/"/>
+        	<link href="https://blackrooksoftware.com/docs/common/" packagelistloc="element-list"/>
+            <link href="https://blackrooksoftware.com/docs/commonio/"/>
+            <link href="https://blackrooksoftware.com/docs/commonlang/"/>
+            <link href="https://blackrooksoftware.com/docs/filesystem/"/>
+            <link href="https://blackrooksoftware.com/docs/archetext/"/>
+            <link href="https://docs.oracle.com/javase/10/docs/api/" packagelistloc="element-list"/>
         </javadoc>
     </target>	
 
