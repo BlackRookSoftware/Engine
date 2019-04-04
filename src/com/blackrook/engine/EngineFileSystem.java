@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -18,8 +18,10 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.zip.ZipException;
 
-import com.blackrook.commons.Common;
 import com.blackrook.commons.logging.Logger;
+import com.blackrook.commons.util.FileUtils;
+import com.blackrook.commons.util.OSUtils;
+import com.blackrook.commons.util.ObjectUtils;
 import com.blackrook.engine.exception.EngineSetupException;
 import com.blackrook.fs.FSFileArchive;
 import com.blackrook.fs.FileSystem;
@@ -53,9 +55,9 @@ public class EngineFileSystem extends FileSystem
 		String[] archives = config.getFileSystemArchives();
 		String[] stack = config.getFileSystemStack();
 		
-		if (!Common.isEmpty(archives))
+		if (!ObjectUtils.isEmpty(archives))
 			includeArchiveList(archives);
-		else if (!Common.isEmpty(stack))
+		else if (!ObjectUtils.isEmpty(stack))
 			includeArchiveSet(stack, config.getFileSystemStackArchiveAutoloadExtension());
 	}
 
@@ -82,7 +84,7 @@ public class EngineFileSystem extends FileSystem
 	{
 		FileFilter packFilter;
 		
-		if (Common.isEmpty(extension))
+		if (ObjectUtils.isEmpty(extension))
 			packFilter = null;
 		else
 		{
@@ -176,7 +178,7 @@ public class EngineFileSystem extends FileSystem
 		if (fullPath == null)
 			return null;
 		logger.infof("Creating global setting path \"%s\"...", fullPath);
-		if (!Common.createPathForFile(fullPath))
+		if (!FileUtils.createPathForFile(fullPath))
 			return null;
 		OutputStream out = new FileOutputStream(fullPath);
 		return out;
@@ -196,7 +198,7 @@ public class EngineFileSystem extends FileSystem
 		if (fullPath == null)
 			return null;
 		logger.infof("Creating user setting path \"%s\"...", fullPath);
-		if (!Common.createPathForFile(fullPath))
+		if (!FileUtils.createPathForFile(fullPath))
 			return null;
 		OutputStream out = new FileOutputStream(fullPath);
 		return out;
@@ -264,7 +266,7 @@ public class EngineFileSystem extends FileSystem
 		if (filePath == null)
 			return null;
 		if (basePath == null)
-			basePath = Common.WORK_DIR;
+			basePath = OSUtils.getWorkingDirectoryPath();
 		basePath = basePath.endsWith(File.separator) || basePath.endsWith("/") ? basePath : basePath + File.separator; 
 		return basePath + filePath;
 	}

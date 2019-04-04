@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -15,8 +15,8 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import com.blackrook.commons.Common;
 import com.blackrook.commons.hash.HashMap;
+import com.blackrook.commons.util.EncodingUtils;
 import com.blackrook.io.SuperReader;
 import com.blackrook.io.SuperWriter;
 
@@ -261,7 +261,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 		byte[] data = sr.readByteArray();
 		byte[] hash = sr.readBytes(20);
 
-		if (!Arrays.equals(Common.sha1(data), hash))
+		if (!Arrays.equals(EncodingUtils.sha1(data), hash))
 			throw new IOException("Hash does not match data. Table may be corrupt.");
 		
 		SuperReader datasr = new SuperReader(new ByteArrayInputStream(data), SuperReader.LITTLE_ENDIAN);
@@ -296,7 +296,7 @@ public final class EStatTable extends HashMap<Integer, Double>
 		}
 		
 		byte[] b = bos.toByteArray();
-		byte[] sha1 = Common.sha1(b);
+		byte[] sha1 = EncodingUtils.sha1(b);
 		
 		SuperWriter swout = new SuperWriter(out, SuperWriter.LITTLE_ENDIAN);
 		swout.writeByteArray(b);

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -11,7 +11,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
-import com.blackrook.commons.Common;
 import com.blackrook.commons.ObjectPair;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.Sizable;
@@ -27,6 +26,8 @@ import com.blackrook.commons.list.List;
 import com.blackrook.commons.list.SortedMap;
 import com.blackrook.commons.math.Tuple1D;
 import com.blackrook.commons.math.geometry.Point1D;
+import com.blackrook.commons.util.ObjectUtils;
+import com.blackrook.commons.util.ThreadUtils;
 import com.blackrook.engine.annotation.resource.Indexed;
 import com.blackrook.engine.annotation.resource.Interval;
 import com.blackrook.engine.annotation.resource.IntervalBound;
@@ -155,7 +156,7 @@ public class EngineResources
 			for (Field field : profile.getAnnotatedPublicFields(Indexed.class))
 			{
 				Indexed anno = field.getAnnotation(Indexed.class);
-				String name = Common.isEmpty(anno.value()) ? field.getName() : anno.value();
+				String name = ObjectUtils.isEmpty(anno.value()) ? field.getName() : anno.value();
 	
 				if (!NUMERIC_CLASSES.contains(field.getType()))
 					throw new EngineSetupException("On class "+clazz.getSimpleName()+", Indexed field \""+name+"\" must return a numeric type.");
@@ -168,7 +169,7 @@ public class EngineResources
 			{
 				Method method = methodSignature.getMethod();
 				Indexed anno = method.getAnnotation(Indexed.class);
-				String name = Common.isEmpty(anno.value()) ? Reflect.getFieldName(method.getName()) : anno.value();
+				String name = ObjectUtils.isEmpty(anno.value()) ? Reflect.getFieldName(method.getName()) : anno.value();
 				
 				if (!NUMERIC_CLASSES.contains(methodSignature.getType()))
 					throw new EngineSetupException("On class "+clazz.getSimpleName()+", Indexed getter \""+name+"\" must return a numeric type.");
@@ -183,7 +184,7 @@ public class EngineResources
 			{
 				Interval anno = field.getAnnotation(Interval.class);
 				IntervalBound bound = anno.bound();
-				String name = Common.isEmpty(anno.value()) ? field.getName() : anno.value();
+				String name = ObjectUtils.isEmpty(anno.value()) ? field.getName() : anno.value();
 	
 				if (!NUMERIC_CLASSES.contains(field.getType()))
 					throw new EngineSetupException("On class "+clazz.getSimpleName()+", Interval field \""+name+"\" must return a numeric type.");
@@ -209,7 +210,7 @@ public class EngineResources
 				Method method = methodSignature.getMethod();
 				Interval anno = method.getAnnotation(Interval.class);
 				IntervalBound bound = anno.bound();
-				String name = Common.isEmpty(anno.value()) ? Reflect.getFieldName(method.getName()) : anno.value();
+				String name = ObjectUtils.isEmpty(anno.value()) ? Reflect.getFieldName(method.getName()) : anno.value();
 	
 				if (!NUMERIC_CLASSES.contains(methodSignature.getType()))
 					throw new EngineSetupException("On class "+clazz.getSimpleName()+", Interval field \""+name+"\" must return a numeric type.");
@@ -821,8 +822,8 @@ public class EngineResources
 		private static Cache getCache()
 		{
 			Cache out;
-			if ((out = (Cache)Common.getLocal(CACHE_NAME)) == null)
-				Common.setLocal(CACHE_NAME, out = new Cache());
+			if ((out = (Cache)ThreadUtils.getLocal(CACHE_NAME)) == null)
+				ThreadUtils.setLocal(CACHE_NAME, out = new Cache());
 			return out;
 		}
 		

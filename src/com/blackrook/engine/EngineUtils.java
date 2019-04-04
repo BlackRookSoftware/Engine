@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -16,10 +16,11 @@ import com.blackrook.archetext.ArcheTextIncluder;
 import com.blackrook.archetext.ArcheTextReader;
 import com.blackrook.archetext.ArcheTextRoot;
 import com.blackrook.archetext.exception.ArcheTextParseException;
-import com.blackrook.commons.Common;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
 import com.blackrook.commons.list.List;
+import com.blackrook.commons.util.IOUtils;
+import com.blackrook.commons.util.ObjectUtils;
 import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.EngineElementConstructor;
 import com.blackrook.engine.exception.EngineSetupException;
@@ -82,7 +83,7 @@ public final class EngineUtils
 	) 
 	{
 		Hash<String> componentStartupClass = new Hash<>();
-		if (!Common.isEmpty(config.getStartupComponentClasses()))
+		if (!ObjectUtils.isEmpty(config.getStartupComponentClasses()))
 			for (String name : config.getStartupComponentClasses())
 				componentStartupClass.put(name);
 
@@ -207,7 +208,7 @@ public final class EngineUtils
 			} catch (IOException e) {
 				throw new EngineSetupException(e);
 			} finally {
-				Common.close(in);
+				IOUtils.close(in);
 			}
 		}
 		

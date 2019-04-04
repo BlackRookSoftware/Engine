@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -23,7 +23,6 @@ import java.util.Properties;
 
 import com.blackrook.archetext.ArcheTextObject;
 import com.blackrook.archetext.ArcheTextRoot;
-import com.blackrook.commons.Common;
 import com.blackrook.commons.ObjectPair;
 import com.blackrook.commons.Reflect;
 import com.blackrook.commons.hash.Hash;
@@ -34,6 +33,8 @@ import com.blackrook.commons.logging.Logger;
 import com.blackrook.commons.logging.LoggingDriver;
 import com.blackrook.commons.logging.LoggingFactory;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
+import com.blackrook.commons.util.IOUtils;
+import com.blackrook.commons.util.ObjectUtils;
 import com.blackrook.engine.EngineResources.ResourceSet;
 import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.element.Ordering;
@@ -121,7 +122,7 @@ public final class Engine
 
 		// load resource definitions.
 		ArcheTextRoot resourceDefinitionRoot;
-		if (!Common.isEmpty(config.getResourceDefinitionFile()))
+		if (!ObjectUtils.isEmpty(config.getResourceDefinitionFile()))
 		{
 			out.logger.infof("Opening resource definitions, %s", config.getResourceDefinitionFile());
 			out.logger.info("Reading definitions...");
@@ -178,7 +179,7 @@ public final class Engine
 			DefinitionName anno = clazz.getAnnotation(DefinitionName.class);
 			String className = clazz.getSimpleName();
 			className = Character.toLowerCase(className.charAt(0)) + className.substring(1);
-			String structName = anno != null && !Common.isEmpty(anno.value()) ? anno.value() : null;
+			String structName = anno != null && !ObjectUtils.isEmpty(anno.value()) ? anno.value() : null;
 	
 			if (structName != null) for (ArcheTextObject object : resourceDefinitionRoot.getAllByType(structName))
 			{
@@ -204,7 +205,7 @@ public final class Engine
 		out.createAllDevices();
 	
 		// call console commands.
-		if (!Common.isEmpty(config.getConsoleCommandsToExecute()))
+		if (!ObjectUtils.isEmpty(config.getConsoleCommandsToExecute()))
 		{
 			out.logger.info("Calling queued console commands...");
 			for (String command : config.getConsoleCommandsToExecute())
@@ -251,7 +252,7 @@ public final class Engine
 			}
 		});
 	
-		if (!Common.isEmpty(config.getLogFile()))
+		if (!ObjectUtils.isEmpty(config.getLogFile()))
 		{
 			final PrintStream ps;
 			try {
@@ -270,12 +271,12 @@ public final class Engine
 			}
 		}
 		
-		if (!Common.isEmpty(config.getApplicationName()))
+		if (!ObjectUtils.isEmpty(config.getApplicationName()))
 			engine.logger.info("Init application \"" + config.getApplicationName() + "\"");
 		else
 			engine.logger.info("Init application.");
 			
-		if (!Common.isEmpty(config.getApplicationVersion()))
+		if (!ObjectUtils.isEmpty(config.getApplicationVersion()))
 			engine.logger.info("Version " + config.getApplicationVersion());
 	}
 
@@ -545,7 +546,7 @@ public final class Engine
 		Properties settings = null;
 		InputStream inStream = null;
 	
-		if (!Common.isEmpty(config.getGlobalVariablesFile()))
+		if (!ObjectUtils.isEmpty(config.getGlobalVariablesFile()))
 		{
 			logger.infof("Loading global settings...");
 			settings = new Properties();
@@ -558,7 +559,7 @@ public final class Engine
 			} catch (IOException e) {
 				logger.errorf(e, "Could not read global settings from file \"%s\".", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
 			} finally {
-				Common.close(inStream);
+				IOUtils.close(inStream);
 			}
 			for (EngineSettingsListener listener : settingsListeners)
 				listener.onLoadGlobalSettings(settings);
@@ -572,7 +573,7 @@ public final class Engine
 		Properties settings = null;
 		InputStream inStream = null;
 	
-		if (!Common.isEmpty(config.getUserVariablesFile()))
+		if (!ObjectUtils.isEmpty(config.getUserVariablesFile()))
 		{
 			logger.infof("Loading user settings...");
 			settings = new Properties();
@@ -585,7 +586,7 @@ public final class Engine
 			} catch (IOException e) {
 				logger.errorf(e, "Could not read user settings from file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
 			} finally {
-				Common.close(inStream);
+				IOUtils.close(inStream);
 			}
 			for (EngineSettingsListener listener : settingsListeners)
 				listener.onLoadUserSettings(settings);
@@ -598,11 +599,11 @@ public final class Engine
 	private void saveGlobalVariables(EngineFileSystem fileSystem)
 	{
 		String applicationString = 
-			(!Common.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
-			+ (!Common.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "");
+			(!ObjectUtils.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
+			+ (!ObjectUtils.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "");
 		OrderedProperties settings = null;
 		OutputStream outStream = null;
-		if (!Common.isEmpty(config.getGlobalVariablesFile()))
+		if (!ObjectUtils.isEmpty(config.getGlobalVariablesFile()))
 		{
 			logger.infof("Saving global settings...");
 			settings = new OrderedProperties();
@@ -615,7 +616,7 @@ public final class Engine
 			} catch (IOException e) {
 				logger.errorf(e, "Could not write global settings to file \"%s\".", fileSystem.getGlobalSettingFilePath(config.getGlobalVariablesFile()));
 			} finally {
-				Common.close(outStream);
+				IOUtils.close(outStream);
 			}
 		}
 	}
@@ -624,12 +625,12 @@ public final class Engine
 	private void saveUserVariables(EngineFileSystem fileSystem)
 	{
 		String applicationString = 
-			(!Common.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
-			+ (!Common.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "");
+			(!ObjectUtils.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
+			+ (!ObjectUtils.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "");
 		OrderedProperties settings = null;
 		OutputStream outStream = null;
 	
-		if (!Common.isEmpty(config.getUserVariablesFile()))
+		if (!ObjectUtils.isEmpty(config.getUserVariablesFile()))
 		{
 			logger.infof("Saving user settings...");
 			settings = new OrderedProperties();
@@ -642,7 +643,7 @@ public final class Engine
 			} catch (IOException e) {
 				logger.errorf(e, "Could not write user settings to file \"%s\".", fileSystem.getUserSettingFilePath(config.getUserVariablesFile()));
 			} finally {
-				Common.close(outStream);
+				IOUtils.close(outStream);
 			}
 		}
 	}
@@ -921,7 +922,7 @@ public final class Engine
 				throwable.printStackTrace(pw);
 				pw.flush();
 				pw.close();
-				Common.close(sw);
+				IOUtils.close(sw);
 				output(sw.toString());
 			}
 		}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -30,8 +30,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.BevelBorder;
 
-import com.blackrook.commons.Common;
 import com.blackrook.commons.list.List;
+import com.blackrook.commons.util.ObjectUtils;
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
 import com.blackrook.engine.EngineConsole;
@@ -72,8 +72,8 @@ public class ConsoleWindow extends JFrame
 		super();
 		
 		String windowTitle = 
-				(!Common.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
-				+ (!Common.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "") 
+				(!ObjectUtils.isEmpty(config.getApplicationName()) ? config.getApplicationName() : "") 
+				+ (!ObjectUtils.isEmpty(config.getApplicationVersion()) ? " v" + config.getApplicationVersion() : "") 
 				+ " Console";
 		setTitle(windowTitle.trim());
 		setIconImage(config.getApplicationIcon());
@@ -169,12 +169,12 @@ public class ConsoleWindow extends JFrame
 				{
 					int cpos = field.getCaretPosition();
 					String selected = field.getSelectedText();
-					String prefix = (!Common.isEmpty(selected) ? selected : field.getText().substring(0, Math.max(cpos, 0))).trim();
-					if (!Common.isEmpty(prefix))
+					String prefix = (!ObjectUtils.isEmpty(selected) ? selected : field.getText().substring(0, Math.max(cpos, 0))).trim();
+					if (!ObjectUtils.isEmpty(prefix))
 					{
 						String[] cmds = consoleManager.getCommandNamesForPrefix(prefix);
 						String[] vars = consoleManager.getVariableNamesForPrefix(prefix);
-						if (Common.isEmpty(cmds) && Common.isEmpty(vars))
+						if (ObjectUtils.isEmpty(cmds) && ObjectUtils.isEmpty(vars))
 						{
 							println("NOTICE: No possible completions for input.");
 							toolkit.beep();
@@ -189,14 +189,14 @@ public class ConsoleWindow extends JFrame
 						}
 						else
 						{
-							if (!Common.isEmpty(cmds))
+							if (!ObjectUtils.isEmpty(cmds))
 							{
 								println("Commands:");
 								for (String c : cmds)
 									print(c + " ");
 								println();
 							}
-							if (!Common.isEmpty(vars))
+							if (!ObjectUtils.isEmpty(vars))
 							{
 								println("\nVariables:");
 								for (String v : vars)

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -9,8 +9,8 @@ package com.blackrook.engine;
 
 import java.awt.Image;
 
-import com.blackrook.commons.Common;
 import com.blackrook.commons.logging.LoggingFactory.LogLevel;
+import com.blackrook.commons.util.ObjectUtils;
 
 /**
  * Configuration for the Engine, which declares basic principles for its application setup.
@@ -114,7 +114,7 @@ public interface EngineConfig
 	 * If empty, these directories are not added.
 	 * This is consulted if {@link #getFileSystemArchives()} returns an empty value.
 	 * @return the paths to push onto the filesystem stack.
-	 * @see Common#isEmpty(Object)
+	 * @see ObjectUtils#isEmpty(Object)
 	 */
 	public String[] getFileSystemStack();
 
@@ -125,7 +125,7 @@ public interface EngineConfig
 	 * Archives are loaded in order specified in the array.
 	 * NOTE: If this is not empty, loading via FileSystemStack is ignored.
 	 * @return the array of archive paths off of the mounted filesystem.
-	 * @see Common#isEmpty(Object)
+	 * @see ObjectUtils#isEmpty(Object)
 	 * @see #getFileSystemStack()
 	 * @see #getFileSystemStackArchiveAutoloadExtension()
 	 */
@@ -137,7 +137,7 @@ public interface EngineConfig
 	 * If empty, does not auto-load archive types.
 	 * Archives are loaded in lexicographical order.
 	 * @return the archive file extension or null to not auto-load archives.
-	 * @see Common#isEmpty(Object)
+	 * @see ObjectUtils#isEmpty(Object)
 	 */
 	public String getFileSystemStackArchiveAutoloadExtension();
 

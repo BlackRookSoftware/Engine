@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2018 Black Rook Software
+ * Copyright (c) 2016-2019 Black Rook Software
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
  * which accompanies this distribution, and is available at
@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
 
-import com.blackrook.commons.Common;
 import com.blackrook.commons.CommonTokenizer;
 import com.blackrook.commons.ObjectPair;
 import com.blackrook.commons.Reflect;
@@ -23,6 +22,9 @@ import com.blackrook.commons.TypeProfile.MethodSignature;
 import com.blackrook.commons.hash.CaseInsensitiveHashMap;
 import com.blackrook.commons.list.List;
 import com.blackrook.commons.trie.CaseInsensitiveTrie;
+import com.blackrook.commons.util.OSUtils;
+import com.blackrook.commons.util.ObjectUtils;
+import com.blackrook.commons.util.StringUtils;
 import com.blackrook.engine.annotation.element.CCMD;
 import com.blackrook.engine.annotation.element.CVAR;
 import com.blackrook.engine.exception.ConsoleCommandInvocationException;
@@ -91,7 +93,7 @@ public class EngineConsole
 			if (anno.debug() && !debug)
 				continue;
 			
-			String cmdname = (Common.isEmpty(anno.value()) ? method.getName().toLowerCase() : anno.value()).toLowerCase();
+			String cmdname = (ObjectUtils.isEmpty(anno.value()) ? method.getName().toLowerCase() : anno.value()).toLowerCase();
 
 			if (commandMap.containsKey(cmdname))
 			{
@@ -108,7 +110,7 @@ public class EngineConsole
 		for (Field field : profile.getAnnotatedPublicFields(CVAR.class))
 		{
 			CVAR anno = field.getAnnotation(CVAR.class);
-			String varname = Common.isEmpty(anno.value()) ? field.getName() : anno.value();
+			String varname = ObjectUtils.isEmpty(anno.value()) ? field.getName() : anno.value();
 
 			if (variableMap.containsKey(varname))
 			{
@@ -136,7 +138,7 @@ public class EngineConsole
 			if (anno == null)
 				continue;
 			
-			String varname = (Common.isEmpty(anno.value()) ? getterName : anno.value()).toLowerCase();
+			String varname = (ObjectUtils.isEmpty(anno.value()) ? getterName : anno.value()).toLowerCase();
 
 			if (variableMap.containsKey(varname))
 			{
@@ -162,7 +164,7 @@ public class EngineConsole
 			if (anno == null)
 				continue;
 
-			String varname = (Common.isEmpty(anno.value()) ? setterName : anno.value()).toLowerCase();
+			String varname = (ObjectUtils.isEmpty(anno.value()) ? setterName : anno.value()).toLowerCase();
 			
 			if (variableMap.containsKey(varname))
 			{
@@ -543,7 +545,7 @@ public class EngineConsole
 	 */
 	public void processCommand(String commandString)
 	{
-		if (Common.isEmpty(commandString))
+		if (ObjectUtils.isEmpty(commandString))
 			return;
 			
 		CommonTokenizer tokenizer = new CommonTokenizer(commandString);
@@ -590,7 +592,7 @@ public class EngineConsole
 	
 		} catch (Exception ex) {
 			consoleWindow.println("EXCEPTION: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
-			consoleWindow.println(Common.getExceptionString(ex));
+			consoleWindow.println(StringUtils.getExceptionString(ex));
 		}
 		
 		if (out != null)
@@ -708,7 +710,7 @@ public class EngineConsole
 	public void cmdList(String prefix)
 	{
 		String[] commands = null;
-		if (Common.isEmpty(prefix))
+		if (ObjectUtils.isEmpty(prefix))
 			commands = getCommandNames();
 		else
 			commands = getCommandNamesForPrefix(prefix);
@@ -777,19 +779,19 @@ public class EngineConsole
 	@CVAR(value = "workdir", description = "Working directory path.")
 	public String getWorkingDirectory()
 	{
-		return Common.WORK_DIR;
+		return OSUtils.getWorkingDirectoryPath();
 	}
 
 	@CVAR(value = "appdata", description = "Application data directory path.")
 	public String getApplicationDataDirectory()
 	{
-		return Common.APP_DIR;
+		return OSUtils.getApplicationSettingsPath();
 	}
 
 	@CVAR(value = "homedir", description = "Home directory path.")
 	public String getHomeDirectory()
 	{
-		return Common.HOME_DIR;
+		return OSUtils.getHomeDirectoryPath();
 	}
 
 	/**
