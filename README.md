@@ -1,6 +1,6 @@
 # Black Rook Engine
 
-Copyright (c) 2016-2019 Black Rook Software. All rights reserved.  
+Copyright (c) 2016-2020 Black Rook Software. All rights reserved.  
 [http://blackrooksoftware.com/projects.htm?name=engine](http://blackrooksoftware.com/projects.htm?name=engine)  
 [https://github.com/BlackRookSoftware/Engine](https://github.com/BlackRookSoftware/Engine)
 
@@ -11,50 +11,59 @@ may change many times in different ways over the course of its development!
 
 ### Required Libraries
 
-Black Rook Commons 2.32.0+  
-[https://github.com/BlackRookSoftware/Common](https://github.com/BlackRookSoftware/Common)
-
-Black Rook Common I/O 2.6.0+  
-[https://github.com/BlackRookSoftware/CommonIO](https://github.com/BlackRookSoftware/CommonIO)
-
-Black Rook Common Lang 2.11.0+  
-[https://github.com/BlackRookSoftware/CommonLang](https://github.com/BlackRookSoftware/CommonLang)
-
-Black Rook Common ArcheText  
-[https://github.com/BlackRookSoftware/ArcheText](https://github.com/BlackRookSoftware/ArcheText)
-
-Black Rook Common FileSystem  
+Black Rook FileSystem 1.0.0+  
 [https://github.com/BlackRookSoftware/FileSystem](https://github.com/BlackRookSoftware/FileSystem)
 
 ### Required Java Modules
 
-[java.desktop](https://docs.oracle.com/javase/10/docs/api/java.desktop-summary.html) 
-* [java.datatransfer](https://docs.oracle.com/javase/10/docs/api/java.datatransfer-summary.html)
-* [java.xml](https://docs.oracle.com/javase/10/docs/api/java.xml-summary.html)
-* [java.base](https://docs.oracle.com/javase/10/docs/api/java.base-summary.html)
+[java.base](https://docs.oracle.com/javase/10/docs/api/java.base-summary.html)
 
 ### Introduction
 
 Black Rook Engine is a dependency injection system built around several roles for hooking into
 a single program and managing device contexts, message passing, and update loops.
 
+
+### Why?
+
+It's nice to have a quick thing to manage dependencies and lifecycle for larger, real-time programs.
+This is it. 
+
+
 ### Compiling with Ant
 
-To download the dependencies for this project (if you didn't set that up yourself already), type:
+To download dependencies for this project, type (`build.properties` will also be altered/created):
 
 	ant dependencies
 
-A *build.properties* file will be created/appended to with the *dev.base* property set.
-	
 To compile this library with Apache Ant, type:
 
 	ant compile
 
-To make a JAR of this library, type:
+To make Maven-compatible JARs of this library (placed in the *build/jar* directory), type:
 
 	ant jar
 
-And it will be placed in the *build/jar* directory.
+To make Javadocs (placed in the *build/docs* directory):
+
+	ant javadoc
+
+To compile main and test code and run tests (if any):
+
+	ant test
+
+To make Zip archives of everything (main src/resources, bin, javadocs, placed in the *build/zip* directory):
+
+	ant zip
+
+To compile, JAR, test, and Zip up everything:
+
+	ant release
+
+To clean up everything:
+
+	ant clean
+
 
 ### Other
 
