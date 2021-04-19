@@ -27,6 +27,8 @@ public class EngineTicker
 	/** Queue of updatables. */
 	private List<EngineUpdateListener> updatables;
 
+	private int updatesPerSecond;
+	private Thread updateThread;
 	private boolean enabled;
 	private boolean active;
 	
@@ -40,32 +42,35 @@ public class EngineTicker
 		this.logger = logger;
 		this.engine = engine;
 		this.updatables = new ArrayList<EngineUpdateListener>();
+		this.updatesPerSecond = config.getUpdatesPerSecond();
+		this.updateThread = null;
 		this.enabled = true;
-		this.active = true;
+		this.active = false;
 	}
 
 	/**
-	 * Sets if the loop will update the list of updatables.
-	 * @param enabled true to enable, false to disable.
+	 * Starts the updater.
 	 */
-	public void setEnabled(boolean enabled)
+	public void start()
 	{
-		this.enabled = enabled;
+		logger.info("Update ticker starting...");
+		if (updateThread == null)
+			(updateThread = new Updater()).start();
 	}
-
+	
 	/**
-	 * Stops the loop.
+	 * Stops the updater.
 	 */
 	public void stop()
 	{
+		// Thread will die after the last update.
 		this.active = false;
 	}
 	
 	/**
 	 * Enters the update loop. 
-	 * @param updatesPerSecond the amount of updates per second.
 	 */
-	void loop(int updatesPerSecond)
+	private void loop()
 	{
 		double millisPerUpdate = updatesPerSecond != 0 ? (1000.0 / updatesPerSecond) : 0;
 		long millis = (long)millisPerUpdate;
@@ -92,6 +97,9 @@ public class EngineTicker
 			
 			Utils.sleep(0, 500000);
 		}
+		
+		logger.info("Update ticker stopped.");
+		updateThread = null;
 	}
 
 	/** 
@@ -119,4 +127,25 @@ public class EngineTicker
 			engine.handleException(t);
 		}
 	}
+	
+	/**
+	 * The updater thread.
+	 */
+	private class Updater extends Thread
+	{
+		private Updater()
+		{
+			setName("EngineUpdater");
+			setDaemon(true);
+		}
+		
+		@Override
+		public void run()
+		{
+			logger.info("Update ticker started.");
+			active = true;
+			loop();
+		}
+	}
+	
 }

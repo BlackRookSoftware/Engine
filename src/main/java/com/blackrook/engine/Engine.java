@@ -176,6 +176,9 @@ public final class Engine
 		for (EngineReadyListener listener : out.readyListeners)
 			listener.onEngineReady();
 		
+		out.logger.infof("Started update loop.", Thread.currentThread().getName());
+		out.updateTicker.start();
+
 		return out;
 	}
 
@@ -821,17 +824,6 @@ public final class Engine
 	
 		logger.infof("Shutting down JVM.");
 		System.exit(-1);
-	}
-
-	/**
-	 * Uses the current thread to enter the update loop.
-	 * This should be called by the same thread that created the engine.
-	 * The loop continues until it is ended by engine shutdown.
-	 */
-	public void startLoop()
-	{
-		logger.infof("Started update loop: Thread [%s].", Thread.currentThread().getName());
-		updateTicker.loop(config.getUpdatesPerSecond());
 	}
 
 	/**
