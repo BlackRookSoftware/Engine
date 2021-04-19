@@ -717,7 +717,7 @@ public final class Engine
 	 * Creates or gets an engine singleton component by class.
 	 * @param <T> the return type.
 	 * @param clazz the class to create/retrieve.
-	 * @return the corre
+	 * @return the corresponding singleton class or null if not found.
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T getElement(Class<T> clazz)
