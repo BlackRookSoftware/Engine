@@ -12,7 +12,7 @@ import com.blackrook.engine.receiver.EngineInputEventReceiver;
 
 /**
  * This interface describes an object that should receive an input listener
- * to attach itself to in order to pass input events along to the active EngineInputListeners (and EngineStates).
+ * to attach itself to in order to pass input events along to the active {@link EngineInputListener}s.
  * <p>
  * The Engine uses something called <b>input codes</b> to define actions taken so that the component
  * that is supposed to listen for device actions can broadcast filtered events, or automate them.
