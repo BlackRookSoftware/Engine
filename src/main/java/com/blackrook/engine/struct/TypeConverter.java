@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
@@ -33,7 +33,7 @@ class TypeConverter
 	 * Creates a type profiler.
 	 * @param profileFactory the profile factory to use for caching reflection info.
 	 */
-	public TypeConverter(TypeProfileFactory profileFactory)
+	TypeConverter(TypeProfileFactory profileFactory)
 	{
 		this.profileFactory = profileFactory;
 	}
@@ -46,7 +46,7 @@ class TypeConverter
 	 * @return a suitable object of type <code>targetType</code>. 
 	 * @throws ClassCastException if the incoming type cannot be converted.
 	 */
-	public <T> T createForType(Object object, Class<T> targetType)
+	<T> T createForType(Object object, Class<T> targetType)
 	{
 		return createForType("source", object, targetType);
 	}
@@ -61,7 +61,7 @@ class TypeConverter
 	 * @throws ClassCastException if the incoming type cannot be converted.
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T createForType(String memberName, Object object, Class<T> targetType)
+	<T> T createForType(String memberName, Object object, Class<T> targetType)
 	{
 		if (object == null)
 		{
@@ -122,7 +122,7 @@ class TypeConverter
 	 * @param value the value to apply/convert.
 	 * @param targetObject the target object to set stuff on.
 	 */
-	public <T> void applyMemberToObject(String name, Object value, T targetObject)
+	<T> void applyMemberToObject(String name, Object value, T targetObject)
 	{
 		@SuppressWarnings("unchecked")
 		Profile<T> profile = profileFactory.getProfile((Class<T>)targetObject.getClass());

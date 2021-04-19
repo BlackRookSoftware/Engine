@@ -1,11 +1,11 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
  * http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  ******************************************************************************/
-package com.blackrook.engine.struct;
+package com.blackrook.engine;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,7 +21,7 @@ import java.util.Queue;
  * Some kind of logger for logging messages.
  * @author Matthew Tropiano
  */
-public class LoggingFactory
+public class EngineLoggingFactory
 {
 	/** Logging levels. */
 	public static enum LogLevel
@@ -217,7 +217,7 @@ public class LoggingFactory
 	 * The starting logging level is {@link LogLevel#DEBUG}.
 	 * @param drivers the logging driver to use for directing output.
 	 */
-	public LoggingFactory(Driver... drivers)
+	public EngineLoggingFactory(Driver... drivers)
 	{
 		this(LogLevel.DEBUG, drivers);
 	}
@@ -227,7 +227,7 @@ public class LoggingFactory
 	 * @param drivers the logging driver to use for directing output.
 	 * @param level the starting logging level.
 	 */
-	public LoggingFactory(LogLevel level, Driver... drivers)
+	public EngineLoggingFactory(LogLevel level, Driver... drivers)
 	{
 		this.drivers = new LinkedList<Driver>();
 		this.outQueue = new LinkedList<LogObject>(); 
@@ -241,9 +241,9 @@ public class LoggingFactory
 	 * <p>Equivalent to: <code>new LoggingFactory(LogLevel.DEBUG, new ConsoleLogger())</code></p>
 	 * @return the new logging factory.
 	 */
-	public static LoggingFactory createConsoleLoggingFactory()
+	public static EngineLoggingFactory createConsoleLoggingFactory()
 	{
-		return new LoggingFactory(LogLevel.DEBUG, new ConsoleLogger());
+		return new EngineLoggingFactory(LogLevel.DEBUG, new ConsoleLogger());
 	}
 
 	/**

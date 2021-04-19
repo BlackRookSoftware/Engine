@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
@@ -18,8 +18,8 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.zip.ZipException;
 
+import com.blackrook.engine.EngineLoggingFactory.Logger;
 import com.blackrook.engine.exception.EngineSetupException;
-import com.blackrook.engine.struct.LoggingFactory.Logger;
 import com.blackrook.engine.struct.OSUtils;
 import com.blackrook.engine.struct.Utils;
 import com.blackrook.fs.FSFileArchive;

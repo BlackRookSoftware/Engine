@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
@@ -29,7 +29,7 @@ public class TypeProfileFactory
 	 * for each type.
 	 * @param policy the member policy.
 	 */
-	public TypeProfileFactory(MemberPolicy policy)
+	TypeProfileFactory(MemberPolicy policy)
 	{
 		this.policy = policy;
 		this.generatedProfiles = new HashMap<>(8);
@@ -44,7 +44,7 @@ public class TypeProfileFactory
 	 * @return a new profile.
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> Profile<T> getProfile(Class<T> clazz)
+	<T> Profile<T> getProfile(Class<T> clazz)
 	{
 		Profile<T> out = null;
 		if ((out = (Profile<T>)generatedProfiles.get(clazz)) == null)

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
@@ -12,7 +12,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.blackrook.engine.struct.LoggingFactory.Logger;
+import com.blackrook.engine.EngineLoggingFactory.Logger;
 
 /**
  * Annotation on {@link EngineElement}s that signify the constructor for this

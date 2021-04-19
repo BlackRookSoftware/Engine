@@ -1,6 +1,6 @@
 # Black Rook Engine
 
-Copyright (c) 2016-2020 Black Rook Software.  
+Copyright (c) 2016-2021 Black Rook Software.  
 [https://github.com/BlackRookSoftware/Engine](https://github.com/BlackRookSoftware/Engine)
 
 ### NOTICE

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
@@ -9,9 +9,9 @@ package com.blackrook.engine.roles;
 
 import com.blackrook.engine.EngineFileSystem;
 import com.blackrook.engine.EngineResourceSet;
+import com.blackrook.engine.EngineLoggingFactory.Logger;
 import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.element.Ordering;
-import com.blackrook.engine.struct.LoggingFactory.Logger;
 
 /**
  * Describes an object to instantiate at engine startup that generates resources on startup.

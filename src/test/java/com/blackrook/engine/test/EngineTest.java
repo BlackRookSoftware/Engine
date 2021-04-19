@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
@@ -11,7 +11,7 @@ import java.awt.Image;
 
 import com.blackrook.engine.Engine;
 import com.blackrook.engine.EngineConfig;
-import com.blackrook.engine.struct.LoggingFactory.LogLevel;
+import com.blackrook.engine.EngineLoggingFactory.LogLevel;
 
 public final class EngineTest
 {

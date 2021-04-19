@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2020 Black Rook Software
+ * Copyright (c) 2016-2021 Black Rook Software
  * This program and the accompanying materials are made available under the 
  * terms of the GNU Lesser Public License v2.1 which accompanies this 
  * distribution, and is available at 
@@ -31,6 +31,8 @@ import java.util.Queue;
 import java.util.Set;
 
 import com.blackrook.engine.EngineResourceSet.ResourceSet;
+import com.blackrook.engine.EngineLoggingFactory.LogLevel;
+import com.blackrook.engine.EngineLoggingFactory.Logger;
 import com.blackrook.engine.annotation.EngineElement;
 import com.blackrook.engine.annotation.element.Ordering;
 import com.blackrook.engine.exception.EngineSetupException;
@@ -49,11 +51,8 @@ import com.blackrook.engine.roles.EngineResourceGenerator;
 import com.blackrook.engine.roles.EngineSettingsListener;
 import com.blackrook.engine.roles.EngineUpdateListener;
 import com.blackrook.engine.roles.EngineWindowBroadcaster;
-import com.blackrook.engine.struct.LoggingFactory;
 import com.blackrook.engine.struct.OrderedProperties;
 import com.blackrook.engine.struct.Utils;
-import com.blackrook.engine.struct.LoggingFactory.LogLevel;
-import com.blackrook.engine.struct.LoggingFactory.Logger;
 
 /**
  * The main engine, created as the centerpoint of the communication between components
@@ -65,7 +64,7 @@ public final class Engine
 	/** Logger. */
 	private Logger logger;
 	/** Engine logging factory. */
-	private LoggingFactory loggingFactory;
+	private EngineLoggingFactory loggingFactory;
 	/** Engine config. */
 	private EngineConfig config;
 	/** Common message receiver. */
@@ -253,7 +252,7 @@ public final class Engine
 		messageListeners = new LinkedList<>();
 		inputListeners = new LinkedList<>();
 
-		loggingFactory = new LoggingFactory();
+		loggingFactory = new EngineLoggingFactory();
 		logger = loggingFactory.getLogger(Engine.class, false);
 
 		// Create message receiver.
@@ -874,7 +873,7 @@ public final class Engine
 	/**
 	 * Common logging driver.
 	 */
-	private static abstract class LogDriver implements LoggingFactory.Driver
+	private static abstract class LogDriver implements EngineLoggingFactory.Driver
 	{
 		private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = ThreadLocal.withInitial(()->new SimpleDateFormat("HH:mm:ss.SSS"));
 		
