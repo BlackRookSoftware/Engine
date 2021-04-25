@@ -22,7 +22,7 @@ public interface EngineInputHandler
 	 * @param set true if active, false if inactive. 
 	 * @return true if this method handled the call, false otherwise. 
 	 */
-	public boolean onInputSet(String code, boolean set);
+	public boolean onInputFlag(String code, boolean set);
 
 	/**
 	 * Handles an input value change.

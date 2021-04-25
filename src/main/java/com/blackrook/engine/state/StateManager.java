@@ -101,10 +101,10 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 	}
 
 	@Override
-	public synchronized boolean onInputSet(String code, boolean set)
+	public synchronized boolean onInputFlag(String code, boolean set)
 	{
 		for (int i = size - 1; i >= 0; i--)
-			if (states[i].onInputSet(code, set))
+			if (states[i].onInputFlag(code, set))
 				return true;
 		return false;
 	}

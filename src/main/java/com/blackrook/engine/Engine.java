@@ -276,7 +276,7 @@ public final class Engine
 			public void fireInputFlag(String code, boolean set)
 			{
 				for (EngineInputListener listener : inputListeners)
-					if (listener.onInputSet(code, set))
+					if (listener.onInputFlag(code, set))
 						break;
 			}
 
