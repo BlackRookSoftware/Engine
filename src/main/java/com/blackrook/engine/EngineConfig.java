@@ -142,13 +142,6 @@ public interface EngineConfig
 	public String getFileSystemStackArchiveAutoloadExtension();
 
 	/**
-	 * Gets the file to read for reading resource definitions. This is filesystem-relative. 
-	 * File system is scanned for all of the files and are read additively from lowest to highest precedence. 
-	 * @return the name of the definition file.
-	 */
-	public String getResourceDefinitionFile();
-	
-	/**
 	 * Gets how many updates per second that the main updating thread needs to do.
 	 * If the returned value is 0 or less, this runs full bore.
 	 * If this returns <code>null</code> the updater is not started. 

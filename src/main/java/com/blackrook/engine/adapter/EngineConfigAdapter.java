@@ -153,12 +153,6 @@ public class EngineConfigAdapter implements EngineConfig
 	}
 
 	@Override
-	public String getResourceDefinitionFile()
-	{
-		return null;
-	}
-
-	@Override
 	public Integer getUpdatesPerSecond()
 	{
 		return null;

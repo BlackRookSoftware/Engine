@@ -32,12 +32,6 @@ public final class EngineTest
 			}
 			
 			@Override
-			public String getResourceDefinitionFile()
-			{
-				return "resources.def";
-			}
-
-			@Override
 			public String getApplicationName()
 			{
 				return "Test";
