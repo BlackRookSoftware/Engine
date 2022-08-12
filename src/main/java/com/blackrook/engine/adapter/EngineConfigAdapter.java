@@ -131,7 +131,7 @@ public class EngineConfigAdapter implements EngineConfig
 	@Override
 	public LogLevel getLogLevel()
 	{
-		return null;
+		return LogLevel.INFO;
 	}
 
 	@Override

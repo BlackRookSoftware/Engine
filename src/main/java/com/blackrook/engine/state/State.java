@@ -18,8 +18,9 @@ public interface State extends EngineUpdateHandler, EngineInputHandler
 {
 	/**
 	 * Called when this state has been activated or made current.
+	 * @param config the configuration for this state.
 	 */
-	public void enter();
+	public void enter(StateConfig config);
 	
 	/**
 	 * Called when this state is switched away.

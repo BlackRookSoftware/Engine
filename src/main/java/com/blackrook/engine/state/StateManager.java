@@ -13,9 +13,8 @@ import com.blackrook.engine.handler.EngineUpdateHandler;
 /**
  * The state manager class for maintaining exclusive, updatable states.
  * @author Matthew Tropiano
- * @param <S> the state type.
  */
-public class StateManager<S extends State> implements EngineUpdateHandler, EngineInputHandler
+public class StateManager implements EngineUpdateHandler, EngineInputHandler
 {
 	/** Current game state. */
 	private State[] states;
@@ -31,11 +30,10 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 	/**
 	 * Changes the current state by emptying the state 
 	 * stack and pushing new ones onto the stack by name.
-	 * Calls {@link State#exit()} on each state popped and {@link State#enter()} on each state pushed. 
+	 * Calls {@link State#exit()} on each state popped and {@link State#enter(StateConfig)} on each state pushed. 
 	 * @param changeStates the states to push in the specified order.
 	 */
-	@SuppressWarnings("unchecked")
-	public synchronized void change(final S ... changeStates)
+	public synchronized void change(final StateEntry ... changeStates)
 	{
 		while (!isEmpty()) 
 			pop();
@@ -44,14 +42,13 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 
 	/**
 	 * Pushes new states onto the stack.
-	 * Calls {@link State#enter()} on each state pushed. 
+	 * Calls {@link State#enter(StateConfig)} on each state pushed. 
 	 * @param pushStates the states to push in the specified order.
 	 * onto the stack, false if at least one was not.
 	 */
-	@SuppressWarnings("unchecked")
-	public synchronized void push(final S ... pushStates)
+	public synchronized void push(final StateEntry ... pushStates)
 	{
-		for (State s : pushStates)
+		for (StateEntry entry : pushStates)
 		{
 			if (size() == states.length)
 			{
@@ -59,8 +56,8 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 				System.arraycopy(states, 0, newarray, 0, pushStates.length);
 				states = newarray;
 			}
-			s.enter();
-			states[size++] = s;
+			entry.state.enter(entry.stateConfig);
+			states[size++] = entry.state;
 		}
 	}
 
@@ -132,6 +129,26 @@ public class StateManager<S extends State> implements EngineUpdateHandler, Engin
 	public boolean isEmpty()
 	{
 		return size() == 0;
+	}
+	
+	/**
+	 * State entry.
+	 */
+	public static class StateEntry
+	{
+		private State state;
+		private StateConfig stateConfig;
+		
+		/**
+		 * Creates a new State Entry for pushing onto the state stack.
+		 * @param state the state to push.
+		 * @param stateConfig the state's configuration parameters.
+		 */
+		public StateEntry(State state, StateConfig stateConfig)
+		{
+			this.state = state;
+			this.stateConfig = stateConfig;
+		}
 	}
 	
 }
