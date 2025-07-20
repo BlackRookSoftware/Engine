@@ -66,7 +66,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @param value the value.
 	 * @see Deque#addFirst(Object)
- 	 */
+	 */
 	public void addFirst(K key, V value)
 	{
 		getOrCreate(key).addFirst(value);
@@ -78,7 +78,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @param value the value.
 	 * @see Deque#addLast(Object)
- 	 */
+	 */
 	public void addLast(K key, V value)
 	{
 		getOrCreate(key).addLast(value);
@@ -91,7 +91,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @return the element removed.
 	 * @see Deque#removeFirst()
 	 * @throws NoSuchElementException if the key does not correspond to an existing deque.
- 	 */
+	 */
 	public V removeFirst(K key)
 	{
 		Deque<V> deque;
@@ -110,7 +110,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @return the element removed.
 	 * @see Deque#removeLast()
 	 * @throws NoSuchElementException if the key does not correspond to an existing deque.
- 	 */
+	 */
 	public V removeLast(K key)
 	{
 		Deque<V> deque;
@@ -128,7 +128,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @return the element removed, or null if no element.
 	 * @see Deque#pollFirst()
- 	 */
+	 */
 	public V pollFirst(K key)
 	{
 		Deque<V> deque;
@@ -146,7 +146,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @return the element removed, or null if no element.
 	 * @see Deque#pollLast()
- 	 */
+	 */
 	public V pollLast(K key)
 	{
 		Deque<V> deque;
@@ -164,7 +164,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @return the element found, or null if no element.
 	 * @see Deque#peekFirst()
- 	 */
+	 */
 	public V peekFirst(K key)
 	{
 		Deque<V> deque;
@@ -179,7 +179,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @return the element found, or null if no element.
 	 * @see Deque#peekLast()
- 	 */
+	 */
 	public V peekLast(K key)
 	{
 		Deque<V> deque;
@@ -233,7 +233,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @see Deque#pop()
 	 * @return the element removed.
 	 * @throws NoSuchElementException if the key does not correspond to an existing deque.
- 	 */
+	 */
 	public V pop(K key)
 	{
 		Deque<V> deque;
@@ -251,7 +251,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @see Deque#poll()
 	 * @return the element removed, or null if no element.
- 	 */
+	 */
 	public V poll(K key)
 	{
 		Deque<V> deque;
@@ -269,7 +269,7 @@ public class TreeDequeMap<K, V> extends TreeMap<K, Deque<V>>
 	 * @param key the key.
 	 * @param value the value.
 	 * @see Deque#push(Object)
- 	 */
+	 */
 	public void push(K key, V value)
 	{
 		getOrCreate(key).push(value);
