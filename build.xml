@@ -24,7 +24,12 @@
 	<!-- Project Info -->
 	<property name="project.archive" value="blackrook-engine" />
 	<property name="project.javadoc.title" value="Black Rook Engine" />
-	<property name="project.classpath" value="${fs.lib}" />
+	<property name="project.compiler.bootclasspath" value="" />
+	<property name="project.testclass" value=""/>
+	<property name="project.testclass.main" value=""/>
+	<property name="project.classpath" value="
+		${dev.base}/${fs.jar}
+	" />
 	<property name="project.javadoc.packages" value="
 		com.blackrook.engine,
 		com.blackrook.engine.adapter,
@@ -58,7 +63,7 @@
 	<target name="javadoc" depends="init.docs" description="Builds the documentation.">
         <javadoc access="protected" 
         	additionalparam="-J-Xmx512m  " author="true" 
-        	classpath="${project.classpath}${path.separator}${bin.dir}" 
+        	classpath="${bin.dir}${S}${project.classpath}" 
         	doctitle="${project.javadoc.title}" 
         	sourcepath="${src.dir}" 
         	packagenames="${project.javadoc.packages}"
@@ -74,7 +79,7 @@
         	notree="false"
     		>
             <link href="https://blackrooksoftware.github.io/FileSystem/javadoc/"/>
-            <link href="https://docs.oracle.com/javase/10/docs/api/" packagelistloc="element-list"/>
+            <link href="https://docs.oracle.com/javase/11/docs/api/"/>
         </javadoc>
     </target>	
 
