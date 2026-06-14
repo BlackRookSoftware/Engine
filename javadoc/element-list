@@ -1,0 +1,11 @@
+com.blackrook.engine
+com.blackrook.engine.adapter
+com.blackrook.engine.annotation
+com.blackrook.engine.annotation.element
+com.blackrook.engine.annotation.resource
+com.blackrook.engine.exception
+com.blackrook.engine.handler
+com.blackrook.engine.receiver
+com.blackrook.engine.roles
+com.blackrook.engine.state
+com.blackrook.engine.struct
