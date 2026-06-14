@@ -17,6 +17,11 @@ Black Rook FileSystem 1.0.0+
 
 [java.base](https://docs.oracle.com/javase/10/docs/api/java.base-summary.html)
 
+### Where to Get
+
+* [Maven Central](https://central.sonatype.com/artifact/com.blackrooksoftware/engine)  
+* [GitHub Releases](https://github.com/BlackRookSoftware/Engine/releases/latest)
+
 ### Introduction
 
 Black Rook Engine is a dependency injection system built around several roles for hooking into
@@ -29,39 +34,35 @@ It's nice to have a quick thing to manage dependencies and lifecycle for larger,
 This is it. 
 
 
-### Compiling with Ant
+### Compiling with Maven
 
-To download dependencies for this project, type (`build.properties` will also be altered/created):
+To install/compile this library and make all artifacts with Apache Maven, type:
 
-	ant dependencies
+	mvn install
 
-To compile this library with Apache Ant, type:
+To compile this library, type:
 
-	ant compile
+	mvn compile
 
-To make Maven-compatible JARs of this library (placed in the *build/jar* directory), type:
+To make Maven-compatible JARs of this library, type:
 
-	ant jar
+	mvn jar:jar
 
-To make Javadocs (placed in the *build/docs* directory):
+To make Javadocs:
 
-	ant javadoc
+	mvn javadoc:javadoc
 
-To compile main and test code and run tests (if any):
+To run tests, type:
 
-	ant test
+	mvn test
 
-To make Zip archives of everything (main src/resources, bin, javadocs, placed in the *build/zip* directory):
+To generate a coverage report, type:
 
-	ant zip
-
-To compile, JAR, test, and Zip up everything:
-
-	ant release
+	mvn test jacoco:report
 
 To clean up everything:
 
-	ant clean
+	mvn clean
 
 
 ### Other
